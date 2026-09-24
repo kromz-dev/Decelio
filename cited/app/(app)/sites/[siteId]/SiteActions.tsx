@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import posthog from "posthog-js";
 import { launchAuditCampaign } from "./actions";
 import { Loader2, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ export function SiteActions({ siteId }: { siteId: string }) {
     startTransition(async () => {
       try {
         await launchAuditCampaign(siteId);
+        posthog.capture("site_rescan_requested");
         setFeedbackMessage("Scan lancé.");
         setTimeout(() => setFeedbackMessage(null), 4000);
       } catch {
@@ -25,6 +27,7 @@ export function SiteActions({ siteId }: { siteId: string }) {
   };
 
   const handleExport = () => {
+    posthog.capture("site_report_exported");
     window.print();
   };
 

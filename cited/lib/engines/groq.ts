@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { EngineConnector, EngineId, EngineQuery, EngineResponse, EngineError, EngineUsage } from "./types";
+import { randomUUID } from "crypto";
 import { z } from "zod";
+import { captureAiGeneration } from "../posthog-ai";
+import { EngineConnector, EngineId, EngineQuery, EngineResponse, EngineError, EngineUsage } from "./types";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = "llama-3.1-70b-versatile";
@@ -65,11 +67,30 @@ export const groqConnector: EngineConnector = {
       throw new EngineError("GROQ_API_KEY manquante", "GROQ" as EngineId, false);
     }
 
+    const traceId = randomUUID();
+    const generationStartedAt = Date.now();
     let attempt = 0;
     while (attempt < maxRetries) {
       const startTime = Date.now();
 
       try {
+        const messages = [
+          {
+            role: "system",
+            content: `Vous êtes un Moteur de Réponse IA (comme Perplexity ou ChatGPT Search) opérant pour des utilisateurs en ${input.country}. 
+Votre rôle est de fournir des réponses extrêmement denses, factuelles et impartiales, comme si vous aviez accès à une base de données RAG en temps réel.
+RÈGLES STRICTES :
+1. Utilisez des listes à puces pour énumérer les outils, logiciels ou solutions.
+2. Soyez très spécifique sur les fonctionnalités et citez des noms de marques réelles.
+3. Ne faites pas de phrases d'introduction ou de conclusion marketing inutiles. Allez droit au but (format dense 40-60 mots par concept).
+4. Citez systématiquement vos sources via des URLs réelles (ou très probables) dans le texte.
+5. Lorsque vous répondez à une question ou comparez des outils, basez-vous sur le consensus web (comme les avis G2, Capterra ou articles d'experts).`
+          },
+          {
+            role: "user",
+            content: input.prompt
+          }
+        ];
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -78,23 +99,7 @@ export const groqConnector: EngineConnector = {
           },
           body: JSON.stringify({
             model: GROQ_MODEL,
-            messages: [
-              {
-                role: "system",
-                content: `Vous êtes un Moteur de Réponse IA (comme Perplexity ou ChatGPT Search) opérant pour des utilisateurs en ${input.country}. 
-Votre rôle est de fournir des réponses extrêmement denses, factuelles et impartiales, comme si vous aviez accès à une base de données RAG en temps réel.
-RÈGLES STRICTES :
-1. Utilisez des listes à puces pour énumérer les outils, logiciels ou solutions.
-2. Soyez très spécifique sur les fonctionnalités et citez des noms de marques réelles.
-3. Ne faites pas de phrases d'introduction ou de conclusion marketing inutiles. Allez droit au but (format dense 40-60 mots par concept).
-4. Citez systématiquement vos sources via des URLs réelles (ou très probables) dans le texte.
-5. Lorsque vous répondez à une question ou comparez des outils, basez-vous sur le consensus web (comme les avis G2, Capterra ou articles d'experts).`
-              },
-              {
-                role: "user",
-                content: input.prompt
-              }
-            ],
+            messages,
             temperature: 0.2,
             max_tokens: 1024,
           })
@@ -114,6 +119,16 @@ RÈGLES STRICTES :
         const rawText = data.choices[0]?.message?.content || "";
         const latencyMs = Date.now() - startTime;
         const usage = toEngineUsage(data.usage);
+
+        await captureAiGeneration({
+          traceId,
+          provider: "groq",
+          model: data.model || GROQ_MODEL,
+          input: messages,
+          output: rawText,
+          latencyMs: Date.now() - generationStartedAt,
+          usage,
+        });
 
         // Extraire des pseudo-citations à partir des URLs retournées dans le texte
         const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -208,6 +223,8 @@ export async function groqPlainJson<T>(
     messages.push({ role: "user", content: options.untrustedData });
   }
 
+  const traceId = randomUUID();
+  const generationStartedAt = Date.now();
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -228,6 +245,16 @@ export async function groqPlainJson<T>(
 
   const data = await response.json();
   const rawText = data.choices[0]?.message?.content || "{}";
+
+  await captureAiGeneration({
+    traceId,
+    provider: "groq",
+    model: data.model || GROQ_MODEL,
+    input: messages,
+    output: rawText,
+    latencyMs: Date.now() - generationStartedAt,
+    usage: toEngineUsage(data.usage),
+  });
 
   // response_format: { type: "json_object" } garantit déjà un JSON nu :
   // pas de repli regex, qui ne faisait que masquer des réponses hors format.

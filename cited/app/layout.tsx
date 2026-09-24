@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   },
 };
 
+import { PostHogIdentify, PostHogPageview } from "./providers";
+import { Suspense } from "react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,6 +24,10 @@ export default function RootLayout({
   return (
     <html lang="fr" className={cn(sans.variable, mono.variable, "font-sans")}>
       <body className="antialiased min-h-screen">
+        <Suspense fallback={null}>
+          <PostHogPageview />
+        </Suspense>
+        <PostHogIdentify />
         {children}
       </body>
     </html>

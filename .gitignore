@@ -33,3 +33,11 @@ yarn-error.log*
 
 # espaces de travail outillage
 Claude-Production-Grade-Suite/
+.env.local
+
+# fichiers de test / scratch, jamais destinés à être commités
+cited/dist/
+cited/scratch-*.js
+cited/scratch-*.tsx
+cited/screenshot.png
+cited/test-*.pdf

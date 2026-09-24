@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import posthog from "posthog-js";
 import { addMonitoredSite, deleteMonitoredSite } from "@/app/actions/sites";
 import { Loader2, Plus, ShieldAlert, X, Download, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -43,6 +44,7 @@ export function DashboardSites({ initialSites }: { initialSites: MonitoredSite[]
 
       if (response.data) {
         setSites([response.data as MonitoredSite, ...sites]);
+        posthog.capture("monitored_site_added");
         setName("");
         setUrl("");
         setShowAddForm(false);
@@ -63,6 +65,7 @@ export function DashboardSites({ initialSites }: { initialSites: MonitoredSite[]
 
       if (response.success) {
         setSites((prev) => prev.filter((s) => s.id !== id));
+        posthog.capture("monitored_site_deleted");
       }
     });
   };

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LoaderCircle } from "lucide-react";
+import posthog from "posthog-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,7 @@ export function AuditForm({ onAuditComplete, initialDomain = "" }: AuditFormProp
       });
       if (!res.ok) throw new Error("Impossible de scanner ce domaine. Vérifiez l'adresse et réessayez.");
       onAuditComplete(await res.json());
+      posthog.capture("audit_completed");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Le scan a échoué. Réessayez dans un instant.");
     } finally {

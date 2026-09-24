@@ -63,7 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <form action={async () => {
               "use server";
               const { signOut } = await import("@/auth");
-              await signOut({ redirectTo: "/" });
+              await signOut({ redirectTo: "/?posthog_reset=1" });
             }}>
               <button type="submit" className="text-ink-2 hover:text-ink" title="Déconnexion" aria-label="Déconnexion">
                 <LogOut className="h-4 w-4" />

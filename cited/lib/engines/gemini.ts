@@ -12,6 +12,8 @@
  * Aucune dépendance : appel REST direct via fetch.
  */
 
+import { randomUUID } from "crypto";
+import { captureAiGeneration } from "../posthog-ai";
 import {
   type EngineConnector,
   type EngineQuery,
@@ -133,6 +135,8 @@ async function callGemini(body: unknown, grounded: boolean, maxRetries = 3): Pro
   // définitive et non réessayable. La laisser lever à l'intérieur du try
   // réseau la déguiserait en « réseau injoignable », donc en erreur retryable.
   const key = apiKey();
+  const traceId = randomUUID();
+  const generationStartedAt = Date.now();
 
   let attempt = 0;
 
@@ -203,6 +207,17 @@ async function callGemini(body: unknown, grounded: boolean, maxRetries = 3): Pro
     if (!candidate) {
       throw new EngineError("Réponse Gemini sans candidat exploitable.", "GEMINI", true);
     }
+
+    await captureAiGeneration({
+      traceId,
+      provider: "google",
+      model: MODEL,
+      input: JSON.stringify(body),
+      output: textOf(candidate),
+      latencyMs: Date.now() - generationStartedAt,
+      usage: usageOf(json.usageMetadata, grounded),
+    });
+
     return { candidate, usageMetadata: json.usageMetadata };
   }
 

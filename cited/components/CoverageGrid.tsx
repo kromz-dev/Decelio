@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import posthog from "posthog-js";
 import { captureLead } from "@/app/actions/lead";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -44,7 +45,8 @@ export function CoverageGrid({ data }: CoverageGridProps) {
     setLeadError("");
     const result = await captureLead(formData, JSON.stringify({ domain, score, type: "v3-technical-scan" }));
     setSubmitted(result.success);
-    if (!result.success) setLeadError("L'envoi a échoué. Vérifiez l'adresse et réessayez.");
+    if (result.success) posthog.capture("lead_submitted");
+    else setLeadError("L'envoi a échoué. Vérifiez l'adresse et réessayez.");
     setLoading(false);
   }
 

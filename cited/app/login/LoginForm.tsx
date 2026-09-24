@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import posthog from "posthog-js";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -26,6 +27,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       setLoading(false);
       return;
     }
+    posthog.capture("user_logged_in");
     router.push(callbackUrl);
     router.refresh();
   }

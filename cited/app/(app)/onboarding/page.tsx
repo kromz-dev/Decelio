@@ -2,6 +2,7 @@
 
 import { useState, useTransition, ChangeEvent, useRef } from "react";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,7 @@ librairie-pas.fr`;
   };
 
   const handleStartScan = () => {
+    posthog.capture("onboarding_scan_started", { domain_count: domainCount });
     setIsScanning(true);
     startTransition(async () => {
       await new Promise((resolve) => setTimeout(resolve, 800));
