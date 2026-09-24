@@ -106,6 +106,169 @@ describe('renderMonthlyReportPdf', () => {
 
     expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
   });
+
+  it('produces a Buffer containing the PDF EOF marker %%EOF', async () => {
+    const buffer = await renderMonthlyReportPdf(fixedData);
+
+    expect(buffer.toString('latin1')).toContain('%%EOF');
+  });
+
+  it('generates a PDF when report data is completely empty (zero sites)', async () => {
+    const emptyData: MonthlyReportData = {
+      period: { start: '2026-08-01T00:00:00.000Z', end: '2026-08-31T00:00:00.000Z' },
+      clientName: 'Client Sans Site',
+      sites: [],
+      history: [],
+      incidents: [],
+      technicalAppendix: [],
+    };
+    const buffer = await renderMonthlyReportPdf(emptyData);
+
+    expect(Buffer.isBuffer(buffer)).toBe(true);
+    expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+    expect(buffer.length).toBeGreaterThan(1000);
+  });
+
+  it('generates a PDF for a single-site client', async () => {
+    const singleSiteData: MonthlyReportData = {
+      period: { start: '2026-08-01T00:00:00.000Z', end: '2026-08-31T00:00:00.000Z' },
+      clientName: 'Solo Site Client',
+      sites: [
+        {
+          name: 'solo.example.com',
+          url: 'https://solo.example.com',
+          currentStatus: 'OK',
+          availabilityPct: 100,
+          degradedDays: 0,
+        },
+      ],
+      history: [
+        {
+          site: 'solo.example.com',
+          entries: [{ date: '2026-08-15T00:00:00.000Z', status: 'OK' }],
+        },
+      ],
+      incidents: [],
+      technicalAppendix: [
+        {
+          site: 'solo.example.com',
+          entries: [{ bot: 'GPTBot', lastHttpStatus: 200, robotsRule: 'Allow: /', cause: null }],
+        },
+      ],
+    };
+    const buffer = await renderMonthlyReportPdf(singleSiteData);
+
+    expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+  });
+
+  it('generates a PDF covering all possible verdict statuses', async () => {
+    const statuses: Array<'OK' | 'BLOQUÉ' | 'COQUILLE VIDE' | 'ERREUR' | 'INCONNU'> = [
+      'OK',
+      'BLOQUÉ',
+      'COQUILLE VIDE',
+      'ERREUR',
+      'INCONNU',
+    ];
+    const multiStatusData: MonthlyReportData = {
+      ...fixedData,
+      sites: statuses.map((status, idx) => ({
+        name: `site-${idx}.example.com`,
+        url: `https://site-${idx}.example.com`,
+        currentStatus: status,
+        availabilityPct: 50 + idx * 10,
+        degradedDays: idx,
+      })),
+      history: statuses.map((status, idx) => ({
+        site: `site-${idx}.example.com`,
+        entries: [{ date: '2026-08-01T00:00:00.000Z', status }],
+      })),
+    };
+    const buffer = await renderMonthlyReportPdf(multiStatusData);
+
+    expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+  });
+
+  it('generates a PDF with technical entries containing null fields', async () => {
+    const nullFieldsData: MonthlyReportData = {
+      ...fixedData,
+      technicalAppendix: [
+        {
+          site: 'atelier-boreal.fr',
+          entries: [
+            { bot: 'UnknownBot', lastHttpStatus: null, robotsRule: null, cause: null },
+          ],
+        },
+      ],
+    };
+    const buffer = await renderMonthlyReportPdf(nullFieldsData);
+
+    expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+  });
+
+  it('generates a PDF when strings contain special characters, accents and ampersands', async () => {
+    const specialCharsData: MonthlyReportData = {
+      period: { start: '2026-08-01T00:00:00.000Z', end: '2026-08-31T00:00:00.000Z' },
+      clientName: "L'Ébénisterie & Café « Le Chêne » <script>alert(1)</script>",
+      sites: [
+        {
+          name: 'ébénisterie-café.fr & fils',
+          url: 'https://xn--bnisterie-caf-4qba.fr?ref=test&utm_source=ia',
+          currentStatus: 'OK',
+          availabilityPct: 99.9,
+          degradedDays: 0,
+        },
+      ],
+      history: [
+        {
+          site: 'ébénisterie-café.fr & fils',
+          entries: [{ date: '2026-08-15T00:00:00.000Z', status: 'OK' }],
+        },
+      ],
+      incidents: [
+        {
+          site: 'ébénisterie-café.fr & fils',
+          type: 'REGRESSION',
+          cause: 'Erreur 500 & blocage d\'accès Cloudflare « WAF »',
+          fix: 'Débloquer l\'agent dans les règles d\'accès & réessayer',
+          occurredAt: '2026-08-10T00:00:00.000Z',
+        },
+      ],
+      technicalAppendix: [
+        {
+          site: 'ébénisterie-café.fr & fils',
+          entries: [
+            {
+              bot: 'GPTBot 1.0 (OpenAI)',
+              lastHttpStatus: 200,
+              robotsRule: 'Allow: /boutique & /catalogue',
+              cause: 'Aucun blocage constaté — tout est au « vert »',
+            },
+          ],
+        },
+      ],
+    };
+    const buffer = await renderMonthlyReportPdf(specialCharsData);
+
+    expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+  });
+
+  it('generates a PDF with 3-digit hex accent color', async () => {
+    const buffer = await renderMonthlyReportPdf(fixedData, {
+      name: 'Agence 3-Hex',
+      accentColor: '#36f',
+    });
+
+    expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+  });
+
+  it('generates a PDF with whitespace-padded hex accent color', async () => {
+    const buffer = await renderMonthlyReportPdf(fixedData, {
+      name: 'Agence Trim',
+      accentColor: '  #2b55d0  ',
+    });
+
+    expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+  });
 });
 
 // @react-pdf/renderer compresse le flux PDF par défaut (`renderToBuffer`/
@@ -155,6 +318,25 @@ describe('buildReportSections', () => {
 
     expect(incidentsSection.isEmpty).toBe(false);
   });
+
+  it('marks all sections except cover as empty when all collections are empty', () => {
+    const emptyData: MonthlyReportData = {
+      period: { start: '2026-08-01T00:00:00.000Z', end: '2026-08-31T00:00:00.000Z' },
+      clientName: 'Client Vide',
+      sites: [],
+      history: [],
+      incidents: [],
+      technicalAppendix: [],
+    };
+    const sections = buildReportSections(emptyData);
+    const byKey = Object.fromEntries(sections.map((s) => [s.key, s]));
+
+    expect(byKey.cover.isEmpty).toBe(false);
+    expect(byKey.currentVerdict.isEmpty).toBe(true);
+    expect(byKey.history.isEmpty).toBe(true);
+    expect(byKey.incidents.isEmpty).toBe(true);
+    expect(byKey.technicalAppendix.isEmpty).toBe(true);
+  });
 });
 
 describe('resolveBrandName', () => {
@@ -165,6 +347,15 @@ describe('resolveBrandName', () => {
 
   it('returns the branding name when provided', () => {
     expect(resolveBrandName({ name: 'Agence Fixture' })).toBe('Agence Fixture');
+  });
+
+  it('trims leading and trailing whitespace from the brand name', () => {
+    expect(resolveBrandName({ name: '  Studio Digitale  ' })).toBe('Studio Digitale');
+  });
+
+  it('falls back to default brand name when brand name is empty string or only whitespace', () => {
+    expect(resolveBrandName({ name: '' })).toBe(DEFAULT_BRAND_NAME);
+    expect(resolveBrandName({ name: '   ' })).toBe(DEFAULT_BRAND_NAME);
   });
 });
 
@@ -185,5 +376,20 @@ describe('resolveAccentColor', () => {
     expect(resolveAccentColor('not-a-color')).toBe(DEFAULT_ACCENT_COLOR);
     expect(resolveAccentColor('red')).toBe(DEFAULT_ACCENT_COLOR);
     expect(resolveAccentColor('#12345')).toBe(DEFAULT_ACCENT_COLOR);
+  });
+
+  it('trims whitespace around a valid hex color', () => {
+    expect(resolveAccentColor('  #2b55d0  ')).toBe('#2b55d0');
+    expect(resolveAccentColor('  #abc  ')).toBe('#abc');
+  });
+
+  it('handles uppercase hex color', () => {
+    expect(resolveAccentColor('#2B55D0')).toBe('#2B55D0');
+    expect(resolveAccentColor('#ABC')).toBe('#ABC');
+  });
+
+  it('falls back to default color for empty or whitespace-only string', () => {
+    expect(resolveAccentColor('')).toBe(DEFAULT_ACCENT_COLOR);
+    expect(resolveAccentColor('   ')).toBe(DEFAULT_ACCENT_COLOR);
   });
 });
