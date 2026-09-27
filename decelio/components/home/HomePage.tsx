@@ -302,6 +302,37 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 </li>
               ))}
             </ul>
+
+            {/*
+              Un vrai diagnostic, date et reproductible, plutot qu'un temoignage : le produit n'a pas encore
+              de clients (constitution, principe II). Valeurs relevees le 27/09/2026 a 07:38 sur
+              /analyse/wordpress.org ; le lien relance le meme diagnostic en direct.
+            */}
+            <figure className="reveal mt-8 overflow-hidden rounded-[1.75rem] border border-line bg-surface">
+              <div className="flex flex-col gap-6 p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <figcaption className="type-caption text-ink-2">Diagnostic réel, vérifié le 27 septembre 2026</figcaption>
+                  <p className="font-display mt-1 text-[26px] font-bold tracking-[-0.02em] text-ink">wordpress.org</p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
+                    Plateforme détectée : WordPress (d&apos;après les indices de la page). 502 mots lisibles sans
+                    exécuter de JavaScript.
+                  </p>
+                </div>
+                <ul className="flex flex-wrap gap-2">
+                  {["ChatGPT", "Claude", "Perplexity"].map((assistant) => (
+                    <li key={assistant} className="flex items-center gap-2 rounded-full border border-line bg-paper py-1.5 pl-3 pr-2">
+                      <span className="text-sm font-medium text-ink">{assistant}</span>
+                      <Verdict value="lu" variant="inline" size="sm" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="border-t border-line bg-paper px-6 py-4 sm:px-8">
+                <a href="/analyse/wordpress.org" className="text-sm font-semibold text-ink underline underline-offset-4 hover:text-brand">
+                  Relancer ce diagnostic en direct
+                </a>
+              </div>
+            </figure>
           </div>
         </section>
 
@@ -424,7 +455,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                       <Verdict value="refuse" variant="inline" size="sm" />
                     </li>
                   </ul>
-                  <p className="type-caption mt-4 text-ink-2">Exemple</p>
+                  <p className="type-caption mt-4 text-ink-2">Exemple. Le rapport envoyé à vos clients porte le logo de votre agence.</p>
                 </figure>
               </article>
 
