@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { Sun, Moon, Monitor } from "lucide-react";
 
 /**
@@ -13,13 +13,19 @@ import { Sun, Moon, Monitor } from "lucide-react";
  * la classe `.dark` est retirée de `<html>`.
  *
  * Le script inline de `app/(app)/layout.tsx` applique déjà la classe au
- * premier rendu pour éviter le flash ; ce composant prend le relais
- * ensuite et réagit aux changements système en mode "Système".
+ * premier rendu pour éviter le flash. `localStorage` n'existe pas côté
+ * serveur : `theme` est lu via `useSyncExternalStore`, qui rend le même
+ * « système » au serveur et au premier rendu client (pas de décalage
+ * d'hydratation), puis se resynchronise seul sur la vraie valeur, sans
+ * passer par un `setState` dans un effet.
  */
 
 type Theme = "light" | "dark" | "system";
 
 const STORAGE_KEY = "decelio-theme";
+// Notifie useSyncExternalStore d'un changement fait dans le même onglet :
+// `storage` ne se déclenche que pour les autres onglets.
+const THEME_EVENT = "decelio-theme-change";
 
 function readStoredTheme(): Theme {
   try {
@@ -44,6 +50,22 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = isDark ? "dark" : "light";
 }
 
+function subscribe(onStoreChange: () => void) {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(THEME_EVENT, onStoreChange);
+  return () => {
+    media.removeEventListener("change", onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(THEME_EVENT, onStoreChange);
+  };
+}
+
+function getServerTheme(): Theme {
+  return "system";
+}
+
 const OPTIONS: { value: Theme; label: string; Icon: typeof Sun }[] = [
   { value: "light", label: "Clair", Icon: Sun },
   { value: "dark", label: "Sombre", Icon: Moon },
@@ -51,25 +73,16 @@ const OPTIONS: { value: Theme; label: string; Icon: typeof Sun }[] = [
 ];
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
-  const [ready, setReady] = useState(false);
+  const theme = useSyncExternalStore(subscribe, readStoredTheme, getServerTheme);
+
+  // Synchronise le DOM avec l'état lu, jamais l'inverse : aucun `setState`
+  // ici, seulement des effets de bord sur `<html>`.
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
-    const stored = readStoredTheme();
-    setTheme(stored);
-    applyTheme(stored);
-    setReady(true);
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onSystemChange = () => {
-      if (readStoredTheme() === "system") {
-        applyTheme("system");
-      }
-    };
-    media.addEventListener("change", onSystemChange);
-
     return () => {
-      media.removeEventListener("change", onSystemChange);
       // Les pages publiques restent toujours claires : on nettoie en quittant l'application.
       document.documentElement.classList.remove("dark");
       document.documentElement.style.colorScheme = "light";
@@ -77,13 +90,12 @@ export function ThemeToggle() {
   }, []);
 
   const choose = useCallback((next: Theme) => {
-    setTheme(next);
-    applyTheme(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
       // Préférence de confort seulement : si le stockage refuse, le choix ne survit pas au rechargement.
     }
+    window.dispatchEvent(new Event(THEME_EVENT));
   }, []);
 
   return (
@@ -97,11 +109,11 @@ export function ThemeToggle() {
           key={value}
           type="button"
           role="radio"
-          aria-checked={ready && theme === value}
+          aria-checked={theme === value}
           title={label}
           onClick={() => choose(value)}
           className={`flex h-8 w-8 items-center justify-center rounded-xs text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink ${
-            ready && theme === value ? "bg-surface-2 text-ink" : ""
+            theme === value ? "bg-surface-2 text-ink" : ""
           }`}
         >
           <Icon className="h-4 w-4" aria-hidden="true" />
