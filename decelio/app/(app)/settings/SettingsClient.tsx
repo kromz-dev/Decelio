@@ -55,7 +55,7 @@ export function SettingsClient({
   return (
     <div className="mx-auto max-w-6xl pb-16" data-trial-ends-at={trialEndsAt ? trialEndsAt.toISOString() : undefined}>
       <div className="border-b border-line pb-8">
-        <h1 className="text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink sm:text-[34px] sm:leading-[40px]">
+        <h1 className="font-display text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink sm:text-[34px] sm:leading-[40px]">
           Paramètres
         </h1>
         <p className="mt-3 max-w-[60ch] text-sm leading-6 text-ink-2">

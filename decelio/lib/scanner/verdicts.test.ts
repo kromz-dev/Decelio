@@ -120,6 +120,7 @@ describe("verdictForBot", () => {
             risk: "blocked",
             httpStatus: 403,
             differsFromBaseline: true,
+            rateLimitUnconfirmed: false,
           },
         ],
       },
@@ -127,6 +128,26 @@ describe("verdictForBot", () => {
     const result = verdictForBot(report, "PerplexityBot");
     expect(result.value).toBe("refuse");
     expect(result.cause).toContain("indice");
+  });
+
+  it("returns 'inconnu' (à vérifier) for an unconfirmed rate-limited probe, never 'refuse'", () => {
+    const report = makeReport({
+      access: {
+        unverifiedProbes: [
+          {
+            claimedBot: "PerplexityBot",
+            label: "unverified requester claiming to be PerplexityBot",
+            risk: "blocked",
+            httpStatus: 429,
+            differsFromBaseline: true,
+            rateLimitUnconfirmed: true,
+          },
+        ],
+      },
+    });
+    const result = verdictForBot(report, "PerplexityBot");
+    expect(result.value).toBe("inconnu");
+    expect(result.cause).toContain("429");
   });
 
   it("returns 'vide' when the raw HTML is JS-dependent", () => {

@@ -112,7 +112,7 @@ const PRICING_FAQ = [
   },
   {
     q: "Comment fonctionnent la facturation et la TVA ?",
-    a: "Les prix affichés sont HT. Une facture est disponible après chaque paiement depuis l'espace client, avec la TVA applicable à votre pays. Le paiement passe par Stripe.",
+    a: "TVA non applicable (art. 293 B du CGI) : le prix affiché est le prix payé. Une facture est disponible après chaque paiement depuis l'espace client. Le paiement passe par Stripe.",
   },
 ] as const;
 
@@ -192,7 +192,7 @@ export default async function PricingPage() {
             <div className="reveal hidden overflow-hidden rounded-[1.75rem] border border-line bg-surface lg:block">
               <table className="w-full border-collapse text-left text-sm">
                 <caption className="sr-only">
-                  Prix hors taxes, facturation mensuelle. Le palier s&apos;ajuste au nombre de sites surveill&eacute;s.
+                  TVA non applicable (art. 293 B du CGI), facturation mensuelle. Le palier s&apos;ajuste au nombre de sites surveill&eacute;s.
                 </caption>
                 <thead>
                   <tr className="align-top">
@@ -266,7 +266,7 @@ export default async function PricingPage() {
             </div>
 
             <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-ink-2">
-              Prix hors taxes, facturation mensuelle. Paiement par carte, via
+              TVA non applicable (art. 293 B du CGI). Facturation mensuelle, paiement par carte via
               <span className="inline-flex items-center gap-1.5 font-medium text-ink">
                 <StripeMark className="h-4 w-4" /> Stripe
               </span>

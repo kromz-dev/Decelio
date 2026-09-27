@@ -132,4 +132,37 @@ describe("analyzeJsDependency", () => {
     expect(analyzeJsDependency(words(100), words(300)).verdict).toBe("partial");
     expect(analyzeJsDependency(words(290), words(300)).verdict).toBe("static");
   });
+
+  it("does not call a short static page (no JS-rendering signal) js-dependent — regression for example.com false positive", () => {
+    // 19 mots, aucun <div id="root">, aucun __NEXT_DATA__, aucun <noscript> : rien
+    // n'indique un rendu côté client, donc pas de « likely_js_dependent ».
+    const shortStaticPage =
+      '<html><head><title>Example Domain</title></head><body><div><h1>Example Domain</h1>' +
+      "<p>This domain is for use in illustrative examples in documents. You may use this " +
+      "domain in literature without prior coordination or asking for permission.</p>" +
+      '<p><a href="https://www.iana.org/domains/example">More information...</a></p></div></body></html>';
+    const result = analyzeJsDependency(shortStaticPage, null);
+    expect(result.verdict).toBe("low_text");
+    expect(result.hasAppRoot).toBe(false);
+  });
+
+  it("keeps likely_js_dependent for a thin page carrying a JS-rendering signal (SPA shell)", () => {
+    expect(analyzeJsDependency('<div id="root"></div>', null)).toMatchObject({ verdict: "likely_js_dependent", hasAppRoot: true });
+  });
+
+  it("keeps likely_js_dependent when the page has a __NEXT_DATA__ hydration payload but almost no text", () => {
+    const page = '<html><body><p>Chargement</p><script id="__NEXT_DATA__" type="application/json">{}</script></body></html>';
+    expect(analyzeJsDependency(page, null).verdict).toBe("likely_js_dependent");
+  });
+
+  it("keeps likely_js_dependent when a <noscript> asks the visitor to enable JavaScript", () => {
+    const page =
+      "<html><body><noscript>Vous devez activer JavaScript pour utiliser cette application.</noscript>" +
+      "<p>Chargement</p></body></html>";
+    expect(analyzeJsDependency(page, null).verdict).toBe("likely_js_dependent");
+  });
+
+  it("still flags a page confirmed empty by a render comparison, even without a raw-HTML signal", () => {
+    expect(analyzeJsDependency("<p>Bonjour</p>", words(300)).verdict).toBe("js_dependent");
+  });
 });

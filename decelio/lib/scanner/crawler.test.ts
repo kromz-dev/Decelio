@@ -9,7 +9,23 @@ vi.mock("node:dns/promises", () => ({
   }),
 }));
 
-import { assertSafeUrl, crawlUrl, MAX_REDIRECTS } from "./crawler";
+// Remplace l'Agent réel d'undici par un espion : les tests n'ouvrent jamais
+// de vraie connexion (`fetch` est lui-même simulé), on vérifie seulement les
+// options passées au constructeur — en particulier `connect.lookup`.
+vi.mock("undici", () => ({
+  Agent: vi.fn(function FakeAgent(this: { __pinnedOpts: unknown }, opts: unknown) {
+    this.__pinnedOpts = opts;
+  }),
+}));
+
+import { Agent } from "undici";
+import { assertSafeUrl, createPinnedDispatcher, crawlUrl, isPinningUnavailable, MAX_REDIRECTS, resolveSafeTarget } from "./crawler";
+
+type PinnedLookup = (
+  hostname: string,
+  options: unknown,
+  callback: (err: Error | null, addresses: { address: string; family: number }[]) => void,
+) => void;
 
 function stubFetch(routes: Record<string, () => Response>) {
   const fn = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -119,5 +135,105 @@ describe("crawlUrl redirects", () => {
     const res = await crawlUrl("https://example.com/");
     expect(res.status).toBe(300);
     expect(res.redirects).toEqual([]);
+  });
+});
+
+describe("isPinningUnavailable (fix/ssrf-rebinding-dns)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("disables pinning when an outbound proxy is set outside production", () => {
+    vi.stubEnv("HTTPS_PROXY", "http://127.0.0.1:1234");
+    vi.stubEnv("NODE_ENV", "development");
+    expect(isPinningUnavailable()).toBe(true);
+  });
+
+  it("never disables pinning in production, even behind a proxy", () => {
+    vi.stubEnv("HTTPS_PROXY", "http://127.0.0.1:1234");
+    vi.stubEnv("NODE_ENV", "production");
+    expect(isPinningUnavailable()).toBe(false);
+  });
+
+  it("keeps pinning enabled when no outbound proxy is configured", () => {
+    vi.stubEnv("HTTPS_PROXY", "");
+    vi.stubEnv("https_proxy", "");
+    vi.stubEnv("HTTP_PROXY", "");
+    vi.stubEnv("http_proxy", "");
+    vi.stubEnv("NODE_ENV", "development");
+    expect(isPinningUnavailable()).toBe(false);
+  });
+});
+
+describe("épinglage de la connexion réelle (fix/ssrf-rebinding-dns)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.mocked(Agent).mockClear();
+  });
+
+  /** Force l'épinglage, quel que soit le proxy ambiant du bac à sable. */
+  function forcePinningOn() {
+    vi.stubEnv("HTTPS_PROXY", "");
+    vi.stubEnv("https_proxy", "");
+    vi.stubEnv("HTTP_PROXY", "");
+    vi.stubEnv("http_proxy", "");
+    vi.stubEnv("NODE_ENV", "production");
+  }
+
+  it("resolveSafeTarget renvoie l'IP déjà validée, à épingler", async () => {
+    await expect(resolveSafeTarget("https://example.com/")).resolves.toEqual({
+      url: "https://example.com/",
+      ip: "93.184.216.34",
+    });
+  });
+
+  it("the pinned lookup returns only the IP validated by resolveSafeTarget, whatever hostname the caller later resolves — closes the DNS-rebinding TOCTOU window", () => {
+    createPinnedDispatcher("93.184.216.34");
+    const opts = vi.mocked(Agent).mock.calls[0][0] as { connect: { lookup: PinnedLookup } };
+    const calls: unknown[] = [];
+    // Un attaquant qui contrôle le DNS d'un domaine à TTL court peut faire
+    // pointer ce même nom vers une IP interne juste après la validation.
+    // `lookup` ne doit renvoyer que l'adresse épinglée, jamais rerésoudre
+    // le nom d'hôte demandé.
+    opts.connect.lookup("attacker-controlled-host-now-pointing-at-10.0.0.5", { all: true }, (...args) => calls.push(args));
+    expect(calls).toEqual([[null, [{ address: "93.184.216.34", family: 4 }]]]);
+  });
+
+  it("pins the outgoing fetch on the validated IP when pinning is available", async () => {
+    forcePinningOn();
+    const fetchMock = stubFetch({ "https://example.com/": () => new Response("<p>ok</p>") });
+
+    await crawlUrl("https://example.com/");
+
+    expect(Agent).toHaveBeenCalledTimes(1);
+    const opts = vi.mocked(Agent).mock.calls[0][0] as { connect: { lookup: PinnedLookup } };
+    const calls: unknown[] = [];
+    opts.connect.lookup("example.com", { all: true }, (...args) => calls.push(args));
+    expect(calls).toEqual([[null, [{ address: "93.184.216.34", family: 4 }]]]);
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init as { dispatcher?: unknown }).dispatcher).toEqual({ __pinnedOpts: opts });
+  });
+
+  it("keeps the real hostname (never the pinned IP) as the fetch target, for SNI and the Host header", async () => {
+    forcePinningOn();
+    const fetchMock = stubFetch({ "https://example.com/page": () => new Response("<p>ok</p>") });
+
+    await crawlUrl("https://example.com/page");
+
+    const [target] = fetchMock.mock.calls[0];
+    expect(String(target)).toBe("https://example.com/page");
+    expect(String(target)).not.toContain("93.184.216.34");
+  });
+
+  it("does not pin the connection when an outbound proxy makes pinning unavailable (dev sandbox)", async () => {
+    vi.stubEnv("HTTPS_PROXY", "http://127.0.0.1:32931");
+    vi.stubEnv("NODE_ENV", "development");
+    const fetchMock = stubFetch({ "https://example.com/": () => new Response("<p>ok</p>") });
+
+    await crawlUrl("https://example.com/");
+
+    expect(Agent).not.toHaveBeenCalled();
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init as { dispatcher?: unknown }).dispatcher).toBeUndefined();
   });
 });
