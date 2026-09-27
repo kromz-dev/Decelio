@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import HeroConcentric from "./HeroConcentric";
 import { schibsted } from "./fonts";
@@ -524,8 +525,15 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-12 md:gap-8 mb-12">
             
             <div className="md:col-span-2">
-              <Link href="/" aria-label="Decelio, accueil" className="text-2xl font-black tracking-tight block mb-4">
-                Decelio
+              <Link href="/" aria-label="Decelio, accueil" className="inline-flex items-center gap-3 mb-4">
+                <Image
+                  src="/logo-decelio-blanc.png"
+                  alt=""
+                  width={502}
+                  height={565}
+                  className="h-9 w-auto"
+                />
+                <span className="text-2xl font-black tracking-tight">Decelio</span>
               </Link>
               <p className="text-paper/70 max-w-sm leading-relaxed">
                 Surveillez l&apos;acc&egrave;s des robots de recherche IA aux sites de vos clients. Rep&eacute;rez les blocages techniques, sans confondre acc&egrave;s et citations.

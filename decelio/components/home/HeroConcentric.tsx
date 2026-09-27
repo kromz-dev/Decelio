@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { ScanForm } from './ScanForm';
 
@@ -83,10 +84,15 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
     <section className="relative min-h-[100dvh] w-full bg-paper overflow-hidden flex flex-col pt-4">
       {/* HEADER BAR */}
       <header className="relative z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between mb-8 animate-cascade delay-100">
-        <div className="flex items-center gap-2">
-           <div className="w-8 h-8 bg-ink text-paper rounded-full flex items-center justify-center font-bold shadow-panel">
-             <div className="w-2.5 h-2.5 bg-paper rounded-full"></div>
-           </div>
+        <div className="flex items-center gap-2.5">
+           <Image
+             src="/logo-decelio.png"
+             alt=""
+             width={502}
+             height={565}
+             priority
+             className="h-8 w-auto"
+           />
            <span className="font-bold text-xl tracking-tight text-ink">Decelio</span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-ink-2">
