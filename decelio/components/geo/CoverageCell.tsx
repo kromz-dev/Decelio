@@ -1,7 +1,7 @@
 export function CoverageCell({ state, label }: { state: "cited" | "absent" | "pending" | "rival"; label: string }) {
   const styles = {
     cited: "border-cited bg-cited",
-    absent: "border-line bg-white",
+    absent: "border-line bg-surface",
     pending: "border-signal bg-signal-light",
     rival: "border-rival bg-rival",
   };

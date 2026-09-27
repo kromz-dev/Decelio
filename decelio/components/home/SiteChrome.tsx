@@ -24,23 +24,54 @@ export const NAV_LINKS = [
  * « ecelio ». Les lecteurs d'ecran lisent « Decelio » (texte masque), le
  * logo et « ecelio » visibles sont decoratifs.
  */
-export function Wordmark({ light, size = "md" }: { light?: boolean; size?: "md" | "lg" }) {
+export function Wordmark({ light, size = "md" }: { light?: boolean | "invert"; size?: "md" | "lg" }) {
   const text = size === "lg" ? "text-[28px]" : "text-[24px]";
   const logo = size === "lg" ? "h-[27px]" : "h-[23px]";
+  // `light` force le logo blanc pour un fond toujours sombre (pied de page
+  // marketing). Sans cette prop, le logo suit le thème de la coque
+  // d'application (`.dark` sur <html>) : bleu sur papier clair, blanc sur
+  // papier sombre. Les deux images sont posées côte à côte et affichées ou
+  // masquées par `dark:`, sans dépendre du JavaScript client.
+  // `light="invert"` : bandeau à fond `bg-ink`, dont la couleur s'inverse
+  // elle-même avec le thème (clair -> encre marine, sombre -> encre claire,
+  // voir OnboardingClient/OnboardingPlanStep). Le logo doit donc suivre
+  // l'inverse du thème, pas le thème lui-même.
   return (
     // La variable de police est posee ici : le nom reste en Bricolage meme hors
     // du cadre des pages publiques (coque de l'application).
     <span className={`${bricolage.variable} inline-flex items-baseline`}>
       <span className="sr-only">Decelio</span>
-      <Image
-        src={light ? "/logo-decelio-blanc.png" : "/logo-decelio.png"}
-        alt=""
-        aria-hidden="true"
-        width={502}
-        height={565}
-        priority={!light}
-        className={`${logo} w-auto self-baseline translate-y-[3px]`}
-      />
+      {light === undefined || light === "invert" ? (
+        <>
+          <Image
+            src="/logo-decelio.png"
+            alt=""
+            aria-hidden="true"
+            width={502}
+            height={565}
+            priority
+            className={`${logo} w-auto self-baseline translate-y-[3px] ${light === "invert" ? "hidden dark:block" : "dark:hidden"}`}
+          />
+          <Image
+            src="/logo-decelio-blanc.png"
+            alt=""
+            aria-hidden="true"
+            width={502}
+            height={565}
+            className={`${logo} w-auto self-baseline translate-y-[3px] ${light === "invert" ? "dark:hidden" : "hidden dark:block"}`}
+          />
+        </>
+      ) : (
+        <Image
+          src={light ? "/logo-decelio-blanc.png" : "/logo-decelio.png"}
+          alt=""
+          aria-hidden="true"
+          width={502}
+          height={565}
+          priority={!light}
+          className={`${logo} w-auto self-baseline translate-y-[3px]`}
+        />
+      )}
       <span aria-hidden="true" className={`font-display ${text} font-bold leading-none tracking-[-0.03em] ${light ? "text-paper" : "text-ink"}`}>
         ecelio
       </span>
