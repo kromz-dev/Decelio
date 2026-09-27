@@ -159,7 +159,7 @@ export function ReportsClient({
       {/* En-tête */}
       <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-8">
         <div>
-          <h1 className="text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink sm:text-[34px] sm:leading-[40px]">
+          <h1 className="font-display text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink sm:text-[34px] sm:leading-[40px]">
             Rapport mensuel d&apos;accès des robots IA
           </h1>
           <p className="mt-3 max-w-[58ch] text-sm leading-6 text-ink-2">
@@ -229,7 +229,7 @@ export function ReportsClient({
         <div className="bg-surface p-5 md:px-6 md:py-[22px]">
           <div className="type-caption font-medium text-ink-2">Disponibilité IA moyenne</div>
           <div className="mt-1.5 text-3xl leading-tight font-semibold text-ink tnum md:text-[32px]">
-            {avgAvailability !== null ? `${avgAvailability} %` : "—"}
+            {avgAvailability !== null ? `${avgAvailability} %` : "-"}
           </div>
         </div>
 
@@ -248,7 +248,7 @@ export function ReportsClient({
               totalIncidents > 0 ? "text-stop" : "text-ink",
             )}
           >
-            {reportsForSelectedPeriod.length > 0 ? totalIncidents : "—"}
+            {reportsForSelectedPeriod.length > 0 ? totalIncidents : "-"}
           </div>
         </div>
 
@@ -288,7 +288,7 @@ export function ReportsClient({
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+          <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
             <table className="w-full min-w-[640px] border-collapse text-left type-table">
               <caption className="sr-only">Disponibilité IA et incidents par client</caption>
               <thead>
@@ -325,7 +325,7 @@ export function ReportsClient({
                       >
                         {report && report.availabilityPct !== null
                           ? `${report.availabilityPct} %`
-                          : "—"}
+                          : "-"}
                       </td>
                       <td
                         className={cn(
@@ -339,7 +339,7 @@ export function ReportsClient({
                           ? report.incidentCount > 0
                             ? `${report.incidentCount} incident${report.incidentCount > 1 ? "s" : ""}`
                             : "0 incident"
-                          : "—"}
+                          : "-"}
                       </td>
                       <td className="px-6 py-3 text-right">
                         {report ? (
