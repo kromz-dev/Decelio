@@ -40,6 +40,8 @@ Deux conversations Claude Code : **Design** (`components/`, `app/(marketing)/`, 
 
 Une branche part de `main` à jour et a **un seul propriétaire**. Une tâche, une branche, une demande de fusion, fusionnée par le fondateur. Jamais de demandes empilées.
 
+`main` est protégée (demande de fusion obligatoire, même pour l'administrateur) ; les branches sont supprimées automatiquement après fusion. Voir `docs/git-et-branches.md`.
+
 **Aucun agent n'écrit dans `PROGRESS.md`, `tasks/mvp-tasks.md` ni `docs/08-constitution.md`.** Ces trois fichiers fusionnent mal. Écrire ce qu'on veut y voir dans la description de la demande de fusion ; le fondateur le recopie.
 
 Un défaut repéré hors de son périmètre se signale, il ne se corrige pas en passant.
