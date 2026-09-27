@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const domain = decodeDomain((await params).domain);
   return {
     title: `Diagnostic Decelio pour ${domain}`,
-    description: `Ce que ChatGPT, Claude et Perplexity voient réellement sur ${domain} : politique robots.txt, accès et dépendance JavaScript.`,
+    description: `Les robots de ChatGPT, Claude et Perplexity peuvent-ils lire ${domain} ? Politique robots.txt, accès et dépendance JavaScript, vérifiés en direct.`,
   };
 }
 
@@ -46,7 +46,7 @@ export default async function AnalyseDomainPage({ params }: PageProps) {
         <section className="mx-auto max-w-4xl py-20 text-center">
           <Badge variant="info">Diagnostic public · {domain}</Badge>
           <h1 className="mt-6 text-5xl leading-tight sm:text-6xl">
-            Ce que les robots IA voient sur <span className="text-cobalt">{domain}</span>
+            Les robots IA peuvent-ils lire <span className="text-cobalt [overflow-wrap:anywhere]">{domain}</span> ?
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-ink-2">
             Politique robots.txt, accès et dépendance JavaScript, vérifiés pour ChatGPT, Claude et Perplexity.

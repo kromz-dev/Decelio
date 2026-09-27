@@ -2,7 +2,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { authorizeCredentials, credentialsProvider } from "./auth";
 import authConfig from "./auth.config";
 import { db } from "@/lib/db";
-import { verifyPassword } from "@/lib/password";
+import { verifyPassword, getDummyPasswordHash } from "@/lib/password";
+
+const DUMMY_HASH = "scrypt:dummysalt:dummykey";
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -14,11 +16,13 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/password", () => ({
   verifyPassword: vi.fn(),
+  getDummyPasswordHash: vi.fn(),
 }));
 
 describe("NextAuth Credentials Provider & Configuration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getDummyPasswordHash).mockResolvedValue(DUMMY_HASH);
   });
 
   describe("Google provider configuration resilience", () => {
@@ -122,7 +126,7 @@ describe("NextAuth Credentials Provider & Configuration", () => {
       expect(result).toBeNull();
     });
 
-    it("rejects Google user without passwordHash cleanly without throwing unhandled exceptions", async () => {
+    it("rejects Google user without passwordHash, but still verifies against the dummy hash (timing equalization)", async () => {
       // User registered via Google OAuth has passwordHash: null
       vi.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: "google_user_456",
@@ -131,6 +135,7 @@ describe("NextAuth Credentials Provider & Configuration", () => {
         image: "https://lh3.googleusercontent.com/photo",
         passwordHash: null,
       } as never);
+      vi.mocked(verifyPassword).mockResolvedValueOnce(false);
 
       const result = await authorizeCredentials({
         email: "googleuser@example.com",
@@ -141,13 +146,18 @@ describe("NextAuth Credentials Provider & Configuration", () => {
         where: { email: "googleuser@example.com" },
         select: { id: true, email: true, name: true, image: true, passwordHash: true },
       });
-      // verifyPassword must NOT be called to avoid unhandled TypeError
-      expect(verifyPassword).not.toHaveBeenCalled();
+      // Un compte sans mot de passe ne doit pas répondre plus vite qu'un mot
+      // de passe erroné : verifyPassword tourne quand même, contre le hash
+      // factice, pour ne pas révéler par le temps de réponse que le compte
+      // existe mais utilise Google.
+      expect(getDummyPasswordHash).toHaveBeenCalled();
+      expect(verifyPassword).toHaveBeenCalledWith(validPassword, DUMMY_HASH);
       expect(result).toBeNull();
     });
 
-    it("rejects when user is not found in database", async () => {
+    it("rejects when user is not found in database, but still verifies against the dummy hash (timing equalization)", async () => {
       vi.mocked(db.user.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(verifyPassword).mockResolvedValueOnce(false);
 
       const result = await authorizeCredentials({
         email: "unknown@example.com",
@@ -158,7 +168,11 @@ describe("NextAuth Credentials Provider & Configuration", () => {
         where: { email: "unknown@example.com" },
         select: { id: true, email: true, name: true, image: true, passwordHash: true },
       });
-      expect(verifyPassword).not.toHaveBeenCalled();
+      // Un e-mail inconnu ne doit pas répondre plus vite qu'un mot de passe
+      // erroné : c'est le canal temporel qui trahissait l'existence d'un
+      // compte (défaut MOYENNE de l'audit).
+      expect(getDummyPasswordHash).toHaveBeenCalled();
+      expect(verifyPassword).toHaveBeenCalledWith(validPassword, DUMMY_HASH);
       expect(result).toBeNull();
     });
 

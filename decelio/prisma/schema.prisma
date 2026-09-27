@@ -166,7 +166,11 @@ model AuditLead {
   id        String   @id @default(cuid())
   email     String
   domain    String
-  brandName String
+  // brandName a été retiré : captureLead (app/actions/lead.ts) ne collecte
+  // plus de champ de citation/marque (docs/08-constitution.md — Decelio ne
+  // mesure pas les citations). Rendu optionnel plutôt que supprimé pour ne
+  // pas perdre les valeurs déjà en base.
+  brandName String?
   score     Float?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
