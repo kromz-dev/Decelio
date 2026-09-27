@@ -18,7 +18,7 @@ vi.mock("@/lib/email/resend", () => ({
 const counters = new Map<string, number>();
 vi.mock("@/lib/rate-limit", () => ({
   callerKey: (req: Request, prefix: string) =>
-    `${prefix}:${req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "inconnu"}`,
+    `${prefix}:${req.headers.get("x-forwarded-for")?.split(",").map((p) => p.trim()).filter(Boolean).pop() || "inconnu"}`,
   rateLimit: vi.fn(async (key: string, limit: number, windowMs: number) => {
     const count = (counters.get(key) ?? 0) + 1;
     counters.set(key, count);
