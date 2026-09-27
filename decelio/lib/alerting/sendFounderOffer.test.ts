@@ -75,4 +75,18 @@ describe("sendFounderOffer", () => {
     const call = sendMock.mock.calls[0][0];
     expect(call.html).toContain("Bonjour,");
   });
+
+  it("échappe un nom malveillant dans le HTML envoyé", async () => {
+    const deadline = new Date("2026-10-08T12:00:00.000Z");
+
+    await sendFounderOffer({
+      email: "agence@example.com",
+      name: `<script>alert('xss')</script>`,
+      deadline,
+    });
+
+    const call = sendMock.mock.calls[0][0];
+    expect(call.html).not.toContain("<script>");
+    expect(call.html).toContain("&lt;script&gt;");
+  });
 });

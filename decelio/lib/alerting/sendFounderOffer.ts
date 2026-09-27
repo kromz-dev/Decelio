@@ -1,4 +1,6 @@
 import { Resend } from "resend";
+import { escapeHtml } from "../email/escapeHtml";
+import { renderEmailLayout, renderButton } from "../email/layout";
 
 function getResend(): Resend {
   const apiKey = process.env.RESEND_API_KEY;
@@ -58,22 +60,23 @@ export async function sendFounderOffer({
   }
 
   const greeting = name ? `Bonjour ${name},` : "Bonjour,";
+  const safeGreeting = name ? `Bonjour ${escapeHtml(name)},` : "Bonjour,";
   const deadlineText = formatDeadlineFr(deadline);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const pricingUrl = appUrl ? `${appUrl}/pricing` : "/pricing";
 
-  const html = `
-    <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
-      <p>${greeting}</p>
-      <p>Merci pour vos réponses. Vous faites partie des 10 premières agences : <strong>-50 % à vie</strong> sur le plan Agence si vous activez votre compte ${deadlineText}.</p>
-      <p>Code à saisir au moment du paiement : <strong>${couponCode}</strong></p>
+  const html = renderEmailLayout({
+    preheader: `-50 % à vie sur le plan Agence si vous activez votre compte ${deadlineText}.`,
+    bodyHtml: `
+      <p>${safeGreeting}</p>
+      <p>Merci pour vos réponses. Vous faites partie des 10 premières agences : <strong>-50 % à vie</strong> sur le plan Agence si vous activez votre compte ${escapeHtml(deadlineText)}.</p>
+      <p>Code à saisir au moment du paiement : <strong>${escapeHtml(couponCode)}</strong></p>
       <p>En échange : un retour écrit chaque mois sur votre usage de Decelio, et l'autorisation de citer votre agence.</p>
-      <p><a href="${pricingUrl}">Activer mon offre fondatrice</a></p>
-      <p>Cette offre est limitée à 10 comptes au total et expire ${deadlineText}.</p>
-      <br />
+      ${renderButton(pricingUrl, "Activer mon offre fondatrice")}
+      <p>Cette offre est limitée à 10 comptes au total et expire ${escapeHtml(deadlineText)}.</p>
       <p>À bientôt,<br/>L'équipe Decelio</p>
-    </div>
-  `;
+    `,
+  });
 
   const text = [
     greeting,
