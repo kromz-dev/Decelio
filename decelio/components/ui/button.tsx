@@ -26,7 +26,11 @@ const buttonVariants = cva(
         ghost:
           "text-ink hover:bg-surface-2 active:bg-line/60 aria-expanded:bg-surface-2",
         destructive:
-          "bg-stop text-white hover:bg-stop/90 active:bg-stop/80 focus-visible:outline-stop",
+          // `--stop` s'éclaircit en sombre pour rester lisible comme texte
+          // (voir globals.css) : sur fond `bg-stop`, du texte blanc tombe
+          // sous 3:1. `dark:text-paper` reprend l'encre sombre du thème
+          // (quasi noire) pour un contraste AA sur les deux fonds.
+          "bg-stop text-white dark:text-paper hover:bg-stop/90 active:bg-stop/80 focus-visible:outline-stop",
         link:
           "h-auto rounded-none border-0 p-0 text-cobalt underline-offset-4 hover:underline",
       },
