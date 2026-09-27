@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import HeroConcentric from "./HeroConcentric";
+import { Verdict } from "@/components/ui/verdict";
 import { StructuredData } from "./StructuredData";
 import { schibsted } from "./fonts";
 import tokens from "./tokens.module.css";
@@ -223,120 +224,129 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
           </div>
         </section>
 
-        <section id="produits" className="relative py-24 bg-paper">
+        {/*
+          Ce que le produit verifie, et ce que l'agence en recoit. Chaque carte
+          decrit une verification qui existe dans le scanner, et rien d'autre :
+          la version precedente promettait de « demontrer la visibilite IA » et
+          de « garantir » la presence du contenu, deux choses que Decelio ne
+          mesure pas. Les maquettes portent la mention « Exemple » : ce ne sont
+          pas des donnees reelles (constitution, principe II).
+        */}
+        <section id="produits" aria-labelledby="produits-titre" className="relative py-24 bg-paper">
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-16">
-              <h2 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight mb-6">
-                Le seul moniteur con&ccedil;u pour l&apos;Answer Engine Optimization
+              <h2 id="produits-titre" className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight mb-6">
+                Ce que Decelio v&eacute;rifie chaque jour
               </h2>
               <p className="text-xl text-ink-2 max-w-3xl mx-auto">
-                Un uptime de 100% ne sert &agrave; rien si ChatGPT est bloqu&eacute; par votre pare-feu. Prenez le contr&ocirc;le de ce que les LLMs voient vraiment.
+                Un site peut r&eacute;pondre normalement &agrave; vos visiteurs et rester ferm&eacute; aux robots des
+                assistants IA. Voici les trois contr&ocirc;les que Decelio fait sur chaque site, et le rapport que
+                vous en tirez.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Card 1: 2-col wide (Surveillance Pare-feu) */}
-              <div className="md:col-span-2 bg-surface rounded-[2rem] p-8 shadow-sm border border-line relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 text-cobalt opacity-[0.03] group-hover:opacity-10 transition-opacity duration-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                </div>
-                <div className="relative z-10 h-full flex flex-col justify-between">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-cobalt/10 text-cobalt flex items-center justify-center mb-6">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    </div>
-                    <h3 className="text-2xl font-bold text-ink mb-3">D&eacute;tection des blocages WAF silencieux</h3>
-                    <p className="text-ink-2 text-lg mb-8 max-w-md">
-                      Cloudflare et Wordfence bloquent souvent les bots IA par d&eacute;faut. Nous v&eacute;rifions chaque jour que les requ&ecirc;tes de ChatGPT, Perplexity et Claude traversent votre pare-feu.
-                    </p>
+
+              {/* Carte 1, deux colonnes : le pare-feu */}
+              <article className="md:col-span-2 bg-surface rounded-[2rem] p-8 border border-line flex flex-col justify-between gap-8">
+                <div>
+                  <div aria-hidden="true" className="w-12 h-12 rounded-2xl bg-cobalt/10 text-cobalt flex items-center justify-center mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                   </div>
-                  {/* Mock UI snippet */}
-                  <div className="bg-paper rounded-xl p-4 border border-line/50 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-bold text-ink mb-3">Blocages du pare-feu</h3>
+                  <p className="text-ink-2 text-lg max-w-xl">
+                    Cloudflare, Wordfence ou le pare-feu de l&apos;h&eacute;bergeur bloquent parfois les robots IA sans
+                    pr&eacute;venir personne. Chaque jour, Decelio envoie &agrave; chaque site des requ&ecirc;tes qui se
+                    pr&eacute;sentent comme GPTBot, ClaudeBot ou PerplexityBot, et note la r&eacute;ponse. C&apos;est un
+                    indice solide, pas une preuve&nbsp;: les vrais robots partent d&apos;autres adresses.
+                  </p>
+                </div>
+                <figure className="bg-paper rounded-xl p-4 border border-line">
+                  <figcaption className="type-caption text-ink-2 mb-3">Exemple</figcaption>
+                  <ul className="flex flex-col gap-3">
+                    <li className="flex items-center justify-between gap-4">
                       <span className="text-sm font-medium text-ink">Requ&ecirc;te non v&eacute;rifi&eacute;e se pr&eacute;sentant comme GPTBot</span>
-                      <span className="text-xs font-bold text-ok bg-ok-soft px-2 py-1 rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-ok animate-pulse"></span>200 OK</span>
-                    </div>
-                    <div className="flex items-center justify-between">
+                      <Verdict value="lu" variant="inline" size="sm" detail="200" />
+                    </li>
+                    <li className="flex items-center justify-between gap-4">
                       <span className="text-sm font-medium text-ink">Requ&ecirc;te non v&eacute;rifi&eacute;e se pr&eacute;sentant comme ClaudeBot</span>
-                      <span className="text-xs font-bold text-ok bg-ok-soft px-2 py-1 rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-ok animate-pulse"></span>200 OK</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                      <Verdict value="refuse" variant="inline" size="sm" detail="403" />
+                    </li>
+                  </ul>
+                </figure>
+              </article>
 
-              {/* Card 2: 1-col wide (Contenu Brut) */}
-              <div className="col-span-1 bg-surface rounded-[2rem] p-8 shadow-sm border border-line relative overflow-hidden group">
-                <div className="relative z-10 h-full flex flex-col">
-                  <div className="w-12 h-12 rounded-2xl bg-cobalt/10 text-cobalt flex items-center justify-center mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                  </div>
-                  <h3 className="text-2xl font-bold text-ink mb-3">Extraction du DOM s&eacute;curis&eacute;e</h3>
-                  <p className="text-ink-2 text-lg">
-                    Les LLMs scannent le HTML brut. Nous garantissons que vos textes vitaux sont bien pr&eacute;sents c&ocirc;t&eacute; serveur, sans d&eacute;pendre du JavaScript.
+              {/* Carte 2 : le contenu sans JavaScript */}
+              <article className="bg-surface rounded-[2rem] p-8 border border-line flex flex-col">
+                <div aria-hidden="true" className="w-12 h-12 rounded-2xl bg-cobalt/10 text-cobalt flex items-center justify-center mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                </div>
+                <h3 className="text-2xl font-bold text-ink mb-3">Texte lisible sans JavaScript</h3>
+                <p className="text-ink-2 text-lg">
+                  Les robots IA lisent en g&eacute;n&eacute;ral la page telle que le serveur l&apos;envoie, sans
+                  ex&eacute;cuter le JavaScript. Decelio v&eacute;rifie qu&apos;il y reste assez de texte utile. Sinon,
+                  le verdict est &laquo;&nbsp;Vide&nbsp;&raquo;.
+                </p>
+                <figure className="mt-auto pt-8">
+                  <figcaption className="type-caption text-ink-2 mb-2">Exemple</figcaption>
+                  <Verdict value="vide" variant="stamp" size="sm" />
+                </figure>
+              </article>
+
+              {/* Carte 3 : robots.txt */}
+              <article className="bg-surface rounded-[2rem] p-8 border border-line flex flex-col">
+                <div aria-hidden="true" className="w-12 h-12 rounded-2xl bg-cobalt/10 text-cobalt flex items-center justify-center mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                </div>
+                <h3 className="text-2xl font-bold text-ink mb-3">R&egrave;gles robots.txt</h3>
+                <p className="text-ink-2 text-lg">
+                  Le fichier robots.txt dit aux robots ce qu&apos;ils ont le droit de lire. Une ligne
+                  &laquo;&nbsp;Disallow&nbsp;&raquo; publi&eacute;e par erreur, et un assistant perd l&apos;acc&egrave;s
+                  au site. Decelio relit ce fichier &agrave; chaque v&eacute;rification quotidienne et vous alerte
+                  quand une r&egrave;gle bloque un robot IA.
+                </p>
+                <figure className="mt-auto pt-8">
+                  <figcaption className="type-caption text-ink-2 mb-2">Exemple de r&egrave;gle d&eacute;tect&eacute;e</figcaption>
+                  <pre className="font-mono text-xs text-stop bg-stop-soft px-3 py-2 rounded-xs">{"User-agent: GPTBot\nDisallow: /"}</pre>
+                </figure>
+              </article>
+
+              {/* Carte 4, deux colonnes : le rapport en marque blanche */}
+              <article className="md:col-span-2 bg-ink rounded-[2rem] p-8 flex flex-col md:flex-row md:items-center gap-8">
+                <div className="flex-1">
+                  <p className="inline-flex items-center px-3 py-1 rounded-full bg-surface/10 text-surface text-sm font-medium mb-6">
+                    Inclus dans les formules Agence et Studio
                   </p>
-                  <div className="mt-auto pt-8">
-                     <div className="w-full h-2 bg-line rounded-full mb-2"></div>
-                     <div className="w-3/4 h-2 bg-line rounded-full mb-2"></div>
-                     <div className="w-5/6 h-2 bg-line rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3: 1-col wide (Veille Robots.txt) */}
-              <div className="col-span-1 bg-surface rounded-[2rem] p-8 shadow-sm border border-line relative overflow-hidden group">
-                <div className="relative z-10 h-full flex flex-col">
-                  <div className="w-12 h-12 rounded-2xl bg-cobalt/10 text-cobalt flex items-center justify-center mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                  </div>
-                  <h3 className="text-2xl font-bold text-ink mb-3">Surveillance robots.txt</h3>
-                  <p className="text-ink-2 text-lg">
-                    Une r&egrave;gle &quot;Disallow&quot; d&eacute;ploy&eacute;e par erreur ? Soyez alert&eacute; avant m&ecirc;me que GPTBot ne d&eacute;sindexe le site de votre client.
+                  <h3 className="text-2xl font-bold text-surface mb-3">Rapport mensuel &agrave; votre marque</h3>
+                  <p className="text-surface-2 text-lg max-w-md">
+                    Un PDF par client, &agrave; votre logo et vos couleurs&nbsp;: l&apos;&eacute;tat de chaque site pour
+                    chaque assistant, l&apos;historique du mois, les incidents avec leur cause et le correctif propos&eacute;.
+                    Il dit si les robots peuvent lire le site, pas si une IA le cite.
                   </p>
-                  <div className="mt-auto pt-8 flex items-center gap-2">
-                     <span className="text-stop font-mono text-xs bg-stop-soft px-2 py-1 rounded">Disallow: /</span>
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-line-strong"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                     <span className="text-ok font-mono text-xs bg-ok-soft px-2 py-1 rounded">Allow: /</span>
-                  </div>
                 </div>
-              </div>
-
-              {/* Card 4: 2-col wide (Rapports Marque Blanche) */}
-              <div className="md:col-span-2 bg-ink rounded-[2rem] p-8 shadow-lg relative overflow-hidden group">
-                <div className="relative z-10 h-full flex flex-col md:flex-row items-center gap-8">
-                  <div className="flex-1">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface/10 text-surface text-xs font-bold uppercase tracking-wider mb-6">
-                      <span className="w-2 h-2 rounded-full bg-ok" />
-                      Inclus &agrave; partir du plan Agence
-                    </div>
-                    <h3 className="text-2xl font-bold text-surface mb-3">Rapports AEO Marque Blanche</h3>
-                    <p className="text-surface-2 text-lg max-w-md">
-                      Prouvez la rentabilit&eacute; de votre prestation mensuelle. G&eacute;n&eacute;rez des audits PDF &agrave; vos couleurs d&eacute;montrant la visibilit&eacute; IA des sites de vos clients.
-                    </p>
+                <figure className="w-full md:w-64 bg-surface rounded-xl p-4">
+                  <figcaption className="sr-only">Exemple de rapport mensuel</figcaption>
+                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-line">
+                    <div aria-hidden="true" className="w-8 h-8 rounded-full bg-paper flex items-center justify-center text-xs font-bold text-ink">Logo</div>
+                    <p className="text-sm font-bold text-ink">Rapport mensuel</p>
                   </div>
-                  {/* Mock UI snippet */}
-                  <div className="w-full md:w-64 bg-surface rounded-xl p-4 shadow-2xl rotate-2 group-hover:rotate-0 transition-transform duration-500">
-                    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-line">
-                       <div className="w-8 h-8 rounded-full bg-paper flex items-center justify-center text-xs font-bold text-ink">Logo</div>
-                       <div className="text-sm font-bold text-ink">Rapport AEO</div>
-                    </div>
-                    <div className="space-y-3">
-                       <div className="flex items-center justify-between">
-                         <div className="w-24 h-2 bg-line rounded-full"></div>
-                         <div className="w-8 h-2 bg-ok rounded-full"></div>
-                       </div>
-                       <div className="flex items-center justify-between">
-                         <div className="w-16 h-2 bg-line rounded-full"></div>
-                         <div className="w-8 h-2 bg-ok rounded-full"></div>
-                       </div>
-                       <div className="flex items-center justify-between">
-                         <div className="w-20 h-2 bg-line rounded-full"></div>
-                         <div className="w-8 h-2 bg-ok rounded-full"></div>
-                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  <ul className="space-y-3">
+                    <li className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-ink-2">ChatGPT</span>
+                      <Verdict value="lu" variant="inline" size="sm" />
+                    </li>
+                    <li className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-ink-2">Claude</span>
+                      <Verdict value="lu" variant="inline" size="sm" />
+                    </li>
+                    <li className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-ink-2">Perplexity</span>
+                      <Verdict value="refuse" variant="inline" size="sm" />
+                    </li>
+                  </ul>
+                  <p className="type-caption text-ink-2 mt-4">Exemple</p>
+                </figure>
+              </article>
 
             </div>
           </div>
