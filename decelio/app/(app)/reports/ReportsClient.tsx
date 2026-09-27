@@ -288,7 +288,7 @@ export function ReportsClient({
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+          <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
             <table className="w-full min-w-[640px] border-collapse text-left type-table">
               <caption className="sr-only">Disponibilité IA et incidents par client</caption>
               <thead>

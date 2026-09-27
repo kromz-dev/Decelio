@@ -353,7 +353,7 @@ export function DashboardSites({
 
       {/* Tableau des domaines */}
       <div className="overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full min-w-[720px] text-left type-table">
             <caption className="sr-only">Liste des domaines surveillés</caption>
             <thead className="border-b border-ink text-ink-2">

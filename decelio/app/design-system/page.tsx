@@ -409,7 +409,7 @@ function PortfolioTable() {
           <Button size="sm"><Plus data-icon="inline-start" />Ajouter un site</Button>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+      <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
         <table className="w-full min-w-[720px] border-collapse type-table">
           <caption className="sr-only">Verdicts par assistant pour chaque site du portefeuille</caption>
           <thead>

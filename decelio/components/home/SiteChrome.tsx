@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { bricolage } from "./fonts";
 
 /**
  * En-tete et pied de page communs a toutes les pages publiques (accueil,
@@ -27,7 +28,9 @@ export function Wordmark({ light, size = "md" }: { light?: boolean; size?: "md" 
   const text = size === "lg" ? "text-[28px]" : "text-[24px]";
   const logo = size === "lg" ? "h-[27px]" : "h-[23px]";
   return (
-    <span className="inline-flex items-baseline">
+    // La variable de police est posee ici : le nom reste en Bricolage meme hors
+    // du cadre des pages publiques (coque de l'application).
+    <span className={`${bricolage.variable} inline-flex items-baseline`}>
       <span className="sr-only">Decelio</span>
       <Image
         src={light ? "/logo-decelio-blanc.png" : "/logo-decelio.png"}
