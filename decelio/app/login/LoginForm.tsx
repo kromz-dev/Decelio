@@ -3,14 +3,12 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import posthog from "posthog-js";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +27,6 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       setLoading(false);
       return;
     }
-    console.log("Logged in! Pushing to", callbackUrl);
     posthog.capture("user_logged_in");
     window.location.href = callbackUrl;
   }
