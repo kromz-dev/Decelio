@@ -121,6 +121,16 @@ export function robotsSummary(report: ScanReport): ResultSummary {
       cause: "Un pare-feu répond à la place du fichier robots.txt : sa politique est illisible.",
     };
   }
+  if (robots.fetchStatus === "blocked") {
+    // 401/403/429 sans page de challenge reconnue : le plus souvent un
+    // pare-feu qui refuse la requête vers robots.txt elle-même. Conclure
+    // « tout est autorisé » comme pour un 404 serait un verdict non prouvé.
+    return {
+      value: "inconnu",
+      cause: "Le serveur refuse l'accès au fichier robots.txt : ses règles sont illisibles. À vérifier.",
+      fix: "Vérifier que /robots.txt s'ouvre normalement et qu'aucun pare-feu ne le bloque.",
+    };
+  }
   if (robots.fetchStatus === "unavailable") {
     return { value: "lu", cause: "Le fichier robots.txt n'existe pas (404) : tout est autorisé par défaut." };
   }

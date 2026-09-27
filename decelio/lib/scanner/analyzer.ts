@@ -69,7 +69,29 @@ const CHALLENGE_MARKUP: Array<[RegExp, string]> = [
   [/<title>\s*Attention Required! \| Cloudflare\s*<\/title>/i, "markup:cf-attention-required"],
   [/captcha-delivery\.com/i, "markup:datadome"],
   [/id=["']px-captcha["']/i, "markup:perimeterx"],
+  // Akamai Bot Manager : la page de refus par défaut associe toujours
+  // « Access Denied » à un identifiant « Reference #», servie par le Ghost
+  // d'Akamai. Combiner les deux évite de confondre cette page avec une
+  // page d'erreur ordinaire qui contiendrait l'une des deux phrases seule.
+  // Sources : https://www.aethyn.io/blog/what-is-akamai-reference-18-access-denied
+  // et https://github.com/AynOps/AynOps/issues/194 (retour d'expérience sur
+  // le faux positif « Server: AkamaiGHost » seul, voir plus bas).
+  [/access denied[\s\S]{0,300}reference #/i, "markup:akamai-access-denied"],
 ];
+
+// Signaux Akamai écartés (documentés pour ne pas être ajoutés par erreur) :
+// - Les cookies `_abck` / `ak_bmsc` (posés dans `set-cookie`) prouvent
+//   seulement que Bot Manager est déployé devant le site, pas que la requête
+//   a été bloquée : ils apparaissent aussi sur des réponses 200 normales.
+//   Source : https://scrapfly.io/blog/posts/akamai-bot-manager-understanding-abck-cookies-and-sensor-data
+//   (« The _abck is the Bot Manager verdict cookie... its presence indicates
+//   Bot Manager is deployed, not that the client passed »).
+// - L'en-tête `Server: AkamaiGHost` seul n'est pas un signal fiable non plus :
+//   il identifie l'infrastructure Akamai et apparaît sur toutes les réponses
+//   d'un site derrière Akamai, y compris les réponses normales.
+//   Source : https://github.com/AynOps/AynOps/issues/194 et le correctif
+//   https://github.com/AynOps/AynOps/pull/196 (exiger le fingerprint du
+//   corps de la page, pas seulement l'en-tête serveur + un statut ≥ 400).
 
 const BLOCKING_STATUSES = new Set([401, 403, 429, 503]);
 
