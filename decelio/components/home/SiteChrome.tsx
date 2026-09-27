@@ -115,6 +115,7 @@ export function SiteFooter({ isLoggedIn }: { isLoggedIn?: boolean }) {
                     <a href={link.href} className={footerLink}>{link.label}</a>
                   </li>
                 ))}
+                <li><Link href="/a-propos" className={footerLink}>Qui est derrière Decelio</Link></li>
               </ul>
             </div>
 
