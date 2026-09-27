@@ -136,6 +136,16 @@ Le poste portait dix dossiers de travail en parallèle, hérités des sessions d
 
 **Travail a deux agents** : `docs/12-partage-du-travail.md` fixe le partage entre l'agent design et l'agent ingenierie — proprietaire par fichier, worktrees plutot que copies de dossier, et interdiction pour les deux d'ecrire dans `PROGRESS.md`, `tasks/mvp-tasks.md` et la constitution.
 
+### 27/09 (après-midi) : design refondu, pages publiques harmonisées
+
+Détail et reprise : `docs/REPRISE-DESIGN.md`.
+
+**Fusionné** : #97 (refonte de l'accueil autour de l'onde du logo, Bricolage Grotesque, cascade), #105, #106, #108, #109 (corrections issues de l'étude concurrentielle : causes de blocage nommées, robots d'entraînement et de recherche, comparatif « un complément », rapport comme argument de marge), #112 et #117 (cause « à vérifier » visible, plateforme détectée « d'après les indices de la page »), #113 (logo Stripe), #119 (`/pricing` et `/analyse` harmonisés, logo en « D »), #122 (code mort), #123 (TVA en franchise), #124 (pages de connexion harmonisées).
+
+**Défauts réels corrigés** : avec `prefers-reduced-motion`, le titre, le texte et le diagnostic du héros étaient invisibles ; le bouton « Scanner un site » de `/pricing` pointait vers `/analyse`, qui n'existe pas ; `/analyse` titrait « Ce que les robots IA voient », contraire à la constitution ; un domaine long débordait sur mobile.
+
+**En cours** : #126 (pages légales, à relire), branche `design/harmonisation-app` (application et `/design-system`, PR à ouvrir).
+
 ---
 
 ## 2. À faire ensuite, dans l'ordre

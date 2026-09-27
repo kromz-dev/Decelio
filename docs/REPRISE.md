@@ -44,9 +44,11 @@ Branches déjà fusionnées, à supprimer : 17 branches de ce lot. La session cl
    - liens des CGV et de la confidentialité dans le portail Stripe (`bpc_1UK9qEE0KhuxlY8ktCu3wqFY`).
 
 ### Design
-- Pages légales, branche `design/pages-legales` : mentions légales, CGV, confidentialité, avec des `[À REMPLIR]` tant que le SIREN manque.
-- « HT » → « TVA non applicable (art. 293 B du CGI) ».
-- Après la fusion de l'essai : `/pricing`, l'accueil et le bandeau d'essai. **Jamais avant.**
+Détail complet : `docs/REPRISE-DESIGN.md`.
+- Pages légales : PR #126 ouverte (`design/pages-legales`), à relire et fusionner, puis remplir les `[À REMPLIR]`.
+- Harmonisation de l'application et de `/design-system` : branche `design/harmonisation-app` poussée, PR à ouvrir après les 4 contrôles.
+- « HT » → « TVA non applicable (art. 293 B du CGI) » : fait (#123).
+- Après la fusion de l'essai : `/pricing`, l'accueil, la clause d'essai des CGV et le bandeau d'essai. **Jamais avant.**
 
 ### Configuration
 | Service | À faire | Bloqué par |
