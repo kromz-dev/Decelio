@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   analyzeJsDependency,
+  analyzeResponse,
   classifyAccess,
   detectChallenge,
   indexingForBot,
@@ -164,5 +165,39 @@ describe("analyzeJsDependency", () => {
 
   it("still flags a page confirmed empty by a render comparison, even without a raw-HTML signal", () => {
     expect(analyzeJsDependency("<p>Bonjour</p>", words(300)).verdict).toBe("js_dependent");
+  });
+});
+
+describe("analyzeResponse (combined status)", () => {
+  const words = (n: number) => `<html><body><p>${"mot ".repeat(n)}</p></body></html>`;
+
+  it("returns LOW_TEXT for a short page without JS rendering signals", () => {
+    const result = analyzeResponse(crawl(200, words(40)), "ClaudeBot");
+    expect(result.status).toBe("LOW_TEXT");
+    expect(result.wordCount).toBe(40);
+  });
+
+  it("returns EMPTY_JS_REQUIRED for a short page with app root", () => {
+    const page = '<html><body><div id="root"></div></body></html>';
+    const result = analyzeResponse(crawl(200, page), "ClaudeBot");
+    expect(result.status).toBe("EMPTY_JS_REQUIRED");
+    expect(result.hasAppRoot).toBe(true);
+  });
+
+  it("returns EMPTY_JS_REQUIRED when raw words fall below 20% of control reference", () => {
+    const pageResult = words(10);
+    const result = analyzeResponse(crawl(200, pageResult), "ClaudeBot", 100);
+    expect(result.status).toBe("EMPTY_JS_REQUIRED");
+  });
+
+  it("returns ACCESSIBLE for a page with enough words", () => {
+    const result = analyzeResponse(crawl(200, words(200)), "ClaudeBot");
+    expect(result.status).toBe("ACCESSIBLE");
+  });
+
+  it("returns BLOCKED_CAPTCHA when challenge is detected", () => {
+    const page = '<html><head><title>Just a moment...</title></head><body></body></html>';
+    const result = analyzeResponse(crawl(403, page), "ClaudeBot");
+    expect(result.status).toBe("BLOCKED_CAPTCHA");
   });
 });

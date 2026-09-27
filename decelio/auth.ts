@@ -6,6 +6,7 @@ import authConfig from "./auth.config"
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password"
 import { loginSchema } from "@/lib/auth-validation"
 import { callerKey, rateLimit } from "@/lib/rate-limit"
+import { captureServerEvent } from "@/lib/posthog-server"
 import {
   LOGIN_IP_LIMIT,
   LOGIN_IP_WINDOW_MS,
@@ -58,6 +59,19 @@ export async function authorizeCredentials(credentials: unknown, request?: Reque
   return { id: user.id, email: user.email, name: user.name, image: user.image };
 }
 
+/**
+ * Ne se déclenche que pour un compte que l'adaptateur Prisma vient de créer
+ * — donc jamais pour l'inscription par identifiants (le compte est déjà
+ * inséré par `app/api/auth/register` avant que NextAuth n'intervienne),
+ * seulement pour la toute première connexion via un fournisseur OAuth.
+ * Google est aujourd'hui le seul fournisseur OAuth configuré
+ * (`auth.config.ts`) : `method: "google"` est donc toujours exact ici.
+ */
+export async function handleUserCreated({ user }: { user: { id?: string } }) {
+  if (!user.id) return;
+  await captureServerEvent(user.id, "signup_completed", { method: "google" });
+}
+
 export const credentialsProvider = Credentials({
   name: "Email et mot de passe",
   credentials: {
@@ -76,6 +90,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   pages: {
     signIn: "/login",
+  },
+  events: {
+    createUser: handleUserCreated,
   },
 })
 

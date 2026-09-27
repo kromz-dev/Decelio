@@ -196,9 +196,16 @@ describe("accessSummary", () => {
     expect(accessSummary(makeReport()).value).toBe("lu");
   });
 
-  it("returns 'refuse' when blocked with an HTTP error status", () => {
+  it("returns 'inconnu' (à vérifier) when the site is challenged by a firewall, not a direct refusal", () => {
+    const result = accessSummary(makeReport({ access: { risk: "challenged", signals: ["markup:turnstile"] } }));
+    expect(result.value).toBe("inconnu");
+    expect(result.cause).toContain("À vérifier");
+  });
+
+  it("returns 'inconnu' (à vérifier) when blocked, since we cannot prove the block targets IA bots specifically", () => {
     const result = accessSummary(makeReport({ access: { risk: "blocked", httpStatus: 403 } }));
-    expect(result.value).toBe("refuse");
+    expect(result.value).toBe("inconnu");
+    expect(result.cause).toContain("À vérifier");
     expect(result.cause).toContain("403");
   });
 

@@ -812,7 +812,8 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 ou retrouvez-moi sur GitHub&nbsp;:{" "}
                 <a href="https://github.com/kromz-dev" rel="me noopener" target="_blank" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">
                   kromz-dev<span className="sr-only"> (s&apos;ouvre dans un nouvel onglet)</span>
-                </a>.
+                </a>.{" "}
+                <a href="/a-propos" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">Qui est derrière Decelio</a>
               </p>
             </div>
           </div>

@@ -14,6 +14,14 @@ const PRICE_ID_BY_PLAN: Partial<Record<Plan, string | undefined>> = {
   SCALE: process.env.STRIPE_PRICE_SCALE,
 };
 
+/**
+ * Durée de l'essai gratuit accordé au premier abonnement d'un compte, en
+ * jours. La carte bancaire est toujours collectée dès le tunnel Stripe
+ * Checkout (`subscription_data.payment_method_collection = "always"`) : le
+ * premier prélèvement a lieu à la fin de l'essai si l'agence n'a pas résilié.
+ */
+export const TRIAL_DAYS = 14;
+
 /** Plans que l'on peut réellement acheter. `FREE` n'en fait pas partie. */
 export const PURCHASABLE_PLANS = ["SOLO", "PRO", "SCALE"] as const;
 export type PurchasablePlan = (typeof PURCHASABLE_PLANS)[number];

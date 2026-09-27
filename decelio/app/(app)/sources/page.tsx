@@ -32,12 +32,12 @@ export default async function SourcesPage() {
         <h3 className="mt-4 text-sm font-semibold text-ink">Aucune source personnalisée</h3>
         <p className="mt-2 text-sm text-ink-2">
           Les sources d&apos;intelligence artificielle globales sont surveillées par défaut pour vos domaines.
-          La configuration de sources personnalisées sera bientôt disponible.
+          La configuration de sources personnalisées est en préparation.
         </p>
         <div className="mt-6">
           <Button variant="outline" disabled>
             <Plus className="mr-2 h-4 w-4" />
-            Ajouter une source (Bientôt)
+            Ajouter une source (en préparation)
           </Button>
         </div>
       </div>

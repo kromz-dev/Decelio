@@ -24,6 +24,7 @@ const LONG_PAGE = html(`<p>Un texte très long pour que ça dépasse 50 mots. ${
 describe("mapStatusToSimple", () => {
   it("maps correctly", () => {
     expect(mapStatusToSimple("ACCESSIBLE")).toBe("OK");
+    expect(mapStatusToSimple("LOW_TEXT")).toBe("À VÉRIFIER");
     expect(mapStatusToSimple("BLOCKED_403")).toBe("BLOQUÉ");
     expect(mapStatusToSimple("BLOCKED_CAPTCHA")).toBe("BLOQUÉ");
     expect(mapStatusToSimple("EMPTY_JS_REQUIRED")).toBe("COQUILLE VIDE");
