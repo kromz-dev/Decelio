@@ -161,7 +161,10 @@ export const scanSiteJob = inngest.createFunction(
             (newStatus === "BLOQUÉ" || newStatus === "COQUILLE VIDE");
 
           if (isRegression) {
-            await sendRegressionAlert(site.user.email, site.url, oldStatus, newStatus);
+            // L'alerte nomme l'assistant seulement si le robot décisif est
+            // l'un des robots de recherche sondés ; sinon elle reste générique.
+            const decidingBot = DEFAULT_PROBE_BOTS.find((bot) => bot === deciding?.agent);
+            await sendRegressionAlert(site.user.email, site.url, oldStatus, newStatus, decidingBot);
           }
         }
 
