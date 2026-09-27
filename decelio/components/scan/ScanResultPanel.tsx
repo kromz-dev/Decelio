@@ -17,6 +17,7 @@ import {
   verdictForBot,
   type ResultSummary,
 } from "@/lib/scanner/verdicts";
+import { describePlatform } from "./platformLabel";
 
 /**
  * Résultat d'un appel à `/api/scan`. Type partagé entre `ScanForm` (scan
@@ -83,6 +84,21 @@ export function ScanResultPanel({ data, submittedUrl }: { data: ScanApiResponse;
     }
   }
 
+  const platformLabel = describePlatform(report.platform);
+
+  // Verdicts par assistant qui ne sont pas « Lu » : leur cause doit etre lisible,
+  // en particulier « a verifier » (blocage general sans preuve de ciblage).
+  // Regroupees par cause identique pour ne pas repeter trois fois la meme phrase.
+  const verdicts = ASSISTANTS.map(({ label, bot }) => ({ label, bot, ...verdictForBot(report, bot) }));
+  const causeGroups = verdicts
+    .filter((v) => v.value !== "lu")
+    .reduce<{ labels: string[]; cause: string; fix?: string }[]>((groups, v) => {
+      const existing = groups.find((g) => g.cause === v.cause);
+      if (existing) existing.labels.push(v.label);
+      else groups.push({ labels: [v.label], cause: v.cause, fix: v.fix });
+      return groups;
+    }, []);
+
   const redirectCount = report.access.redirects.length;
   const redirected = redirectCount > 0 && report.finalUrl !== submittedUrl;
 
@@ -96,6 +112,12 @@ export function ScanResultPanel({ data, submittedUrl }: { data: ScanApiResponse;
               Vérifié à <span className="tnum">{formatTime(report.scannedAt)}</span>
             </p>
           </div>
+          {platformLabel && (
+            <p className="mt-1 type-caption text-ink-2">
+              <span className="font-medium text-ink">Plateforme d&eacute;tect&eacute;e&nbsp;: </span>
+              {platformLabel}
+            </p>
+          )}
           {redirected && (
             <p className="mt-1 type-caption text-ink-2">
               Redirigé depuis {submittedUrl} ({redirectCount} redirection{redirectCount > 1 ? "s" : ""}).
@@ -104,19 +126,35 @@ export function ScanResultPanel({ data, submittedUrl }: { data: ScanApiResponse;
         </div>
 
         <ul className="flex flex-wrap gap-2">
-          {ASSISTANTS.map(({ label, bot }) => {
-            const v = verdictForBot(report, bot);
-            return (
-              <li
-                key={bot}
-                className="flex items-center gap-1.5 rounded-sm border border-line bg-paper px-2 py-1.5"
-              >
-                <Badge>{label}</Badge>
-                <Verdict value={v.value} variant="inline" size="sm" />
-              </li>
-            );
-          })}
+          {verdicts.map((v) => (
+            <li
+              key={v.bot}
+              className="flex items-center gap-1.5 rounded-sm border border-line bg-paper px-2 py-1.5"
+            >
+              <Badge>{v.label}</Badge>
+              <Verdict value={v.value} variant="inline" size="sm" />
+            </li>
+          ))}
         </ul>
+
+        {causeGroups.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {causeGroups.map((group) => (
+              <li key={group.cause} className="rounded-sm border border-line bg-paper px-3 py-2">
+                <p className="type-caption text-ink">
+                  <span className="font-medium">{group.labels.join(", ")}&nbsp;: </span>
+                  {group.cause}
+                </p>
+                {group.fix && (
+                  <p className="mt-1 type-caption text-ink-2">
+                    <span className="font-medium text-ink">Correctif : </span>
+                    {group.fix}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div className="flex flex-col gap-3">
           <ResultRow title="Politique robots.txt" {...robotsSummary(report)} />
@@ -130,7 +168,7 @@ export function ScanResultPanel({ data, submittedUrl }: { data: ScanApiResponse;
             <ul className="mt-1.5 flex flex-col gap-1">
               {report.access.unverifiedProbes.map((probe) => (
                 <li key={probe.claimedBot} className="type-caption text-ink-2">
-                  {probe.claimedBot} : {RISK_LABEL[probe.risk] ?? probe.risk} (HTTP {probe.httpStatus}) —
+                  {probe.claimedBot} : {RISK_LABEL[probe.risk] ?? probe.risk} (HTTP {probe.httpStatus}),
                   indicatif, non vérifié.
                 </li>
               ))}
