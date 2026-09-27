@@ -94,7 +94,7 @@ export async function sendFounderOffer({
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.app>", // Update with a verified domain
+      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
       to: email,
       subject: "Votre offre fondatrice Decelio : -50 % à vie",
       html,

@@ -119,6 +119,28 @@ describe("POST /api/scan", () => {
     expect(scannerCore.runCoreScan).not.toHaveBeenCalled();
   });
 
+  it("should return 504 when the scan exceeds the global ENF-004 budget (e.g. a stalled DNS lookup)", async () => {
+    vi.useFakeTimers();
+    try {
+      // Simule une résolution DNS/scan qui ne se termine jamais côté crawler
+      // (hors de portée : lib/scanner/crawler.ts ne peut pas être modifié ici).
+      vi.mocked(scannerCore.runCoreScan).mockReturnValue(new Promise(() => {}));
+
+      const pending = POST(createRequest({ url: "https://example.com" }, "ip-timeout"));
+      await vi.advanceTimersByTimeAsync(20_000);
+      const res = await pending;
+
+      expect(res.status).toBe(504);
+      const data = await res.json();
+      expect(typeof data.error).toBe("string");
+      expect(data.error.length).toBeGreaterThan(0);
+      // Le message ne doit exposer aucun détail interne (DNS, timeout technique, nom de fichier...).
+      expect(data.error.toLowerCase()).not.toMatch(/dns|etimedout|crawler|stack|enotfound/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("should return 500 if scan throws an error", async () => {
     vi.mocked(scannerCore.runCoreScan).mockRejectedValueOnce(new Error("Scanner failed"));
 

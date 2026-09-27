@@ -10,5 +10,16 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json({ status: "ok" }, { status: 200 });
+  // PostHog remplace Sentry (ADR-001) : c'est notre seul canal de remontée
+  // d'erreurs en production (voir lib/posthog-server.ts). Sans jeton ni hôte
+  // valides, ce client se désactive silencieusement et ne prévient qu'en
+  // développement — en production, plus aucune erreur ne remonte, sans le
+  // moindre signal. On expose donc ici un simple booléen de présence des
+  // deux variables d'environnement requises, jamais le jeton lui-même, un
+  // fragment ou sa longueur : seule sa présence importe pour la supervision.
+  const posthogConfigured = Boolean(
+    process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  );
+
+  return NextResponse.json({ status: "ok", posthogConfigured }, { status: 200 });
 }
