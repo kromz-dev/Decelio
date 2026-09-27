@@ -104,10 +104,9 @@ export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary 
 
 export function robotsSummary(report: ScanReport): ResultSummary {
   const { robots } = report;
-  // Chaque valeur de `fetchStatus` a son propre retour anticipé : une future
-  // valeur (par ex. « blocked » pour un robots.txt qui répond 401/403/429 nu)
-  // s'ajoute comme un nouveau bloc `if` ici, avec son propre `value: "inconnu"`,
-  // sans toucher au reste de la fonction.
+  // Chaque valeur de `fetchStatus` a son propre retour anticipé : une nouvelle
+  // valeur s'ajoute comme un bloc `if` de plus, sans toucher au reste de la
+  // fonction. Seul un robots.txt réellement lu (« ok ») arrive au calcul final.
   if (robots.fetchStatus === "unreachable") {
     return {
       value: "inconnu",
