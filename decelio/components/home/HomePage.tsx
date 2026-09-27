@@ -173,7 +173,7 @@ const faqs = [
   },
   {
     q: "Combien coûte Decelio ?",
-    a: "De 39 € par mois pour 10 sites à 249 € par mois pour 100 sites, sans engagement. Le diagnostic d'une adresse est gratuit et ne demande pas de compte.",
+    a: "De 39 € par mois pour 10 sites à 249 € par mois pour 100 sites, sans engagement, avec 14 jours d'essai gratuit. Le diagnostic d'une adresse est gratuit et ne demande pas de compte.",
   },
   {
     q: "Quelle différence avec Semrush ?",
@@ -666,6 +666,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
             {/* Les questions qu'une agence se pose devant trois prix, verifiables dans le code de facturation. */}
             <ul className="mt-12 flex flex-wrap items-center justify-center gap-x-3 gap-y-3 text-sm text-ink-2">
               {[
+                "Essai gratuit de 14 jours",
                 "Facturation mensuelle, sans engagement",
                 "TVA non applicable (art. 293 B du CGI)",
                 "Paiement par carte, via Stripe",
@@ -679,8 +680,9 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               ))}
             </ul>
             <p className="mt-5 text-center text-sm text-ink-2">
-              Pas de p&eacute;riode d&apos;essai&nbsp;: le diagnostic d&apos;une URL est gratuit et sans compte, autant
-              l&apos;utiliser avant de payer.{" "}
+              Essai gratuit de 14&nbsp;jours sur les trois formules&nbsp;: la carte est demand&eacute;e au d&eacute;part,
+              le premier pr&eacute;l&egrave;vement a lieu &agrave; la fin de l&apos;essai, sauf r&eacute;siliation avant. Et
+              le diagnostic d&apos;une URL reste gratuit et sans compte.{" "}
               <a href="#scan" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">Scanner un site</a>
             </p>
           </div>

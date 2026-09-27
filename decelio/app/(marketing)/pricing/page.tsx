@@ -24,8 +24,8 @@ type PlanColumn = {
 };
 
 /**
- * « Choisir » et non « Essayer » : il n'existe pas de periode d'essai (la
- * decision appartient au fondateur). Le scan libre renvoie au diagnostic de
+ * Essai gratuit de 14 jours sur les trois formules (ADR-002), carte demandee
+ * au depart par Stripe Checkout. Le scan libre renvoie au diagnostic de
  * l'accueil : /analyse seul n'existe pas, seul /analyse/[domain] existe.
  */
 const getPlans = (isLoggedIn: boolean): PlanColumn[] => [
@@ -75,10 +75,15 @@ const ROWS: FeatureRow[] = [
   { label: "Slack et webhook", values: ["no", "no", "soon", "soon"] },
   { label: "Plusieurs utilisateurs", values: ["no", "no", "no", "soon"] },
   { label: "Accès API", values: ["no", "no", "no", "soon"] },
+  { label: "Essai gratuit de 14 jours", values: ["no", "yes", "yes", "yes"] },
   { label: "Compte requis", values: ["no", "yes", "yes", "yes"] },
 ];
 
 const TERMS = [
+  {
+    title: "Essai gratuit de 14 jours",
+    body: "Sur les trois formules, un essai par compte. La carte est demandée au départ ; le premier prélèvement a lieu à la fin de l'essai, et un e-mail vous prévient 3 jours avant. Résiliez avant la fin depuis « Gérer mon abonnement » et rien n'est prélevé.",
+  },
   {
     title: "Au-delà de 100 sites",
     body: "2 € par site et par mois. Ce n'est pas activable depuis le compte : demandez-le en répondant à l'e-mail de bienvenue après votre inscription, et nous l'activons à la main.",
@@ -94,6 +99,10 @@ const TERMS = [
 ] as const;
 
 const PRICING_FAQ = [
+  {
+    q: "Ai-je accès à toute la formule pendant l'essai ?",
+    a: "Oui. Pendant les 14 jours, la formule choisie fonctionne comme un abonnement payé : même nombre de sites, mêmes options. Les conditions de l'essai (carte, prélèvement, résiliation) sont détaillées plus haut.",
+  },
   {
     q: "Y a-t-il un engagement de durée ?",
     a: "Non. Les paliers Freelance, Agence et Studio sont facturés au mois. Vous changez de palier ou vous arrêtez depuis les paramètres du compte, sans durée minimale.",
@@ -179,8 +188,8 @@ export default async function PricingPage() {
           </h1>
           <p className="animate-cascade mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-2 sm:text-xl" style={{ animationDelay: "200ms" }}>
             Decelio v&eacute;rifie chaque jour que les robots de ChatGPT, Claude et Perplexity peuvent lire vos sites
-            clients, et vous pr&eacute;vient avant que le client ne s&apos;en aper&ccedil;oive. Facturation mensuelle, sans
-            engagement. Le scan d&apos;un site reste gratuit et sans compte.
+            clients, et vous pr&eacute;vient avant que le client ne s&apos;en aper&ccedil;oive. 14&nbsp;jours d&apos;essai
+            gratuit, puis facturation mensuelle, sans engagement. Le scan d&apos;un site reste gratuit et sans compte.
           </p>
         </section>
 
@@ -272,7 +281,7 @@ export default async function PricingPage() {
               </span>
             </p>
 
-            <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">
               {TERMS.map((term, i) => (
                 <div key={term.title} style={rank(i)} className="reveal rounded-[1.25rem] border border-line bg-surface p-6">
                   <h3 className="font-display mb-2 text-[20px] font-bold tracking-[-0.02em] text-ink">{term.title}</h3>
