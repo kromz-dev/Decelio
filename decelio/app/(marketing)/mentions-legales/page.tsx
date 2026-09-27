@@ -38,8 +38,7 @@ export default async function MentionsLegalesPage() {
                   Siège social : <ToFill>adresse postale du siège</ToFill>
                 </li>
                 <li>
-                  TVA intracommunautaire :{" "}
-                  <ToFill>numéro de TVA intracommunautaire, ou mention de franchise en base</ToFill>
+                  TVA : non applicable (art. 293 B du CGI), franchise en base de TVA
                 </li>
                 <li>Directeur de la publication : <ToFill>nom et prénom</ToFill></li>
                 <li>
@@ -50,9 +49,8 @@ export default async function MentionsLegalesPage() {
 
             <LegalSection id="hebergement" title="Hébergement">
               <p>
-                Le site est hébergé par Render Services, Inc.,{" "}
-                <ToFill>adresse postale de Render, à vérifier sur render.com</ToFill>, sur des serveurs situés à
-                Francfort (Allemagne).
+                Le site est hébergé par Render Services, Inc., 525 Brannan Street, Suite 300, San Francisco, CA
+                94107, États-Unis, sur des serveurs situés à Francfort (Allemagne).
               </p>
             </LegalSection>
 
