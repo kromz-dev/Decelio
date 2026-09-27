@@ -201,3 +201,47 @@ Il ne dit pas si la page convertit. Personne ne peut le dire sans trafic.
 Il ne dit pas non plus si le positionnement est le bon — c'est la question de `docs/05-analyse-strategique.md`, pas celle-ci.
 
 Ce qu'il dit, c'est que la page promet aujourd'hui plus que ce que le produit fait, dans une catégorie où cette promesse excessive est précisément ce que le produit dénonce chez les autres. C'est le défaut à corriger en premier, et c'est le moins cher des dix.
+
+
+---
+
+## Reprise — décidé le 27 septembre 2026
+
+Sept des dix correctifs de ce rapport sont faits et fusionnés. Voici ce qui attend, par ordre de gravité.
+
+### 1. La section « produits » n'a jamais été auditée
+
+Ce rapport portait sur l'ensemble de la page ; cette section a été relue en détail après coup et porte **quatre écarts**, dont un sérieux.
+
+- **« Rapports AEO Marque Blanche […] démontrant la visibilité IA des sites de vos clients »** — c'est le positionnement abandonné au pivot, sur la carte qui porte l'argument de facturation du plan Agence. Une agence qui achète pour ce rapport attend une mesure de visibilité et recevra un rapport d'accessibilité technique.
+- « Prenez le contrôle de ce que les LLMs voient vraiment » — on ne peut pas savoir ce qu'ils voient.
+- « Nous garantissons que vos textes vitaux sont bien présents » — garantie absolue.
+- « Soyez alerté avant même que GPTBot ne désindexe le site » — sous-entend une réactivité supérieure au rythme quotidien.
+
+### 2. La navigation est incohérente
+
+L'en-tête (`HeroConcentric.tsx`) annonce « Solutions / Produits / Tarifs ». Le pied de page (`HomePage.tsx`) annonce « Comment ça marche / Fonctionnalités / Tarifs / Questions fréquentes » — pour les mêmes sections. Deux vocabulaires pour un seul site.
+
+Pire : « Solutions » pointe sur `#solutions`, qui est la section **du problème**, pas des solutions. Le libellé dit l'inverse de la destination.
+
+Le design system impose qu'une même chose porte le même nom partout.
+
+### 3. Les autres pages n'ont pas été touchées
+
+Seule la page d'accueil a été retravaillée. Restent à mettre en cohérence :
+
+- **`/pricing`** — porte sa propre grille tarifaire, désormais divergente de celle de l'accueil, qui a été rendue comparable. Deux grilles qui se contredisent sur un même site se remarquent.
+- **`/design-system`** — la vitrine interne, à jour du jeton `--brand` et du motif du héros.
+- Pages légales, `/login`, `/register`, `/forgot-password` — jamais relues sous l'angle du design system.
+
+Le travail est de cohérence, pas de refonte : mêmes jetons, mêmes composants, mêmes libellés d'action, même vocabulaire.
+
+### 4. Deux dettes plus petites
+
+- Les 17 avertissements d'`eslint` (variables déclarées jamais utilisées). Sans danger, mais ils masqueront un vrai avertissement le jour où il arrivera.
+- « La cause en 15 secondes » : à confirmer par le fondateur. Si le diagnostic à la demande répond vraiment en 15 secondes, c'est honnête.
+
+### Hors design, mais bloquant avant toute mise en ligne
+
+- **La base de production n'a pas reçu la migration `updatedAt`** (T060). Sans elle, toute création de compte ou de site échouera.
+- **`decelio.fr` n'est pas vérifié chez Resend** (T068). Aucun e-mail ne part tant que ce n'est pas fait — ni alerte, ni prospection.
