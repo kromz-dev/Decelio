@@ -7,7 +7,7 @@ Source de vérité pour reprendre le travail, avec un humain ou un agent.
 
 ## 27/09 — état et reprise
 
-**Répartition du travail inversée à partir d'aujourd'hui** : l'agent Design est maintenant une session locale, et l'agent Ingénierie une session dans le cloud qui délègue à des sous-agents (un worktree par sous-agent). Le contrat de `docs/12-partage-du-travail.md` (propriété par fichier, branches non empilées) ne change pas.
+**Répartition du travail (fin du 27/09)** : l'agent Design et l'agent Ingénierie sont deux sessions locales ; l'Ingénierie travaille dans son propre worktree (`decelio-ing`) et délègue à des sous-agents. Le contrat de `docs/12-partage-du-travail.md` (propriété par fichier, branches non empilées) ne change pas.
 
 ### Fait aujourd'hui (fusionné dans `main`)
 
@@ -20,32 +20,36 @@ Source de vérité pour reprendre le travail, avec un humain ou un agent.
 
 ### État de `main`
 
-Les quatre portes de qualité (`tsc`, `eslint`, `vitest`, `build`) sont vertes. `npx vitest run` (relancé pour cette mise à jour) donne **608 tests verts sur 80 fichiers**.
+Les quatre portes de qualité (`tsc`, `eslint`, `vitest`, `build`) sont vertes. `npx vitest run` (relancé pour cette mise à jour) donne **637 tests verts sur 81 fichiers**.
+
+### Fait aujourd'hui (fusionné dans `main`, suite)
+
+- #128 à #131 : quatre correctifs du scanner (taille `/api/pdf/diagnostic`, rebinding DNS, faux « COQUILLE VIDE » sur pages courtes, 429 auto-provoqués), **633 tests** ; reste : même biais dans l'ancienne route `/api/audit` (tâche séparée T077).
+- #134 : PostHog par notre domaine (route `/ingest/[...path]`, suppression IP/cookies/forwarded, limite 256 Kio), **637 tests** ; reste : vérification réseau dans un vrai navigateur (T072 non cochée).
+- #126 : pages légales (mentions légales, CGV, confidentialité), **[À REMPLIR]** en attente du SIREN ; #135 : informations publiques des prestataires, franchise TVA art. 293 B — **T070 cochée**.
+- #121 : ADR-002/003/004 et liste de contrôle ; #122 : code mort (Design) ; #123 : « HT » → « TVA non applicable » ; #124 : pages de connexion harmonisées ; #133 : application et design system harmonisés ; #137 : préparation baromètre IA (docs) ; #138 : audit anti-slop 001 ; #140 : corrections audit anti-slop ; #141 : preuve réelle datée accueil.
 
 ### En cours, pas encore fusionné
 
-- `fix/coquille-vide-page-courte`, `fix/scanner-sans-auto-429`, `fix/ssrf-rebinding-dns`, `fix/pdf-diagnostic-taille-corps` — fiabilité restante du scanner (T076).
 - `feat/essai-gratuit-14-jours` — essai gratuit de 14 jours avec carte (ADR-002, T071).
-- `chore/avant-lancement` — inscription Google dans le tunnel, `AUTH_TRUST_HOST`, page « visibilité IA », suppression du client Stripe à la purge d'un compte.
-- `fix/posthog-proxy-domaine` — PostHog par notre propre domaine, pour ne jamais envoyer l'IP du visiteur à un tiers depuis une page publique (ADR-004, T072).
-- `design/pages-legales` — mentions légales, CGV, politique de confidentialité (T070).
+- `chore/avant-lancement` — inscription Google dans le tunnel, `AUTH_TRUST_HOST`, suppression du texte « visibilité IA », suppression du client Stripe à la purge d'un compte (T078, préparation lancement).
 
 Aucune de ces branches n'est prise en compte dans les cases cochées de `tasks/mvp-tasks.md` : la règle d'or reste de ne cocher que ce que `main` prouve.
 
 ### Ce qui bloque le lancement
 
 - **SIREN en attente.** Micro-entreprise en franchise de TVA (ADR-003) : **aucune vente avant** de l'avoir reçu.
-- **Resend sans domaine vérifié.** `decelio.fr` est acheté depuis le 26/09, mais `list-domains` (relevé par MCP le 27/09) ne renvoie toujours aucun domaine. Sans vérification, aucun e-mail produit ne peut partir (alertes, rapports, essai, réinitialisation de mot de passe) — T068.
-- **Neon `main` (production) sans historique de migrations.** Les tables existent (poussées par `db push`), mais aucune table `_prisma_migrations` : `npx prisma migrate deploy` échouera tel quel, il faut baseliner d'abord (T073). La branche n'est pas non plus protégée.
-- **Render jamais déployé.** Service créé mais `rootDir` vaut encore `cited` au lieu de `decelio`, les variables d'environnement ne sont pas saisies, le déploiement automatique est coupé (T003/T004).
+- **Resend : domaine créé, DNS à ajouter.** `decelio.fr` acheté depuis le 26/09, créé dans Resend le 27/09 (région eu-west-1), mais **non vérifié** : les enregistrements DNS OVH restent à ajouter (T068).
+- **Neon `main` (production) sans historique de migrations.** Les tables existent (poussées par `db push`), mais aucune table `_prisma_migrations` : `npx prisma migrate deploy` échouera tel quel, il faut baseliner d'abord (T073). **Protection impossible en offre gratuite** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render.
+- **Render : rootDir déjà `decelio/`** (vérifié), variables d'environnement et déploiement automatique à configurer dans le tableau de bord (T003/T004).
 - **Aucun webhook Stripe** (T074), et Stripe reste en mode test — l'activation en réel (T075) suit le SIREN.
 
 ### Ordre des étapes jusqu'au lancement
 
-Le détail par service est dans `docs/runbooks/checklist-mise-en-production.md` (sur la branche `chore/docs-decisions-lancement`, pas encore fusionnée — le fondateur la recopiera). Dans l'ordre :
+Le détail par service est dans `docs/runbooks/checklist-mise-en-production.md` (sur `main` depuis #121) et `docs/REPRISE.md`. Dans l'ordre :
 
-1. Fusionner les branches en cours listées ci-dessus (fiabilité du scanner, essai gratuit, proxy PostHog, pages légales) — chacune sa propre revue.
-2. Baseliner Neon `main`, protéger la branche, saisir les variables d'environnement Render et pointer `rootDir` sur `decelio`.
+1. Fusionner les branches en cours listées ci-dessus (essai gratuit #139, préparation du lancement #142), puis vérifier PostHog dans un vrai navigateur.
+2. Baseliner Neon `main` (aucune branche protégée possible en offre gratuite : la chaîne de `main` ne sort jamais de Render), puis saisir les variables d'environnement Render.
 3. Créer le webhook Stripe de production, vérifier le domaine Resend.
 4. Premier déploiement complet en mode test Stripe, avec les vérifications manuelles listées dans la checklist (en-têtes de sécurité, IP client, tunnel PostHog, scan réel, réception d'un e-mail).
 5. Dès le SIREN reçu : compléter les pages légales, activer Stripe en réel, recréer les objets Stripe (prix, coupon, portail, webhook) en mode réel, puis ouvrir la prospection écrite.

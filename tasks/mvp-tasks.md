@@ -540,7 +540,7 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 - [ ] **T068** [MARKETING] Vérifier le domaine `decelio.fr` chez Resend - tableau de bord Resend
   - **Dépendances** : Aucune
-  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Le domaine est acheté depuis le 26/09. Relevé par MCP le 27/09 : `list-domains` ne renvoie toujours aucun résultat.
+  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Domaine créé dans Resend le 27/09 (région eu-west-1), mais DNS OVH reste à ajouter (TXT `resend._domainkey`, MX `send`, TXT `send` SPF, CNAME `rsend`).
   - **Vérification** : `list-domains` renvoie `decelio.fr` avec le statut vérifié.
   - **Taille** : S
 
@@ -553,9 +553,9 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : un compte créé sans cocher la case est refusé ; le compte créé porte `termsAcceptedAt` et la version acceptée.
   - **Taille** : S
 
-- [ ] **T070** [DESIGN] Pages légales (mentions légales, CGV, politique de confidentialité) - `decelio/app/(marketing)/mentions-legales/`, `.../cgv/`, `.../confidentialite/`
+- [x] **T070** [DESIGN] Pages légales (mentions légales, CGV, politique de confidentialité) - `decelio/app/(marketing)/mentions-legales/`, `.../cgv/`, `.../confidentialite/`
   - **Dépendances** : Aucune (mais porte des `[À REMPLIR]` tant que le SIREN manque)
-  - **Note** : en cours sur la branche `design/pages-legales`, pas fusionnée au 27/09. Relecture juridique conseillée avant mise en ligne réelle.
+  - **Note** : fusionnée par #126 (pages légales) et #135 (franchise TVA art. 293 B). Les trois pages existent et sont liées depuis le pied de page ; `[À REMPLIR]` en attente du SIREN.
   - **Vérification** : les trois pages existent, liées depuis le pied de page ; aucune mention inventée (numéro SIREN, adresse) tant que non disponible.
   - **Taille** : M
 
@@ -567,14 +567,14 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 - [ ] **T072** [ING] Proxy PostHog par notre propre domaine (ADR-004) - `decelio/next.config.ts` (rewrites), `decelio/instrumentation-client.ts`
   - **Dépendances** : Aucune
-  - **Note** : en cours sur la branche `fix/posthog-proxy-domaine`, pas fusionnée au 27/09. Sans ce correctif, l'IP du visiteur est envoyée à PostHog directement depuis le navigateur, ce que la constitution interdit pour un appel à un tiers depuis une page publique.
+  - **Note** : fusionnée par #134 (route `/ingest/[...path]`, IP/cookies/forwarded retirés, limite 256 Kio). Reste : vérification réseau dans un vrai navigateur que aucune requête ne part vers `*.posthog.com`.
   - **Vérification** : les requêtes PostHog partent du domaine `decelio.fr` dans l'onglet réseau, jamais de `*.posthog.com` directement.
   - **Taille** : S
 
 - [ ] **T073** [ING] Baseline des migrations Prisma sur Neon `main` (production) - `docs/runbooks/deploiement-render-neon.md`
   - **Dépendances** : Aucune
-  - **Note** : relevé par MCP le 27/09 : les tables existent sur `main` mais aucune table `_prisma_migrations` — la base a été peuplée par `db push`. `npx prisma migrate deploy` échouera tel quel. La branche Neon `main` n'est pas non plus protégée contre une suppression accidentelle.
-  - **Vérification** : `npx prisma migrate resolve --applied <dernière migration>` exécuté sur `main`, puis `npx prisma migrate status` ne signale plus aucune migration en attente ; la branche est protégée dans la console Neon.
+  - **Note** : les tables existent sur `main` mais aucune table `_prisma_migrations` — la base a été peuplée par `db push`. `npx prisma migrate deploy` échouera tel quel. **Protection de branche impossible en offre gratuite Neon** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render.
+  - **Vérification** : `npx prisma migrate resolve --applied <dernière migration>` exécuté sur `main`, puis `npx prisma migrate status` ne signale plus aucune migration en attente.
   - **Taille** : S
 
 - [ ] **T074** [ING] Webhook Stripe de production - tableau de bord Stripe, variables Render
@@ -589,8 +589,20 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : un paiement réel de test (carte du fondateur, remboursé ensuite) aboutit à un abonnement actif.
   - **Taille** : M
 
-- [ ] **T076** [ING] Fiabilité restante du scanner - `decelio/lib/scanner/*`
+- [x] **T076** [ING] Fiabilité restante du scanner - `decelio/lib/scanner/*`
   - **Dépendances** : Aucune
-  - **Note** : les corrections principales sont fusionnées (#103, #107, #110, #111). Restent, chacune sur sa propre branche non fusionnée au 27/09 : faux verdict « COQUILLE VIDE » sur une page courte mais légitime (`fix/coquille-vide-page-courte`), le scanner qui déclenche lui-même le 429 qu'il rapporte (`fix/scanner-sans-auto-429`), le contournement par rebinding DNS de la garde SSRF (`fix/ssrf-rebinding-dns`), et la taille du corps de `/api/pdf/diagnostic` (`fix/pdf-diagnostic-taille-corps`).
-  - **Vérification** : les quatre branches ci-dessus fusionnées, chacune avec ses propres tests verts.
+  - **Note** : fusionnées par #128-#131 (taille `/api/pdf/diagnostic` 256 Kio, IP épinglée contre rebinding DNS, page courte sans indice JS n'est plus « COQUILLE VIDE », scanner ne provoque plus lui-même de 429). Reste mineur : même biais « COQUILLE VIDE » dans l'ancienne route `/api/audit` (lib/scanner/analyzer.ts, tâche séparée T077).
+  - **Vérification** : les quatre branches ci-dessus fusionnées sur main avec leurs tests verts.
   - **Taille** : M
+
+- [ ] **T077** [ING] Même faux « COQUILLE VIDE » dans `/api/audit` - `decelio/lib/scanner/analyzer.ts` (analyzeResponse / EMPTY_JS_REQUIRED)
+  - **Dépendances** : T076
+  - **Note** : la route `/api/audit` (ancienne, exposée en public) réutilise le moteur `lib/scanner/analyzer.ts` qui contient le même biais « COQUILLE VIDE » que le scanner. Correctif orthogonal, tâche séparée.
+  - **Vérification** : une page courte sans indice de rendu JavaScript n'est plus classée « COQUILLE VIDE » par `/api/audit`.
+  - **Taille** : S
+
+- [ ] **T078** [ING] Préparation du lancement - `decelio/auth.ts`, `.env.example`
+  - **Dépendances** : Aucune
+  - **Note** : en cours sur la branche `chore/avant-lancement` (demande #142). Contenu : `AUTH_TRUST_HOST=true` dans `.env.example`, `signup_completed` après connexion Google, suppression du texte « visibilité IA » du formulaire de prospection, suppression du client Stripe à la purge RGPD d'un compte.
+  - **Vérification** : les quatre changements sont présents dans `main` ; `tsc`, `eslint`, `vitest` au vert.
+  - **Taille** : S
