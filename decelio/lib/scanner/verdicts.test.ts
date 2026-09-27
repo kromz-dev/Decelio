@@ -113,6 +113,12 @@ describe("robotsSummary", () => {
     expect(robotsSummary(makeReport({ robots: { fetchStatus: "unavailable" } })).value).toBe("lu");
   });
 
+  it("returns 'inconnu', never 'lu', when robots.txt is refused by the server (403 without challenge)", () => {
+    const result = robotsSummary(makeReport({ robots: { fetchStatus: "blocked" } }));
+    expect(result.value).toBe("inconnu");
+    expect(result.cause).toContain("À vérifier");
+  });
+
   it("returns 'inconnu' when robots.txt is unreachable", () => {
     expect(robotsSummary(makeReport({ robots: { fetchStatus: "unreachable" } })).value).toBe("inconnu");
   });
