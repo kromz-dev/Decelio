@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import zlib from 'node:zlib';
 import { generateDiagnosticPdfBuffer } from './renderDiagnosticPdf';
 import type { ScanReport, ScanCoreResult } from '../scanner/core';
+import type { PlatformDetection } from '../scanner/platform';
 
 /**
  * Rapport minimal mais complet, aligné sur la vraie forme de `ScanReport`
@@ -8,7 +10,7 @@ import type { ScanReport, ScanCoreResult } from '../scanner/core';
  * qui testent la résilience du pipeline à un payload malformé plutôt que le
  * contenu réel du PDF).
  */
-function makeReport(): ScanReport {
+function makeReport(platform?: PlatformDetection): ScanReport {
   return {
     url: 'https://exemple.fr',
     finalUrl: 'https://exemple.fr/',
@@ -40,6 +42,7 @@ function makeReport(): ScanReport {
       renderer: 'none',
     },
     indexing: { sources: [], perBot: [] },
+    platform,
   } as ScanReport;
 }
 
@@ -62,6 +65,40 @@ async function pdfText(buffer: Buffer): Promise<string> {
   // et la taille, comme le fait déjà reportGeneration.e2e.test.ts, plutôt que
   // de parser le PDF pour en extraire le texte.
   return buffer.toString('latin1');
+}
+
+/**
+ * Extrait le texte réellement dessiné dans le PDF, pour les tests qui ont
+ * besoin de vérifier une phrase précise (pas seulement la validité globale
+ * du fichier). Les flux de contenu PDF sont compressés (FlateDecode) par
+ * défaut ; une fois décompressés, `@react-pdf/renderer` écrit chaque
+ * fragment de texte comme une chaîne hexadécimale `<...>` dans un opérateur
+ * `TJ` (police Helvetica standard, non embarquée : un octet par caractère,
+ * en WinAnsi/Latin-1). Concaténer ces chaînes hexadécimales décodées, dans
+ * l'ordre d'apparition, reconstitue le texte visible sans avoir à interpréter
+ * tout le langage de mise en page PDF.
+ */
+function extractPdfText(buffer: Buffer): string {
+  const raw = buffer.toString('latin1');
+  const streamRe = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  let content = '';
+  let streamMatch: RegExpExecArray | null;
+  while ((streamMatch = streamRe.exec(raw))) {
+    const chunk = Buffer.from(streamMatch[1], 'latin1');
+    try {
+      content += zlib.inflateSync(chunk).toString('latin1');
+    } catch {
+      content += chunk.toString('latin1');
+    }
+  }
+
+  const hexStringRe = /<([0-9a-fA-F]+)>/g;
+  let text = '';
+  let hexMatch: RegExpExecArray | null;
+  while ((hexMatch = hexStringRe.exec(content))) {
+    text += Buffer.from(hexMatch[1], 'hex').toString('latin1');
+  }
+  return text;
 }
 
 describe('generateDiagnosticPdfBuffer', () => {
@@ -123,5 +160,94 @@ describe('generateDiagnosticPdfBuffer', () => {
     ]);
     expect(Buffer.isBuffer(buffer)).toBe(true);
     expect(buffer.subarray(0, 4).toString('utf-8')).toBe('%PDF');
+  });
+});
+
+describe('annexe de correctifs — plateforme détectée', () => {
+  const results: ScanCoreResult[] = [
+    makeResult({
+      agent: 'GPTBot',
+      simpleStatus: 'BLOQUÉ',
+      // Deux causes distinctes pour exercer à la fois la correspondance CMS
+      // (robots-disallow-rule) et pare-feu (access-challenged) dans la même annexe.
+      reasons: ['robots.txt disallows GPTBot', 'access challenged (cloudflare)'],
+    }),
+  ];
+
+  it('met en avant la plateforme détectée et rappelle que ce n\'est qu\'un indice, pas une certitude', async () => {
+    const platform: PlatformDetection = {
+      cms: 'wordpress',
+      seoPlugin: 'yoast',
+      firewall: 'cloudflare',
+      signals: ['meta generator: WordPress 6.5'],
+    };
+
+    const buffer = await generateDiagnosticPdfBuffer(makeReport(platform), results);
+    const text = extractPdfText(buffer);
+
+    expect(text).toContain('Plateforme détectée');
+    expect(text).toContain("d'après les indices");
+    // Les marches à suivre WordPress/Yoast et Cloudflare apparaissent bien.
+    expect(text).toContain('Dans le tableau de bord WordPress');
+    expect(text).toContain('AI Crawl Control');
+  });
+
+  it('met en avant les étapes Shopify quand Shopify est la plateforme détectée', async () => {
+    const platform: PlatformDetection = { cms: 'shopify', signals: ['référence cdn.shopify.com dans le HTML'] };
+
+    const buffer = await generateDiagnosticPdfBuffer(makeReport(platform), results);
+    const text = extractPdfText(buffer);
+
+    expect(text).toContain('Plateforme détectée');
+    expect(text).toContain('robots.txt.liquid');
+  });
+
+  it('garde l\'annexe générique (toutes plateformes) quand le cms détecté est unknown', async () => {
+    const platform: PlatformDetection = { cms: 'unknown', signals: [] };
+
+    const buffer = await generateDiagnosticPdfBuffer(makeReport(platform), results);
+    const text = extractPdfText(buffer);
+
+    expect(text).not.toContain('Plateforme détectée');
+    // L'annexe complète liste toujours plusieurs CMS pour la même cause.
+    expect(text).toContain('WordPress');
+    expect(text).toContain('Shopify');
+  });
+
+  it("garde l'annexe générique (toutes plateformes) quand platform est absent du rapport", async () => {
+    const buffer = await generateDiagnosticPdfBuffer(makeReport(undefined), results);
+    const text = extractPdfText(buffer);
+
+    expect(text).not.toContain('Plateforme détectée');
+    expect(text).toContain('WordPress');
+    expect(text).toContain('Shopify');
+  });
+
+  it("n'affiche jamais les indices bruts (`signals`) de la détection dans le PDF", async () => {
+    const platform: PlatformDetection = {
+      cms: 'wordpress',
+      seoPlugin: 'yoast',
+      signals: ['SIGNAL-BRUT-NE-DOIT-PAS-APPARAITRE'],
+    };
+
+    const buffer = await generateDiagnosticPdfBuffer(makeReport(platform), results);
+    const text = extractPdfText(buffer);
+
+    expect(text).not.toContain('SIGNAL-BRUT-NE-DOIT-PAS-APPARAITRE');
+  });
+
+  it("n'évoque ni citation, ni visibilité, ni présence dans les réponses IA (docs/08-constitution.md, principe I)", async () => {
+    const platform: PlatformDetection = {
+      cms: 'wordpress',
+      seoPlugin: 'yoast',
+      firewall: 'cloudflare',
+      signals: [],
+    };
+
+    const buffer = await generateDiagnosticPdfBuffer(makeReport(platform), results);
+    const text = extractPdfText(buffer);
+
+    // Même expression interdite que lib/remediation/catalog.test.ts.
+    expect(text).not.toMatch(/\bcit(e|er|é|ation)|invisible|apparaî?t dans|visibilité/i);
   });
 });
