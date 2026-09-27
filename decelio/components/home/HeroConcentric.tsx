@@ -1,6 +1,6 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import { ScanForm } from './ScanForm';
+import { SiteHeader } from './SiteChrome';
 
 /**
  * Schema du hero : les trois controles, en courbes de niveau.
@@ -75,17 +75,6 @@ const ASSISTANTS = [
   { name: "Copilot", icon: "/icons/github-copilot.svg", radius: 780, angle: 150 },
 ];
 
-/**
- * Navigation unique, partagee par l'en-tete et le pied de page : une meme
- * section porte le meme nom partout (docs/11-audit-landing-page.md, Reprise §2).
- */
-export const NAV_LINKS = [
-  { href: "#probleme", label: "Le problème" },
-  { href: "#controles", label: "Les contrôles" },
-  { href: "#methode", label: "Comment ça marche" },
-  { href: "#tarifs", label: "Tarifs" },
-  { href: "#faq", label: "Questions" },
-] as const;
 
 /** Titre decoupe en mots pour l'entree en cascade. Deux lignes, coupees au sens. */
 const TITLE_LINES = [
@@ -100,10 +89,28 @@ const TITLE_LINES = [
  */
 const RIPPLE = { radius: 780, from: 0.42, to: 1.08, delay: 2.6, duration: 7 };
 
-/** Instant (en s) ou l'onde atteint une bulle posee sur l'orbite `radius`. */
-function pingDelay(radius: number): string {
+/**
+ * Instant (en s) ou l'onde touche le BORD d'une bulle posee sur l'orbite
+ * `radius`, a l'angle `angleDeg`.
+ *
+ * Declencher au centre de la bulle donnait un retard visible : une pastille
+ * fait ~110 px de large, et l'onde (~74 unites/s) met pres d'une seconde a
+ * la traverser. On retranche donc le temps que met l'onde a parcourir la
+ * demi-epaisseur de la pastille dans la direction du rayon, estimee pour le
+ * schema a sa taille bureau (1340 px pour 1600 unites).
+ */
+const PX_PER_UNIT = 1340 / VIEW;
+const PILL_HALF_HEIGHT_PX = 18;
+
+function pingDelay(radius: number, angleDeg: number, label: string): string {
+  const speed = (RIPPLE.radius * (RIPPLE.to - RIPPLE.from)) / RIPPLE.duration; // unites par seconde
   const progress = (radius / RIPPLE.radius - RIPPLE.from) / (RIPPLE.to - RIPPLE.from);
-  return `${(RIPPLE.delay + progress * RIPPLE.duration).toFixed(2)}s`;
+  // Largeur de pastille : icone 24 px + marges ~28 px + ~7 px par caractere.
+  const halfWidthPx = (52 + label.length * 7) / 2;
+  const a = (angleDeg * Math.PI) / 180;
+  const radialHalfPx = Math.abs(Math.cos(a)) * halfWidthPx + Math.abs(Math.sin(a)) * PILL_HALF_HEIGHT_PX;
+  const lead = radialHalfPx / PX_PER_UNIT / speed;
+  return `${Math.max(0, RIPPLE.delay + progress * RIPPLE.duration - lead).toFixed(2)}s`;
 }
 
 /** Position en pourcentage du conteneur carre, pour un angle et un rayon donnes. */
@@ -120,40 +127,7 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
 
   return (
     <>
-      {/* En-tete colle en haut : il reste a portee pendant toute la lecture. */}
-      <header className="sticky top-0 z-50 w-full border-b border-line/70 bg-paper/75 backdrop-blur-xl backdrop-saturate-150">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-          <Link href="/" aria-label="Decelio, accueil" className="flex items-center gap-2.5">
-            <Image src="/logo-decelio.png" alt="" width={502} height={565} priority className="h-8 w-auto" />
-            <span className="font-display text-[22px] font-bold tracking-[-0.03em] text-ink">Decelio</span>
-          </Link>
-
-          <nav aria-label="Navigation principale" className="hidden items-center gap-7 text-sm font-medium text-ink-2 lg:flex">
-            {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} className="nav-link pb-0.5 hover:text-ink">
-                {link.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-              <Link href="/dashboard" className="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-ink/90">
-                Tableau de bord
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" className="hidden px-3 text-sm font-medium text-ink-2 transition-colors hover:text-ink sm:block">
-                  Connexion
-                </Link>
-                <Link href="/register" className="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper shadow-float transition-all duration-300 hover:-translate-y-0.5">
-                  Cr&eacute;er un compte
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteHeader isLoggedIn={isLoggedIn} />
 
       <section
         aria-labelledby="hero-titre"
@@ -207,7 +181,7 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
                 {/* Deux couches : l'entree en cascade et la reaction a l'onde animent chacune leur propre transform. */}
                 <span
                   className="bubble-ping flex items-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/80 py-1.5 pl-1.5 pr-3.5 shadow-float backdrop-blur-md"
-                  style={{ ["--ping-delay" as string]: pingDelay(assistant.radius) }}
+                  style={{ ["--ping-delay" as string]: pingDelay(assistant.radius, assistant.angle, assistant.name) }}
                 >
                   <Image src={assistant.icon} alt="" width={24} height={24} className="h-6 w-6 rounded-full bg-surface" />
                   <span className="text-[13px] font-medium leading-none text-ink-2">{assistant.name}</span>
