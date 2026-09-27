@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "note": "Registre de provenance des skills vendorisees a la racine, sous .agents/skills/ et .claude/skills/ (deux miroirs du meme jeu). Il ne remplace PAS decelio/skills-lock.json, qui appartient a l'outil d'installation : le champ computedHash de ce verrou suit un schema que nous n'avons pas pu reproduire, et inventer une valeur aurait fait croire a une verification d'integrite inexistante. sha256SkillMd est, lui, reproductible partout : sha256 du SKILL.md apres normalisation des fins de ligne en LF.",
+  "verification": "tr -d '\r' < .agents/skills/<nom>/SKILL.md | sha256sum",
+  "upstream": {
+    "repository": "https://github.com/coreyhaines31/marketingskills",
+    "license": "MIT, Copyright (c) 2025 Corey Haines",
+    "commit": "5b2c0007766c6a1cf1d53fd8fc73e979e0821022",
+    "commitDate": "2026-09-05T04:48:02Z",
+    "fetchedAt": "2026-09-27"
+  },
+  "skills": {
+    "analytics": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/analytics/SKILL.md",
+      "sha256SkillMd": "3eda97d96b2329daa933b6fdb94bf81aaa1196e3e344e56a8805f972a7438404"
+    },
+    "churn-prevention": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/churn-prevention/SKILL.md",
+      "sha256SkillMd": "88fd25b77e44ef3689d68d54091df9659a40f5e905c8bdeb09bdeed3f049ad67"
+    },
+    "cold-email": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/cold-email/SKILL.md",
+      "sha256SkillMd": "b7f8d793169a5111c857e5720c6b80028686cc95d5a0d0d6570957c2710aff9e"
+    },
+    "community-marketing": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/community-marketing/SKILL.md",
+      "sha256SkillMd": "e4c4a21e82a04e8ef6e2845fa34ebaf5512ba59ae1c9c74d8caa9f045628f4da"
+    },
+    "competitor-profiling": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/competitor-profiling/SKILL.md",
+      "sha256SkillMd": "3e775491484a9e6fddce1db4e03415a900a5026d898ef146161f6fea017eafcf"
+    },
+    "competitors": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/competitors/SKILL.md",
+      "sha256SkillMd": "99e9ea715b1ac6dbaedda345a27358fb5e099f7d4fd5be63789d6e65cf2a6f46"
+    },
+    "copywriting": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/copywriting/SKILL.md",
+      "sha256SkillMd": "ce18137ae31ab37f261078501431649865ab6b403054d97490754e82acb002d8"
+    },
+    "customer-research": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/customer-research/SKILL.md",
+      "sha256SkillMd": "ae4769147f63dd5aea1308a0fddd85473601164893f58111dce738738226317e"
+    },
+    "directory-submissions": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/directory-submissions/SKILL.md",
+      "sha256SkillMd": "dd08854f5cd1e16413dd588b13e02a32ce01dd3a9f4e9b1099f92a7b635ac24a"
+    },
+    "emails": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/emails/SKILL.md",
+      "sha256SkillMd": "1fbd54df4c59f48408057e7db0dfb1a53c033e6a4ca5cd1927a47c51ec28d8f1"
+    },
+    "launch": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/launch/SKILL.md",
+      "sha256SkillMd": "1d5f5e6a4caaa5b62604a8df324b060eb99da567e65e9fc5a69b9999c61325b2"
+    },
+    "marketing-plan": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/marketing-plan/SKILL.md",
+      "sha256SkillMd": "95722fc0566e139db44ab5d5b5e0f1174a0a2344baca6a3b266f86f8a266e88c"
+    },
+    "onboarding": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/onboarding/SKILL.md",
+      "sha256SkillMd": "ca219e0ba8f931888e2a634624ab927206f8ef26aeca2250399c3c48da0341e0"
+    },
+    "prospecting": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/prospecting/SKILL.md",
+      "sha256SkillMd": "beabb53a99b4df893216c18ba84198d7f2622cc83ef35043c09b218840498356"
+    },
+    "public-relations": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/public-relations/SKILL.md",
+      "sha256SkillMd": "36fe43e755d951a9e05a268319e6089e7727dcd9de0a9ab6c4ec56768e4190ed"
+    },
+    "referrals": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/referrals/SKILL.md",
+      "sha256SkillMd": "103bd339d6d7796fae1128487c1560f38feecd94898d0d7c44ca0383f4c809d9"
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "license": "MIT",
+      "skillPath": "skills/seo-audit/SKILL.md",
+      "sha256SkillMd": "9420a6c1ffcf7212766bcb618c28766ecb084631bed8045f3115d42b1230d368"
+    }
+  }
+}
