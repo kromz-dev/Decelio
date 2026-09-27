@@ -12,6 +12,69 @@ import styles from "./home.module.css";
 
 
 
+/**
+ * Grille tarifaire.
+ *
+ * Les trois paliers exposent exactement les memes lignes, dans le meme ordre.
+ * Une grille ou chaque carte enumere des choses differentes ne se compare pas :
+ * le lecteur ne peut pas voir ce que le palier d'entree n'a pas. Ici, ce qui
+ * manque est ecrit, pas omis.
+ */
+const PLAN_FEATURES = [
+  "Sites clients surveillés",
+  "Vérification quotidienne des robots IA",
+  "Alerte par e-mail avec la cause et le correctif",
+  "Rapport mensuel à la marque de votre agence",
+] as const;
+
+const PLANS = [
+  {
+    slug: "freelance",
+    name: "Freelance",
+    price: 39,
+    pitch: "Pour sécuriser vos premiers sites clients.",
+    values: ["10 sites", true, true, false] as const,
+    featured: false,
+  },
+  {
+    slug: "agence",
+    name: "Agence",
+    price: 99,
+    pitch: "Le portefeuille complet d'une agence.",
+    values: ["30 sites", true, true, true] as const,
+    featured: true,
+  },
+  {
+    slug: "studio",
+    name: "Studio",
+    price: 249,
+    pitch: "Les agences à fort volume.",
+    values: ["100 sites", true, true, true] as const,
+    featured: false,
+  },
+] as const;
+
+/** Coche des listes de paliers. */
+function Check({ muted }: { muted?: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={muted ? "shrink-0 text-ink-3" : "shrink-0 text-ok"}
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 const faqs = [
   {
     q: "Qu'est-ce que Decelio ?",
@@ -359,60 +422,107 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
         <section id="tarifs" className="py-24 bg-paper border-y border-line">
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <span className="text-ok font-bold tracking-widest uppercase text-sm mb-4 block">Rentable d&egrave;s le 1er client</span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight mb-4">
-                Des tarifs con&ccedil;us pour les agences
+                Des tarifs con&ccedil;us pour &ecirc;tre refactur&eacute;s
               </h2>
-              <p className="text-xl text-ink-2 max-w-3xl mx-auto">
-                <strong className="text-ink font-semibold">Le but : vous faire gagner de l&apos;argent.</strong> Facturez une prestation de &quot;Monitoring AEO&quot; 10&euro; ou 20&euro; par site et par mois &agrave; vos clients, et Decelio se rembourse tout seul.
+              <p className="text-xl text-ink-2 max-w-2xl mx-auto leading-relaxed">
+                Ajoutez une ligne &laquo;&nbsp;surveillance IA&nbsp;&raquo; &agrave; votre contrat de maintenance, entre
+                10 et 20&nbsp;&euro; par site et par mois. Sur trente sites factur&eacute;s 10&nbsp;&euro;,
+                cela fait <strong className="text-ink font-semibold">300&nbsp;&euro; par mois</strong> pour un
+                abonnement &agrave; 99&nbsp;&euro;.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1000px] mx-auto">
-              
-              {/* Freelance */}
-              <div className="bg-surface rounded-3xl p-8 shadow-sm border border-line flex flex-col">
-                <h3 className="text-2xl font-bold text-ink mb-2">Freelance</h3>
-                <p className="text-ink-2 mb-6">Pour s&eacute;curiser vos premiers sites clients.</p>
-                <div className="text-4xl font-extrabold text-ink mb-6">39&euro;<span className="text-lg text-ink-2 font-normal">/mois</span></div>
-                <ul className="space-y-4 mb-8 flex-1">
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Jusqu&apos;&agrave; <strong className="text-ink font-semibold">10 sites</strong> clients</span></li>
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Scan AEO quotidien</span></li>
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Alerte par e-mail au prochain scan</span></li>
-                </ul>
-                <Link href="/register?plan=freelance" className="w-full text-center px-6 py-3 rounded-full border border-line text-ink font-bold hover:bg-surface-2 transition-colors">D&eacute;marrer</Link>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1000px] mx-auto items-start">
+              {PLANS.map((plan) => (
+                <div
+                  key={plan.slug}
+                  className={
+                    plan.featured
+                      ? "bg-ink rounded-3xl p-8 shadow-xl border border-ink flex flex-col relative md:-translate-y-4"
+                      : "bg-surface rounded-3xl p-8 shadow-sm border border-line flex flex-col"
+                  }
+                >
+                  {plan.featured && (
+                    <div className="absolute top-0 inset-x-0 -translate-y-1/2 flex justify-center">
+                      <span className="bg-ok text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                        Pour 10 &agrave; 30 sites
+                      </span>
+                    </div>
+                  )}
 
-              {/* Agence (Highlighted) */}
-              <div className="bg-ink rounded-3xl p-8 shadow-xl border border-ink flex flex-col relative transform md:-translate-y-4">
-                <div className="absolute top-0 inset-x-0 transform -translate-y-1/2 flex justify-center">
-                  <span className="bg-ok text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">Pour 10 &agrave; 30 sites</span>
+                  <h3 className={`text-2xl font-bold mb-2 ${plan.featured ? "text-surface" : "text-ink"}`}>
+                    {plan.name}
+                  </h3>
+                  <p className={`mb-6 ${plan.featured ? "text-surface-2" : "text-ink-2"}`}>{plan.pitch}</p>
+                  <div className={`text-4xl font-extrabold mb-8 ${plan.featured ? "text-surface" : "text-ink"}`}>
+                    {plan.price}&euro;
+                    <span className={`text-lg font-normal ${plan.featured ? "text-surface-2" : "text-ink-2"}`}>
+                      /mois
+                    </span>
+                  </div>
+
+                  {/* Memes lignes, meme ordre, sur les trois paliers : ce qui manque se voit. */}
+                  <ul className="space-y-4 mb-8 flex-1">
+                    {PLAN_FEATURES.map((feature, i) => {
+                      const value = plan.values[i];
+                      const absent = value === false;
+                      const tone = plan.featured
+                        ? absent
+                          ? "text-surface-2/50"
+                          : "text-surface-2"
+                        : absent
+                          ? "text-ink-3"
+                          : "text-ink-2";
+                      return (
+                        <li key={feature} className="flex items-start gap-3">
+                          {absent ? (
+                            <span aria-hidden="true" className="shrink-0 w-5 text-center leading-5 text-ink-3">
+                              &mdash;
+                            </span>
+                          ) : (
+                            <Check />
+                          )}
+                          <span className={`text-[15px] leading-5 ${tone}`}>
+                            {typeof value === "string" ? (
+                              <>
+                                <strong className={plan.featured ? "text-surface font-semibold" : "text-ink font-semibold"}>
+                                  {value}
+                                </strong>{" "}
+                                {feature.toLowerCase()}
+                              </>
+                            ) : (
+                              feature
+                            )}
+                            {absent && <span className="sr-only"> : non inclus</span>}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {/* Meme verbe sur les trois paliers, et le meme que dans l'application. */}
+                  <Link
+                    href={`/register?plan=${plan.slug}`}
+                    className={
+                      plan.featured
+                        ? "w-full text-center px-6 py-3 rounded-full bg-surface text-ink font-bold hover:opacity-90 transition-opacity"
+                        : "w-full text-center px-6 py-3 rounded-full border border-line text-ink font-bold hover:bg-surface-2 transition-colors"
+                    }
+                  >
+                    Choisir {plan.name}
+                  </Link>
                 </div>
-                <h3 className="text-2xl font-bold text-surface mb-2">Agence</h3>
-                <p className="text-surface-2 mb-6">Id&eacute;al pour le portefeuille complet d&apos;une agence.</p>
-                <div className="text-4xl font-extrabold text-surface mb-6">99&euro;<span className="text-lg text-surface-2 font-normal">/mois</span></div>
-                <ul className="space-y-4 mb-8 flex-1">
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-surface-2">Jusqu&apos;&agrave; <strong className="text-surface font-semibold">30 sites</strong> clients</span></li>
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-surface-2">Alerte e-mail avec la cause probable et le correctif</span></li>
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-surface-2"><strong className="text-surface">Rapports PDF Marque Blanche</strong></span></li>
-                </ul>
-                <Link href="/register?plan=agence" className="w-full text-center px-6 py-3 rounded-full bg-surface text-ink font-bold hover:opacity-90 transition-opacity">S&eacute;curiser mes clients</Link>
-              </div>
-
-              {/* Studio */}
-              <div className="bg-surface rounded-3xl p-8 shadow-sm border border-line flex flex-col">
-                <h3 className="text-2xl font-bold text-ink mb-2">Studio</h3>
-                <p className="text-ink-2 mb-6">Pour les grosses agences &agrave; fort volume.</p>
-                <div className="text-4xl font-extrabold text-ink mb-6">249&euro;<span className="text-lg text-ink-2 font-normal">/mois</span></div>
-                <ul className="space-y-4 mb-8 flex-1">
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Jusqu&apos;&agrave; <strong className="text-ink font-semibold">100 sites</strong> clients</span></li>
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2"><strong className="text-ink font-semibold">Rapports PDF Marque Blanche</strong></span></li>
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Alerte e-mail avec la cause probable et le correctif</span></li>
-                </ul>
-                <Link href="/register?plan=studio" className="w-full text-center px-6 py-3 rounded-full border border-line text-ink font-bold hover:bg-surface-2 transition-colors">Choisir Studio</Link>
-              </div>
-
+              ))}
             </div>
+
+            <p className="mt-10 text-center text-sm text-ink-2">
+              Paiement par Stripe. Le diagnostic d&apos;une URL reste gratuit et sans compte&nbsp;:
+              {" "}
+              <a href="#scan" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">
+                testez avant de payer
+              </a>.
+            </p>
           </div>
         </section>
 
