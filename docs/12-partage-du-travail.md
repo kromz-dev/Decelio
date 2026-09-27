@@ -1,8 +1,22 @@
 # Travailler à deux agents sans se marcher dessus
 
-Deux agents de code travaillent sur Decelio : **Design** (interface, marketing, design system) et **Ingénierie** (scanner, base, facturation, infrastructure). Ce document est le contrat entre eux. Les deux le lisent avant de commencer.
+Deux conversations Claude Code travaillent sur Decelio : **Design** (interface, marketing, design system) et **Ingénierie** (scanner, base, facturation, infrastructure). Ce document est le contrat entre elles. Les deux le lisent avant de commencer.
+
+**Elles sont les deux seules à écrire dans le dépôt.** Tout autre outil de code — Antigravity, Cursor, Codex — est un troisième intervenant : soit il est fermé, soit il travaille sur sa propre branche et ne pousse jamais sur celle d'un autre.
 
 Il existe parce que la méthode précédente a échoué : au 26 septembre 2026, le poste portait **dix copies du dépôt** — `Cited-claude`, `Cited-grok`, `Cited-agent`, `cited-antigravity` et six autres. Aucune ne contenait de travail absent des autres, et la vérification automatique était rouge depuis douze heures sans que personne le sache.
+
+## Ce qui s'est déjà produit
+
+Le 27 septembre à 3 h 06, un troisième outil a commité **sur la branche d'un agent en train d'y travailler**. Le commit
+`6b84b93` porte le message « refonte AEO, icones locales, corrections constitution », qui décrit le travail de l'agent
+design — mais son contenu réel se limite à trois fichiers non suivis ramassés dans le dossier de travail, dont deux que
+l'agent venait délibérément de retirer du suivi.
+
+Rien n'a été perdu. Mais un message de commit qui ne décrit pas son contenu rend l'historique inutilisable pour
+comprendre ce qui s'est passé, et c'est précisément ce qu'on cherche à préserver quand plusieurs agents travaillent.
+
+**Une branche a un seul propriétaire.** Pas deux, pas « celui qui passe par là ».
 
 ## La règle qui compte le plus
 
@@ -95,6 +109,12 @@ Une branche distante avec des commits récents signifie que l'autre agent y est.
 On ne le corrige pas en passant. Le design qui repère une requête non protégée, l'ingénierie qui repère un contraste insuffisant : on le signale, on ne le répare pas dans sa propre branche. Une correction hors périmètre transforme une demande de fusion lisible en champ de mines, et prive l'autre du contexte.
 
 Sauf si la correction est bloquante pour son propre travail. Dans ce cas, elle part dans un commit séparé, dont le message dit pourquoi elle est là.
+
+## Un commit décrit ce qu'il contient
+
+Le message annonce le contenu réel du diff, pas l'intention de la session ni le travail d'un autre. Un commit qui ajoute
+trois fichiers de configuration ne s'appelle pas « refonte ». En cas de doute, relire `git show --stat` avant d'écrire le
+message.
 
 ## Sauvegarde
 
