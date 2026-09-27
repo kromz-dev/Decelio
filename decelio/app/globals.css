@@ -209,6 +209,8 @@
   --font-sans: var(--font-marketing), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading: var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
+  /* Titres d'affichage marketing (Bricolage Grotesque), repli sur le sans */
+  --font-display: var(--font-bricolage), var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* Rayons par niveau : puce 4, contrôle 6, carte 10, panneau 14 */
@@ -346,3 +348,74 @@
 .delay-\[1500ms\] { animation-delay: 1500ms; }
 
 .rounded-full { border-radius: 9999px !important; }
+
+/* ---------- 6. Mouvement de la page d'accueil : l'onde ----------
+   Une seule idée, reprise du logo : tout part du centre, comme une onde.
+   1. Au chargement, les anneaux du héros se tracent l'un après l'autre, puis
+      les mots du titre arrivent en cascade.
+   2. Une onde lente s'échappe du centre, rappel du contrôle quotidien.
+   3. Au défilement, les éléments marqués `.reveal` montent en cascade selon
+      leur rang (`--i`). Animation liée au défilement (CSS pur, aucun JS) :
+      sans prise en charge du navigateur, le contenu est simplement visible.
+   Tout est coupé par `prefers-reduced-motion` (règle globale plus haut). */
+
+@keyframes ring-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+.ring-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ring-draw 2.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes ripple {
+  0%   { transform: scale(0.42); opacity: 0; }
+  12%  { opacity: 0.55; }
+  100% { transform: scale(1.08); opacity: 0; }
+}
+
+.ripple {
+  transform-box: view-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: ripple 7s cubic-bezier(0.25, 0.6, 0.3, 1) 2.6s infinite;
+}
+
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(0.45em); filter: blur(10px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+.word {
+  display: inline-block;
+  opacity: 0;
+  animation: word-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-delay: calc(350ms + var(--i, 0) * 75ms);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(36px) scale(0.985); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i, 0) * 6%) cover calc(24% + var(--i, 0) * 6%);
+    }
+  }
+}
+
+/* Un soulignement qui se trace au survol, pour les liens de navigation. */
+.nav-link {
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 1px;
+  transition: background-size 0.35s var(--brand-ease), color 0.2s;
+}
+.nav-link:hover,
+.nav-link:focus-visible {
+  background-size: 100% 1px;
+}
