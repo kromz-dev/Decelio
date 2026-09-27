@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Exception : ce fichier ne doit pas suivre la regle .env* ci-dessus, sinon 'git add' l'ignorerait silencieusement s'il etait recree (le .gitignore racine ne rattrape pas les sous-dossiers)
+!.env.example
 
 # vercel
 .vercel
