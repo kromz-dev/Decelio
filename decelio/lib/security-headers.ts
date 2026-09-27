@@ -37,37 +37,12 @@
  *   styles inline par des variables CSS/classes utilitaires permettrait de
  *   durcir `style-src` plus tard ; ce n'est pas fait ici pour rester dans le
  *   périmètre « en-têtes de sécurité ».
- */
-
-/** Hôte PostHog Cloud UE réellement utilisé côté navigateur (voir
- * `instrumentation-client.ts` et `NEXT_PUBLIC_POSTHOG_HOST` dans
- * `.env.example`). Sert les requêtes API du SDK (`/flags`, capture
- * d'événements). */
-export const POSTHOG_API_HOST =
-  process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com";
-
-/**
- * Hôte d'assets PostHog (scripts et configuration à distance).
  *
- * Vérifié dans un vrai navigateur (Chromium/Playwright, `NEXT_PUBLIC_POSTHOG_
- * PROJECT_TOKEN` factice posé) : `posthog-js`, avec `capture_exceptions: true`
- * (voir `instrumentation-client.ts`), charge dynamiquement un script distant
- * `exception-autocapture.js` et une configuration `config.js` depuis
- * `eu-assets.i.posthog.com` — un hôte distinct de l'hôte API, propre à
- * PostHog (pas un CDN tiers générique). Sans l'autoriser en `script-src` et
- * `connect-src`, ces requêtes échouaient (« Refused to load the script… »,
- * « Refused to connect… ») sur `/` et `/login`. PostHog dérive cet hôte de
- * son hôte API en insérant `-assets` avant `.i.posthog.com` ; on reproduit
- * cette dérivation pour rester correct si `NEXT_PUBLIC_POSTHOG_HOST` change
- * de région Cloud (ex. US), avec la valeur EU observée en repli. */
-export function posthogAssetsHost(apiHost: string): string {
-  const match = /^(https:\/\/)([a-z]+)(\.i\.posthog\.com)$/.exec(apiHost);
-  if (!match) return "https://eu-assets.i.posthog.com";
-  const [, scheme, region, suffix] = match;
-  return `${scheme}${region}-assets${suffix}`;
-}
-
-export const POSTHOG_ASSETS_SRC = posthogAssetsHost(POSTHOG_API_HOST);
+ * PostHog (`instrumentation-client.ts`) passe par `/ingest` sur notre propre
+ * domaine (`app/ingest/[...path]/route.ts`), qui relaie côté serveur vers
+ * PostHog Cloud UE : `script-src` et `connect-src` n'ont donc besoin
+ * d'aucun hôte PostHog, `'self'` suffit. Voir `docs/api-reference.md`.
+ */
 
 /**
  * Origines Stripe autorisées comme cible de `form-action`.
@@ -101,11 +76,11 @@ export const STRIPE_BILLING_PORTAL_ORIGIN = "https://billing.stripe.com";
 export function buildContentSecurityPolicy(isProduction: boolean): string {
   const directives = [
     `default-src 'self'`,
-    `script-src 'self' 'unsafe-inline' ${POSTHOG_ASSETS_SRC}${isProduction ? "" : " 'unsafe-eval'"}`,
+    `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob:`,
     `font-src 'self'`,
-    `connect-src 'self' ${POSTHOG_API_HOST} ${POSTHOG_ASSETS_SRC}${isProduction ? "" : " ws: wss:"}`,
+    `connect-src 'self'${isProduction ? "" : " ws: wss:"}`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self' ${STRIPE_CHECKOUT_ORIGIN} ${STRIPE_BILLING_PORTAL_ORIGIN}`,

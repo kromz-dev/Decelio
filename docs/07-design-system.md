@@ -47,12 +47,12 @@ Alias historiques conservés le temps de la migration : `paper-deep` → surface
 
 ### Typographie
 
-Texte : **Schibsted Grotesk** (`next/font/google`, variable `--font-marketing`, exposée comme `font-sans`). Titres d'affichage des pages marketing : **Bricolage Grotesque** à taille optique (variable `--font-bricolage`, classe `font-display`), jamais pour du texte courant ni dans l'application. Les deux sont servies depuis notre domaine par `next/font` (aucune requête vers Google depuis le navigateur). Mono : Geist Mono (`font-mono`), uniquement pour du code.
+Texte : **Schibsted Grotesk** (`next/font/google`, variable `--font-marketing`, exposée comme `font-sans`). Titres d'affichage : **Bricolage Grotesque** à taille optique (variable `--font-bricolage`, classe `font-display`), jamais pour du texte courant. Depuis l'harmonisation de septembre 2026 (décision du fondateur), `font-display` couvre aussi le Titre 1 de chaque page de l'application (Portefeuille, Alertes, Rapports, Paramètres) : c'est le seul usage de Bricolage dans l'application, tout le reste du texte applicatif reste en Schibsted. Les deux familles sont servies depuis notre domaine par `next/font` (aucune requête vers Google depuis le navigateur). Mono : Geist Mono (`font-mono`), uniquement pour du code.
 
 | Rôle | Taille / interligne | Graisse | Classe |
 |---|---|---|---|
 | Affichage (héros marketing) | clamp(36, 56) / 1.05, -0.025em | 700 | `type-display` |
-| Titre 1 (page) | 28 / 34, -0.02em | 600 | `text-[28px] leading-[34px] font-semibold` |
+| Titre 1 (page) | 28 / 34, -0.02em | 600 | `font-display text-[28px] leading-[34px] font-semibold` |
 | Titre 2 (section) | 22 / 28 | 600 | `text-[22px] leading-7 font-semibold` |
 | Titre 3 (carte) | 17 / 24 | 600 | `text-[17px] leading-6 font-semibold` |
 | Corps marketing | 17 / 26 | 400 | `.root` de `tokens.module.css` |
@@ -166,6 +166,6 @@ Cible : freelances et agences de maintenance WordPress, fondateurs d'agences SEO
 
 ## 7. Migration
 
-Fait : `globals.css`, polices (`lib/fonts.ts`, `components/home/fonts.ts`), `tokens.module.css`, primitives `components/ui/*`, `Verdict`, vitrine `/design-system`.
+Fait : `globals.css`, polices (`lib/fonts.ts`, `components/home/fonts.ts`), `tokens.module.css`, primitives `components/ui/*`, `Verdict`, vitrine `/design-system`, `app/(app)/layout.tsx` (Wordmark), `components/DashboardSites.tsx`, `app/(app)/reports/ReportsClient.tsx`, `app/(app)/alerts/AlertsJournal.tsx`, `app/(app)/settings/SettingsClient.tsx`, `app/(app)/onboarding/OnboardingClient.tsx` et `OnboardingPlanStep.tsx` (Wordmark, Titre 1 en `font-display`, jetons `--stop` au lieu du rouge codé en dur). `components/MarketingHeader.tsx`, doublon inutilisé de `SiteChrome`, a été supprimé.
 
-À migrer : `app/login/page.tsx` et `app/register/page.tsx` (rouge `#ec3013` codé en dur, capitales espacées, fond de champ gris), `app/login/LoginForm.tsx` (flèche dans le bouton), `app/(app)/layout.tsx` et `app/(app)/*` (`bg-paper-deep`, `text-muted`, `shadow-panel`, tableau de bord à passer sur `Verdict`), `components/ui.tsx` (ancien `Badge` en capitales, `StatusDot` couleur seule, `ArrowLink`), `components/DashboardSites.tsx`, `components/landing/*` hérités, `app/(marketing)/analyse/[domain]`. Une fois migrés, supprimer `app/ds/`, `app/_ds/` et les alias historiques de `globals.css`.
+À migrer : `app/login/page.tsx` et `app/register/page.tsx` (rouge `#ec3013` codé en dur, capitales espacées, fond de champ gris), `app/login/LoginForm.tsx` (flèche dans le bouton), `components/ui.tsx` (ancien `Badge` en capitales, `StatusDot` couleur seule, `ArrowLink`), `components/landing/*` hérités, `app/(marketing)/analyse/[domain]`, et le Titre 1 de `app/(app)/dashboard/page.tsx` et `app/(app)/sources/page.tsx` (JSX porté par ces `page.tsx`, propriété Ingénierie : passer leur `<h1>` en `font-display` comme les autres pages de l'application). Une fois migrés, supprimer `app/ds/`, `app/_ds/` et les alias historiques de `globals.css`.

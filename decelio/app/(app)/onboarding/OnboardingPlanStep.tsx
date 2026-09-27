@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { createCheckoutSession } from "@/lib/billing/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Wordmark } from "@/components/home/SiteChrome";
 import { ONBOARDING_PLANS } from "./onboarding-plan";
 
 /**
@@ -25,8 +26,8 @@ export function OnboardingPlanStep() {
     <div className="-m-6 flex min-h-screen flex-col bg-paper text-ink md:-m-10">
       <header className="bg-ink text-paper">
         <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-3.5">
-          <Link href="/" className="mr-auto inline-flex items-center text-[19px] font-semibold tracking-tight">
-            Decelio<span className="text-cobalt">.</span>
+          <Link href="/" aria-label="Decelio, accueil" className="mr-auto inline-flex items-center">
+            <Wordmark light />
           </Link>
           <span className="type-caption font-medium opacity-70">Étape 2 sur 3</span>
         </div>
@@ -40,7 +41,7 @@ export function OnboardingPlanStep() {
       <main className="flex flex-1 justify-center bg-paper p-6 sm:p-12">
         <div className="w-full max-w-[760px]">
           <p className="mb-2.5 text-sm font-medium text-ink-2">Étape 2 · Choisir un palier</p>
-          <h1 className="mb-2.5 text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] text-ink sm:text-[32px]">
+          <h1 className="font-display mb-2.5 text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] text-ink sm:text-[32px]">
             Le scan gratuit s&apos;arrête à un site
           </h1>
           <p className="mb-[22px] text-sm leading-6 text-ink-2">
@@ -70,11 +71,11 @@ export function OnboardingPlanStep() {
                 key={plan.id}
                 className={
                   "flex flex-col rounded-lg border bg-surface p-4.5 " +
-                  (plan.id === "PRO" ? "border-cobalt" : "border-line")
+                  (plan.id === "PRO" ? "border-ink" : "border-line")
                 }
               >
                 {plan.id === "PRO" && (
-                  <span className="mb-2.5 self-start rounded-xs bg-cobalt-soft px-2 py-0.5 type-caption font-medium text-cobalt">
+                  <span className="mb-2.5 self-start rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-paper">
                     Recommandé
                   </span>
                 )}
@@ -101,7 +102,7 @@ function PlanSubmitButton({ label, primary }: { label: string; primary: boolean 
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" size="lg" variant={primary ? "default" : "outline"} disabled={pending} className="w-full">
+    <Button type="submit" size="lg" variant={primary ? "default" : "outline"} disabled={pending} className="h-auto min-h-11 w-full whitespace-normal py-2.5 text-center leading-snug">
       {pending ? (
         <>
           <Loader2 className="size-4 animate-spin" />

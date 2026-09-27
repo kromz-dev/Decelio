@@ -107,7 +107,7 @@ export function AnalyseScanRunner({ domain }: { domain: string }) {
           `Lancer le diagnostic pour ${domain}`
         )}
       </Button>
-      <p className="type-caption text-ink-2">Gratuit, sans compte, résultat en 15 secondes.</p>
+      <p className="type-caption text-ink-2">Gratuit et sans compte.</p>
 
       {error && (
         <p role="alert" className="mt-2 text-sm font-medium text-stop">

@@ -65,6 +65,19 @@ describe("runScan", () => {
     expect(report.indexing.perBot.find((i) => i.bot === "ClaudeBot")?.noindex).toBe(true);
   });
 
+  it("does not mark a short static page (no JS-rendering signal) as COQUILLE VIDE — regression example.com", async () => {
+    const shortStaticPage = html(
+      "<h1>Example Domain</h1><p>This domain is for use in illustrative examples in documents. " +
+        "You may use this domain in literature without prior coordination or asking for permission.</p>",
+    );
+    stubFetch((url) => (url.endsWith("/robots.txt") ? new Response("", { status: 404 }) : new Response(shortStaticPage)));
+    const { report, results } = await runCoreScan("https://example.com/", ["GPTBot"]);
+
+    expect(report.jsDependency).toMatchObject({ verdict: "low_text", hasAppRoot: false });
+    expect(results[0].simpleStatus).not.toBe("COQUILLE VIDE");
+    expect(results[0].simpleStatus).toBe("À VÉRIFIER");
+  });
+
   it("compares raw and rendered text when a renderer is provided", async () => {
     stubFetch((url) =>
       url.endsWith("/robots.txt") ? new Response("", { status: 404 }) : new Response(html('<div id="root"></div>')),
@@ -181,6 +194,7 @@ describe("runCoreScan", () => {
         risk: "blocked",
         httpStatus: 403,
         differsFromBaseline: true,
+        rateLimitUnconfirmed: false,
       },
     ]);
     // La requête honnête passe (règle 3) : la sonde bloquée devient un indice
@@ -229,6 +243,13 @@ describe("runCoreScan", () => {
   });
 
   it("handles the 50-word boundary", async () => {
+    // 49 mots sans aucun indice de rendu côté client (pas de racine
+    // d'application, pas de bundle d'hydratation, pas de <noscript>) n'est
+    // pas une preuve de dépendance JS : « À VÉRIFIER », jamais « COQUILLE
+    // VIDE » (correctif fix/coquille-vide-page-courte — avant ce correctif,
+    // ce test attendait "COQUILLE VIDE" pour toute page sous 50 mots, ce qui
+    // est le faux positif reproduit sur https://example.com : 19 mots,
+    // aucun JavaScript, classé « dépendante du JavaScript » à tort).
     const words49 = "mot ".repeat(49).trim();
     const words50 = "mot ".repeat(50).trim();
     stubFetch((url) => {
@@ -237,9 +258,89 @@ describe("runCoreScan", () => {
     });
 
     const short = await runCoreScan("https://w49.example.com", ["GPTBot"]);
-    expect(short.results[0].simpleStatus, "49 mots doit marquer la page comme COQUILLE VIDE").toBe("COQUILLE VIDE");
+    expect(short.results[0].simpleStatus, "49 mots sans indice JS doit être À VÉRIFIER, pas COQUILLE VIDE").toBe("À VÉRIFIER");
 
     const enough = await runCoreScan("https://w50.example.com", ["GPTBot"]);
     expect(enough.results[0].simpleStatus, "50 mots doit suffire pour être OK").toBe("OK");
   });
+
+  it("still marks a thin SPA shell under 50 words as COQUILLE VIDE (JS-rendering signal present)", async () => {
+    stubFetch((url) => {
+      if (url.endsWith("/robots.txt")) return new Response("", { status: 404 });
+      return new Response(html('<div id="root"></div>'));
+    });
+    const { results } = await runCoreScan("https://spa.example.com", ["GPTBot"]);
+    expect(results[0].simpleStatus).toBe("COQUILLE VIDE");
+  });
+});
+
+describe("espacement des requêtes vers le même hôte (fix/scanner-sans-auto-429)", () => {
+  beforeEach(() => vi.unstubAllGlobals());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("never sends more than 2 requests to the same host at once, and spaces the batches", async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const startTimes: number[] = [];
+    stubFetch(async (url) => {
+      startTimes.push(Date.now());
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight--;
+      if (url.endsWith("/robots.txt")) return new Response("", { status: 404 });
+      return new Response(LONG_PAGE);
+    });
+
+    await runCoreScan("https://example.com", ["OAI-SearchBot", "Claude-SearchBot", "PerplexityBot"]);
+
+    // 1 requête honnête (seule) + 4 requêtes vers le même hôte (robots.txt +
+    // 3 sondes), jamais plus de 2 en vol à la fois.
+    expect(maxInFlight).toBeLessThanOrEqual(2);
+
+    // Après la requête honnête, les 4 requêtes restantes forment 2 lots de 2,
+    // espacés d'au moins la pause documentée.
+    const hostCallStarts = startTimes.slice(1).sort((a, b) => a - b);
+    expect(hostCallStarts).toHaveLength(4);
+    const gapBetweenBatches = hostCallStarts[2] - hostCallStarts[1];
+    expect(gapBetweenBatches).toBeGreaterThanOrEqual(250);
+  }, 10_000);
+
+  it("does not mark BLOQUÉ for an isolated 429 that succeeds on the spaced retry", async () => {
+    let calls = 0;
+    stubFetch((url, ua) => {
+      if (url.endsWith("/robots.txt")) return new Response("", { status: 404 });
+      if (ua.includes("OAI-SearchBot")) {
+        calls++;
+        // 429 la première fois seulement : un hébergeur mutualisé qui a
+        // limité le débit pendant la rafale, pas un vrai blocage.
+        return calls === 1 ? new Response("Too Many Requests", { status: 429 }) : new Response(LONG_PAGE);
+      }
+      return new Response(LONG_PAGE);
+    });
+
+    const { results, report } = await runCoreScan("https://example.com", ["OAI-SearchBot"]);
+    expect(calls).toBe(2);
+    expect(report.access.unverifiedProbes[0]).toMatchObject({ risk: "ok", rateLimitUnconfirmed: false });
+    expect(results[0].simpleStatus).toBe("OK");
+  });
+
+  it("treats a persistent 429 (confirmed by the retry) as documented evidence of a block", async () => {
+    stubFetch((url, ua) => {
+      if (url.endsWith("/robots.txt")) return new Response("", { status: 404 });
+      if (ua.includes("OAI-SearchBot")) return new Response("Too Many Requests", { status: 429 });
+      return new Response(LONG_PAGE);
+    });
+
+    const { results, report } = await runCoreScan("https://example.com", ["OAI-SearchBot"]);
+    expect(report.access.unverifiedProbes[0]).toMatchObject({ risk: "blocked", rateLimitUnconfirmed: false });
+    expect(results[0].simpleStatus).toBe("BLOQUÉ");
+  });
+
+  it("respects the overall scan budget: total duration stays far below the 20s route budget", async () => {
+    stubFetch((url) => (url.endsWith("/robots.txt") ? new Response("", { status: 404 }) : new Response(LONG_PAGE)));
+    const start = Date.now();
+    await runCoreScan("https://example.com", ["OAI-SearchBot", "Claude-SearchBot", "PerplexityBot"]);
+    expect(Date.now() - start).toBeLessThan(5_000);
+  }, 10_000);
 });

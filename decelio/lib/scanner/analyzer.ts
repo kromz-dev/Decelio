@@ -48,6 +48,37 @@ export function detectSpaRoot(html: string): boolean {
   return /<div[^>]+id=["'](root|app|__next|__nuxt|svelte)["'][^>]*>\s*(<!--[\s\S]*?-->\s*)*<\/div>/i.test(html);
 }
 
+/** Charges d'hydratation des frameworks côté client : leur seule présence indique un rendu JS. */
+const FRAMEWORK_HYDRATION_MARKERS: RegExp[] = [
+  /__NEXT_DATA__/,
+  /window\.__NUXT__\b/,
+  /\bdata-reactroot\b/i,
+  /\bng-version\s*=/i,
+];
+
+/** Un <noscript> qui demande d'activer JavaScript pour voir le contenu. */
+function hasNoscriptEnableJsHint(html: string): boolean {
+  for (const [tag] of html.matchAll(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi)) {
+    if (/javascript/i.test(tag)) return true;
+  }
+  return false;
+}
+
+/**
+ * Un indice — jamais une preuve — que la page dépend d'un rendu côté client :
+ * racine d'application vide, bundle d'hydratation connu, ou un <noscript> qui
+ * demande explicitement d'activer JavaScript. Sans l'un de ces indices, un
+ * texte court n'est qu'un texte court (page statique légitime), pas une
+ * « coquille vide » (constitution, principe I : jamais de verdict tranché
+ * sans preuve).
+ */
+export function hasClientRenderSignal(html: string): boolean {
+  if (!html) return false;
+  if (detectSpaRoot(html)) return true;
+  if (hasNoscriptEnableJsHint(html)) return true;
+  return FRAMEWORK_HYDRATION_MARKERS.some((re) => re.test(html));
+}
+
 // ---------------------------------------------------------------------------
 // Défis anti-bot
 // ---------------------------------------------------------------------------
@@ -273,10 +304,22 @@ export function indexingForBot(directives: IndexingDirectives, bot: BotAgent): B
  * - static              : le HTML brut contient l'essentiel du texte rendu ;
  * - partial             : une partie notable du texte n'apparaît qu'après JS ;
  * - js_dependent        : le HTML brut est quasi vide face au rendu ;
- * - likely_js_dependent : pas de rendu disponible, mais le HTML brut est quasi vide ;
+ * - likely_js_dependent : pas de rendu disponible, le HTML brut est quasi vide,
+ *                         ET un indice de rendu côté client est présent
+ *                         (racine d'application, bundle d'hydratation, <noscript>) ;
+ * - low_text            : pas de rendu disponible, le HTML brut est quasi vide,
+ *                         mais AUCUN indice de rendu côté client — une page
+ *                         peu textuelle n'est pas pour autant « dépendante du
+ *                         JavaScript » (constitution, principe I) ;
  * - unknown             : pas de HTML exploitable.
  */
-export type JsDependencyVerdict = "static" | "partial" | "js_dependent" | "likely_js_dependent" | "unknown";
+export type JsDependencyVerdict =
+  | "static"
+  | "partial"
+  | "js_dependent"
+  | "likely_js_dependent"
+  | "low_text"
+  | "unknown";
 
 export interface JsDependencyCheck {
   verdict: JsDependencyVerdict;
@@ -298,8 +341,12 @@ export function analyzeJsDependency(rawHtml: string, renderedHtml: string | null
   if (renderedHtml === null) {
     let verdict: JsDependencyVerdict;
     if (!rawHtml) verdict = "unknown";
-    else if (rawWordCount < MIN_WORDS) verdict = "likely_js_dependent";
-    else verdict = "static";
+    else if (rawWordCount < MIN_WORDS) {
+      // Un texte court n'est une « coquille vide » que s'il porte un indice
+      // de rendu côté client. Sans indice, c'est une page statique légitime :
+      // « à vérifier », jamais un verdict tranché (constitution, principe I).
+      verdict = hasAppRoot || hasClientRenderSignal(rawHtml) ? "likely_js_dependent" : "low_text";
+    } else verdict = "static";
     return { verdict, rawWordCount, renderedWordCount: null, rawToRenderedRatio: null, hasAppRoot };
   }
 

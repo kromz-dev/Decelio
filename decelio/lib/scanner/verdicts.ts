@@ -83,6 +83,15 @@ export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary 
   // est bloquée : un indice à forte valeur, jamais une preuve (le site peut
   // vérifier ce robot par IP, ce que nous ne faisons pas).
   const probe = access.unverifiedProbes.find((p) => p.claimedBot === bot);
+  if (probe && probe.differsFromBaseline && probe.rateLimitUnconfirmed) {
+    // 429 isolé pendant la rafale de requêtes vers le même hôte, sans
+    // confirmation par une nouvelle tentative (budget insuffisant) : ce
+    // n'est pas la preuve d'un blocage (fix/scanner-sans-auto-429).
+    return {
+      value: "inconnu",
+      cause: `Une requête non vérifiée se présentant comme ${bot} a reçu un code 429 (limite de débit), non confirmé par une nouvelle tentative. Un 429 isolé n'est pas la preuve d'un blocage. À vérifier.`,
+    };
+  }
   if (probe && probe.differsFromBaseline && (probe.risk === "blocked" || probe.risk === "challenged")) {
     return {
       value: "refuse",
@@ -96,6 +105,17 @@ export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary 
       value: "vide",
       cause: `La page arrive quasi vide sans exécuter de JavaScript (${jsDependency.rawWordCount} mots).`,
       fix: "Pré-rendre le contenu côté serveur (SSR/SSG) pour les robots qui n'exécutent pas de script.",
+    };
+  }
+
+  // Texte court, mais aucun indice de rendu côté client (pas de racine
+  // d'application, pas de bundle d'hydratation, pas de <noscript>) : ce
+  // n'est pas une preuve de dépendance au JavaScript, juste une page peu
+  // textuelle. « À vérifier », jamais un verdict tranché.
+  if (jsDependency.verdict === "low_text") {
+    return {
+      value: "inconnu",
+      cause: `Le HTML brut est court (${jsDependency.rawWordCount} mots), mais rien n'indique qu'il dépend du JavaScript. À vérifier.`,
     };
   }
 
@@ -200,6 +220,11 @@ export function jsSummary(report: ScanReport): ResultSummary {
         value: "vide",
         cause: `Le HTML brut est très court (${jsDependency.rawWordCount} mots), sans confirmation par un rendu.`,
         fix: "Vérifier avec un rendu JavaScript, ou passer en rendu côté serveur.",
+      };
+    case "low_text":
+      return {
+        value: "inconnu",
+        cause: `Le HTML brut est court (${jsDependency.rawWordCount} mots), sans indice de rendu côté client. À vérifier.`,
       };
     case "unknown":
       return { value: "inconnu", cause: "Impossible de mesurer le contenu de la page." };

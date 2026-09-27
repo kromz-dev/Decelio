@@ -96,7 +96,7 @@ export function ScanForm() {
         </Button>
       </form>
 
-      <p className="mt-2 type-caption text-ink-2">Gratuit, sans compte, résultat en 15 secondes.</p>
+      <p className="mt-2 type-caption text-ink-2">Gratuit et sans compte.</p>
 
       {error && (
         <p id="scan-error" role="alert" className="mt-3 text-sm font-medium text-stop">

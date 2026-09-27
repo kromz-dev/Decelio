@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildContentSecurityPolicy,
-  getSecurityHeaders,
-  posthogAssetsHost,
-} from "./security-headers";
+import { buildContentSecurityPolicy, getSecurityHeaders } from "./security-headers";
 
 function findHeader(headers: ReturnType<typeof getSecurityHeaders>, key: string) {
   return headers.find((header) => header.key === key)?.value;
@@ -64,21 +60,20 @@ describe("buildContentSecurityPolicy", () => {
     expect(buildContentSecurityPolicy(true)).toContain("frame-ancestors 'none'");
   });
 
-  it("n'autorise que l'hôte d'assets PostHog pour les scripts, aucun autre CDN tiers (dette 'unsafe-inline' documentée pour le bootstrap Next.js)", () => {
+  it("n'autorise aucun hôte tiers pour les scripts (dette 'unsafe-inline' documentée pour le bootstrap Next.js) : PostHog passe par /ingest, sur notre domaine", () => {
     const csp = buildContentSecurityPolicy(true);
-    expect(csp).toContain("script-src 'self' 'unsafe-inline' https://eu-assets.i.posthog.com");
-    expect(csp).not.toMatch(/script-src[^;]*https:\/\/(?!eu-assets\.i\.posthog\.com)/);
+    expect(csp).toContain("script-src 'self' 'unsafe-inline'");
+    expect(csp).not.toMatch(/script-src[^;]*https:\/\//);
   });
 
   it("autorise les styles inline (dette documentée) mais rien d'externe", () => {
     expect(buildContentSecurityPolicy(true)).toContain("style-src 'self' 'unsafe-inline'");
   });
 
-  it("autorise l'hôte API et l'hôte d'assets PostHog Cloud UE réellement utilisés, en plus de 'self'", () => {
+  it("n'autorise aucun hôte tiers en connect-src : PostHog est relayé par /ingest, sur notre domaine (voir app/ingest/[...path]/route.ts)", () => {
     const csp = buildContentSecurityPolicy(true);
-    expect(csp).toContain(
-      "connect-src 'self' https://eu.i.posthog.com https://eu-assets.i.posthog.com",
-    );
+    expect(csp).toContain("connect-src 'self'");
+    expect(csp).not.toMatch(/connect-src[^;]*https:\/\//);
   });
 
   it("autorise Stripe Checkout et le portail de facturation Stripe comme cible de form-action (Server Actions soumises via de vrais <form>)", () => {
@@ -100,25 +95,5 @@ describe("buildContentSecurityPolicy", () => {
     expect(dev).toContain("ws: wss:");
     expect(prod).not.toContain("'unsafe-eval'");
     expect(prod).not.toContain("ws:");
-  });
-});
-
-describe("posthogAssetsHost", () => {
-  it("dérive l'hôte d'assets EU observé dans un vrai navigateur à partir de l'hôte API EU", () => {
-    expect(posthogAssetsHost("https://eu.i.posthog.com")).toBe(
-      "https://eu-assets.i.posthog.com",
-    );
-  });
-
-  it("s'adapte à une autre région Cloud PostHog (ex. US)", () => {
-    expect(posthogAssetsHost("https://us.i.posthog.com")).toBe(
-      "https://us-assets.i.posthog.com",
-    );
-  });
-
-  it("retombe sur l'hôte EU si la valeur ne correspond à aucune région PostHog Cloud connue", () => {
-    expect(posthogAssetsHost("https://posthog.example.com")).toBe(
-      "https://eu-assets.i.posthog.com",
-    );
   });
 });

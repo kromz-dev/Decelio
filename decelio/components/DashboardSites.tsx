@@ -353,7 +353,7 @@ export function DashboardSites({
 
       {/* Tableau des domaines */}
       <div className="overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full min-w-[720px] text-left type-table">
             <caption className="sr-only">Liste des domaines surveillés</caption>
             <thead className="border-b border-ink text-ink-2">
@@ -432,9 +432,9 @@ export function DashboardSites({
                           <Verdict value={verdict} variant="inline" detail={site.status === "À VÉRIFIER" ? "à vérifier" : undefined} />
                         )}
                       </td>
-                      <td className="px-3 py-2 text-right text-ink-2 tnum">—</td>
-                      <td className="px-3 py-2 text-right text-ink-2 tnum">—</td>
-                      <td className="px-3 py-2 text-right text-ink-2 tnum">—</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">-</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">-</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">-</td>
                       <td className="px-3 py-2 text-right text-ink-2 tnum">
                         {new Date(site.createdAt).toLocaleDateString("fr-FR")}
                       </td>
