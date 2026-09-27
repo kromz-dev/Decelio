@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/billing/stripe";
 import { planForPriceId } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
 import { captureServerEvent } from "@/lib/posthog-server";
+import { sendTrialEndingEmail } from "@/lib/email/resend";
 import { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -25,6 +26,13 @@ function periodEndOf(subscription: Stripe.Subscription): Date | null {
 /** Plan réellement facturé, déduit du tarif que Stripe confirme. */
 function planOf(subscription: Stripe.Subscription) {
   return planForPriceId(subscription.items?.data?.[0]?.price?.id);
+}
+
+/** Fin de l'essai en cours, ou `null` si l'abonnement n'est pas en essai. */
+function trialEndOf(subscription: Stripe.Subscription): Date | null {
+  return typeof subscription.trial_end === "number"
+    ? new Date(subscription.trial_end * 1000)
+    : null;
 }
 
 /**
@@ -67,11 +75,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Événements de tunnel à émettre après la transaction, une fois
-  // l'idempotence Stripe vérifiée (ProcessedWebhook). Alimentés depuis
-  // l'intérieur de la transaction ; un événement rejoué échoue sur le
-  // marqueur d'idempotence avant que ce tableau ne soit jamais rempli, donc
-  // n'émet rien une seconde fois.
+  // Effets de bord (événements de tunnel PostHog, e-mail Resend) à exécuter
+  // après la transaction, une fois l'idempotence Stripe vérifiée
+  // (ProcessedWebhook). Alimentés depuis l'intérieur de la transaction ; un
+  // événement rejoué échoue sur le marqueur d'idempotence avant que ce
+  // tableau ne soit jamais rempli, donc n'exécute rien une seconde fois.
   const pendingFunnelEvents: Array<() => Promise<void>> = [];
 
   try {
@@ -83,6 +91,21 @@ export async function POST(req: Request) {
           session.subscription as string,
         );
       }
+    }
+
+    // Lien du portail client à glisser dans l'e-mail de fin d'essai. Créé
+    // avant la transaction, comme la relecture de l'abonnement ci-dessus :
+    // un appel Stripe supplémentaire sur un rejeu ne coûte rien, l'écriture
+    // en base (et donc l'envoi de l'e-mail) reste protégée par
+    // `ProcessedWebhook`.
+    let trialWillEndPortalUrl: string | null = null;
+    if (event.type === "customer.subscription.trial_will_end") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: subscription.customer as string,
+        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      });
+      trialWillEndPortalUrl = portalSession.url;
     }
 
     // Le marqueur d'idempotence et l'écriture métier sont dans la même
@@ -107,6 +130,18 @@ export async function POST(req: Request) {
           }
 
           const isFounder = founderCouponApplied(session);
+          const isTrialing = fetchedSubscription.status === "trialing";
+          const trialEnd = trialEndOf(fetchedSubscription);
+
+          // `trialUsedAt` n'est jamais effacé : on ne le pose que s'il est
+          // encore vide, pour ne pas perdre la trace du premier abonnement
+          // d'un compte si ce webhook était un jour rejoué avec une valeur
+          // différente en amont (il ne l'est pas ici, ProcessedWebhook s'en
+          // charge, mais la garde ne coûte rien et documente l'intention).
+          const existingUser = await tx.user.findUnique({
+            where: { id: userId },
+            select: { trialUsedAt: true },
+          });
 
           await tx.user.update({
             where: { id: userId },
@@ -118,14 +153,28 @@ export async function POST(req: Request) {
               stripeCurrentPeriodEnd: periodEndOf(fetchedSubscription),
               cancelledAt: null,
               purgeAt: null,
+              trialUsedAt: existingUser?.trialUsedAt ?? new Date(),
+              stripeTrialEnd: trialEnd,
               ...(isFounder
                 ? { isFounderMember: true, founderOfferAt: new Date() }
                 : {}),
             },
           });
+          // `subscription_activated` part dès le début de l'essai (ou dès
+          // le paiement immédiat s'il n'y a pas d'essai) : c'est le moment où
+          // l'agence a réellement pris l'engagement (carte fournie), plus
+          // honnête qu'attendre la conversion qui peut n'être qu'une
+          // formalité 14 jours plus tard. `trial_converted` (facture
+          // cycle_reason ci-dessous) mesure spécifiquement le passage réel au
+          // payant.
           pendingFunnelEvents.push(() =>
             captureServerEvent(userId, "subscription_activated", { plan }),
           );
+          if (isTrialing) {
+            pendingFunnelEvents.push(() =>
+              captureServerEvent(userId, "trial_started", { plan }),
+            );
+          }
           break;
         }
 
@@ -149,7 +198,13 @@ export async function POST(req: Request) {
               stripeCurrentPeriodEnd: periodEndOf(subscription),
               // Un changement de tarif doit se refléter dans les deux sens :
               // conserver l'ancien plan rendait toute rétrogradation sans effet.
+              // `trialing` compte comme actif : la période d'essai donne déjà
+              // accès au plan payant (EF-essai-gratuit-14-jours).
               plan: active && plan ? plan : "FREE",
+              // Reflète la date de fin d'essai courante ; `null` une fois
+              // l'essai terminé (converti ou résilié), ce qui arrête aussi
+              // tout futur affichage d'un essai qui n'existe plus.
+              stripeTrialEnd: trialEndOf(subscription),
             },
           });
           break;
@@ -181,6 +236,72 @@ export async function POST(req: Request) {
               plan: "FREE",
               previous_plan: user.plan,
             }),
+          );
+          break;
+        }
+
+        case "customer.subscription.trial_will_end": {
+          const subscription = event.data.object;
+          const user = await tx.user.findUnique({
+            where: { stripeCustomerId: subscription.customer as string },
+            select: { id: true, email: true, name: true },
+          });
+          if (!user) break;
+
+          const trialEnd = trialEndOf(subscription);
+          const price = subscription.items?.data?.[0]?.price;
+          const amountCents = price?.unit_amount;
+          const currency = price?.currency;
+
+          if (
+            !trialEnd ||
+            typeof amountCents !== "number" ||
+            !currency ||
+            !trialWillEndPortalUrl
+          ) {
+            // Un abonnement sans prix ou sans date de fin d'essai lisible ne
+            // doit jamais produire un e-mail avec un montant ou une date
+            // inventés (docs/08-constitution.md, honnêteté de la mesure).
+            console.error(
+              `Webhook trial_will_end incomplet pour l'abonnement ${subscription.id} : e-mail non envoyé.`,
+            );
+            break;
+          }
+
+          pendingFunnelEvents.push(async () => {
+            await sendTrialEndingEmail({
+              to: user.email,
+              recipientName: user.name,
+              trialEndDate: trialEnd,
+              amountCents,
+              currency,
+              portalUrl: trialWillEndPortalUrl!,
+            });
+          });
+          break;
+        }
+
+        case "invoice.paid": {
+          const invoice = event.data.object;
+          if (invoice.billing_reason !== "subscription_cycle") break;
+
+          const user = await tx.user.findUnique({
+            where: { stripeCustomerId: invoice.customer as string },
+            select: { id: true, plan: true, stripeTrialEnd: true },
+          });
+          // `stripeTrialEnd` non nul signifie que ce compte sortait d'un
+          // essai : c'est ce qui distingue la facture de conversion des
+          // factures de renouvellement suivantes (elles aussi
+          // `subscription_cycle`, mais avec `stripeTrialEnd` déjà remis à
+          // `null` par cette même écriture la première fois).
+          if (!user || !user.stripeTrialEnd) break;
+
+          await tx.user.update({
+            where: { id: user.id },
+            data: { stripeTrialEnd: null },
+          });
+          pendingFunnelEvents.push(() =>
+            captureServerEvent(user.id, "trial_converted", { plan: user.plan }),
           );
           break;
         }

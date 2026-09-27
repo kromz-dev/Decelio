@@ -18,12 +18,19 @@ export function SettingsClient({
   whiteLabelSection,
   userName,
   userEmail,
+  trialEndsAt,
 }: {
   subscriptionSection: ReactNode;
   personalDataSection: ReactNode;
   whiteLabelSection: ReactNode;
   userName: string | null;
   userEmail: string | null;
+  /**
+   * Fin de l'essai gratuit en cours, `null` sinon (T-essai-gratuit-14-jours).
+   * Pas encore affichée : réservé à l'équipe Design, posée ici en attribut
+   * de données pour rester lisible sans construire d'interface.
+   */
+  trialEndsAt?: Date | null;
 }) {
   const [activeTab, setActiveTab] = useState("abonnement");
 
@@ -46,7 +53,7 @@ export function SettingsClient({
   };
 
   return (
-    <div className="mx-auto max-w-6xl pb-16">
+    <div className="mx-auto max-w-6xl pb-16" data-trial-ends-at={trialEndsAt ? trialEndsAt.toISOString() : undefined}>
       <div className="border-b border-line pb-8">
         <h1 className="text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink sm:text-[34px] sm:leading-[40px]">
           Paramètres

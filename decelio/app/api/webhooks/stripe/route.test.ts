@@ -34,6 +34,12 @@ vi.mock("@/lib/posthog-server", () => ({
   captureServerEvent: captureServerEventMock,
 }));
 
+const sendTrialEndingEmailMock = vi.fn(async () => ({ success: true }));
+
+vi.mock("@/lib/email/resend", () => ({
+  sendTrialEndingEmail: sendTrialEndingEmailMock,
+}));
+
 import { getStripe } from "@/lib/billing/stripe";
 import { Prisma } from "@prisma/client";
 
@@ -215,5 +221,266 @@ describe("POST /api/webhooks/stripe — customer.subscription.deleted", () => {
 
     expect(replayBody).toEqual({ received: true, duplicate: true });
     expect(captureServerEventMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+function mockStripeCheckoutTrialing() {
+  const event = {
+    id: "evt_trial_1",
+    type: "checkout.session.completed",
+    data: { object: fakeSession([]) },
+  };
+
+  vi.mocked(getStripe).mockReturnValue({
+    webhooks: { constructEvent: vi.fn(() => event) },
+    subscriptions: {
+      retrieve: vi.fn(async () => ({
+        ...fakeSubscription(),
+        status: "trialing",
+        trial_end: 1_700_600_000,
+      })),
+    },
+  } as unknown as ReturnType<typeof getStripe>);
+}
+
+describe("POST /api/webhooks/stripe — essai gratuit (checkout.session.completed, trialing)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    txUserFindUnique.mockResolvedValue({ trialUsedAt: null });
+  });
+
+  it("accorde le plan payant dès le début de l'essai et pose trialUsedAt/stripeTrialEnd", async () => {
+    mockStripeCheckoutTrialing();
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "user-1" },
+        data: expect.objectContaining({
+          plan: "SOLO",
+          trialUsedAt: expect.any(Date),
+          stripeTrialEnd: new Date(1_700_600_000 * 1000),
+        }),
+      }),
+    );
+    expect(captureServerEventMock).toHaveBeenCalledWith("user-1", "subscription_activated", {
+      plan: "SOLO",
+    });
+    expect(captureServerEventMock).toHaveBeenCalledWith("user-1", "trial_started", {
+      plan: "SOLO",
+    });
+  });
+
+  it("ne repose pas trialUsedAt s'il existait déjà", async () => {
+    const existing = new Date("2026-01-01T00:00:00Z");
+    txUserFindUnique.mockResolvedValue({ trialUsedAt: existing });
+    mockStripeCheckoutTrialing();
+
+    await POST(fakeRequest());
+
+    const data = txUserUpdate.mock.calls[0][0].data;
+    expect(data.trialUsedAt).toEqual(existing);
+  });
+});
+
+function mockStripeSubscriptionUpdated(status: string) {
+  const event = {
+    id: `evt_updated_${status}`,
+    type: "customer.subscription.updated",
+    data: {
+      object: {
+        id: "sub_1",
+        customer: "cus_1",
+        status,
+        items: { data: [{ price: { id: "price_solo" }, current_period_end: 1_700_000_000 }] },
+        trial_end: status === "trialing" ? 1_700_600_000 : null,
+      },
+    },
+  };
+
+  vi.mocked(getStripe).mockReturnValue({
+    webhooks: { constructEvent: vi.fn(() => event) },
+  } as unknown as ReturnType<typeof getStripe>);
+}
+
+describe("POST /api/webhooks/stripe — customer.subscription.updated", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    txUserFindUnique.mockResolvedValue({ id: "user-1" });
+  });
+
+  it("traite trialing comme un plan actif", async () => {
+    mockStripeSubscriptionUpdated("trialing");
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ plan: "SOLO", stripeTrialEnd: new Date(1_700_600_000 * 1000) }),
+      }),
+    );
+  });
+
+  it.each(["past_due", "canceled", "incomplete_expired"])(
+    "repasse au plan FREE quand l'essai se termine sans paiement (%s)",
+    async (status) => {
+      mockStripeSubscriptionUpdated(status);
+
+      const res = await POST(fakeRequest());
+
+      expect(res.status).toBe(200);
+      expect(txUserUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ plan: "FREE", stripeTrialEnd: null }),
+        }),
+      );
+    },
+  );
+});
+
+function mockStripeTrialWillEnd() {
+  const event = {
+    id: "evt_trial_will_end_1",
+    type: "customer.subscription.trial_will_end",
+    data: {
+      object: {
+        id: "sub_1",
+        customer: "cus_1",
+        trial_end: 1_700_600_000,
+        items: {
+          data: [{ price: { id: "price_solo", unit_amount: 4900, currency: "eur" } }],
+        },
+      },
+    },
+  };
+
+  vi.mocked(getStripe).mockReturnValue({
+    webhooks: { constructEvent: vi.fn(() => event) },
+    billingPortal: {
+      sessions: { create: vi.fn(async () => ({ url: "https://billing.stripe.com/session" })) },
+    },
+  } as unknown as ReturnType<typeof getStripe>);
+}
+
+describe("POST /api/webhooks/stripe — customer.subscription.trial_will_end", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("envoie un e-mail avec la date, le montant et le lien du portail", async () => {
+    mockStripeTrialWillEnd();
+    txUserFindUnique.mockResolvedValueOnce({
+      id: "user-1",
+      email: "agence@example.com",
+      name: "Agence Test",
+    });
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendTrialEndingEmailMock).toHaveBeenCalledWith({
+      to: "agence@example.com",
+      recipientName: "Agence Test",
+      trialEndDate: new Date(1_700_600_000 * 1000),
+      amountCents: 4900,
+      currency: "eur",
+      portalUrl: "https://billing.stripe.com/session",
+    });
+  });
+
+  it("n'envoie pas deux fois le même e-mail quand l'événement est rejoué", async () => {
+    mockStripeTrialWillEnd();
+    txUserFindUnique.mockResolvedValue({
+      id: "user-1",
+      email: "agence@example.com",
+      name: "Agence Test",
+    });
+
+    await POST(fakeRequest());
+    expect(sendTrialEndingEmailMock).toHaveBeenCalledTimes(1);
+
+    txProcessedWebhookCreate.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "5.22.0",
+      }),
+    );
+    const replay = await POST(fakeRequest());
+    const replayBody = await replay.json();
+
+    expect(replayBody).toEqual({ received: true, duplicate: true });
+    expect(sendTrialEndingEmailMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+function mockStripeInvoicePaid(billingReason: string) {
+  const event = {
+    id: `evt_invoice_paid_${billingReason}`,
+    type: "invoice.paid",
+    data: {
+      object: {
+        id: "in_1",
+        customer: "cus_1",
+        billing_reason: billingReason,
+      },
+    },
+  };
+
+  vi.mocked(getStripe).mockReturnValue({
+    webhooks: { constructEvent: vi.fn(() => event) },
+  } as unknown as ReturnType<typeof getStripe>);
+}
+
+describe("POST /api/webhooks/stripe — invoice.paid (trial_converted)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("émet trial_converted et efface stripeTrialEnd pour la facture de sortie d'essai", async () => {
+    mockStripeInvoicePaid("subscription_cycle");
+    txUserFindUnique.mockResolvedValueOnce({
+      id: "user-1",
+      plan: "SOLO",
+      stripeTrialEnd: new Date("2026-02-01T00:00:00Z"),
+    });
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { stripeTrialEnd: null },
+    });
+    expect(captureServerEventMock).toHaveBeenCalledWith("user-1", "trial_converted", {
+      plan: "SOLO",
+    });
+  });
+
+  it("n'émet rien pour un renouvellement déjà comptabilisé (stripeTrialEnd déjà à null)", async () => {
+    mockStripeInvoicePaid("subscription_cycle");
+    txUserFindUnique.mockResolvedValueOnce({
+      id: "user-1",
+      plan: "SOLO",
+      stripeTrialEnd: null,
+    });
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).not.toHaveBeenCalled();
+    expect(captureServerEventMock).not.toHaveBeenCalled();
+  });
+
+  it("n'émet rien pour une facture qui n'est pas un renouvellement de cycle", async () => {
+    mockStripeInvoicePaid("subscription_create");
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).not.toHaveBeenCalled();
+    expect(captureServerEventMock).not.toHaveBeenCalled();
   });
 });

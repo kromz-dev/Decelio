@@ -224,5 +224,91 @@ export async function sendMonthlyReportReadyEmail({
   }
 }
 
+export interface SendTrialEndingEmailOptions {
+  to: string;
+  recipientName?: string | null;
+  /** Date du premier prélèvement, soit la fin de l'essai. */
+  trialEndDate: Date;
+  /** Montant du prélèvement, en centimes, dans la devise Stripe de l'abonnement. */
+  amountCents: number;
+  currency: string;
+  portalUrl: string;
+}
+
+/**
+ * T-essai-gratuit-14-jours : e-mail envoyé 3 jours avant la fin de l'essai
+ * gratuit (`customer.subscription.trial_will_end`). Donne la date et le
+ * montant du premier prélèvement ainsi que le lien vers le portail client
+ * pour résilier avant que la carte ne soit débitée.
+ */
+export async function sendTrialEndingEmail({
+  to,
+  recipientName,
+  trialEndDate,
+  amountCents,
+  currency,
+  portalUrl,
+}: SendTrialEndingEmailOptions) {
+  const greeting = recipientName ? `Bonjour ${escapeHtml(recipientName)},` : "Bonjour,";
+
+  const dateLabel = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(trialEndDate);
+
+  const amountLabel = new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(amountCents / 100);
+
+  const safePortalUrl = escapeHtml(portalUrl);
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a; line-height: 1.5;">
+      <p>${greeting}</p>
+      <p>Votre essai gratuit Decelio se termine le <strong>${dateLabel}</strong>.</p>
+      <p>Si vous ne résiliez pas avant cette date, ${amountLabel} seront prélevés automatiquement pour poursuivre votre abonnement.</p>
+      <p style="margin: 24px 0;"><a href="${safePortalUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 500;">Gérer mon abonnement</a></p>
+      <p style="font-size: 13px; color: #64748b;">Vous pouvez résilier à tout moment depuis ce lien, avant le prélèvement.</p>
+      <br />
+      <p>À bientôt,<br/>L'équipe Decelio</p>
+    </div>
+  `;
+
+  const text = [
+    greeting,
+    "",
+    `Votre essai gratuit Decelio se termine le ${dateLabel}.`,
+    `Si vous ne résiliez pas avant cette date, ${amountLabel} seront prélevés automatiquement pour poursuivre votre abonnement.`,
+    "",
+    `Gérer mon abonnement : ${portalUrl}`,
+    "",
+    "À bientôt,",
+    "L'équipe Decelio",
+  ].join("\n");
+
+  try {
+    const response = await getResend().emails.send({
+      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
+      to,
+      subject: "Votre essai Decelio se termine dans 3 jours",
+      html,
+      text,
+    });
+
+    if (response.error) {
+      console.error("Failed to send trial ending email:", response.error);
+      return { success: false, error: response.error };
+    }
+
+    return { success: true, id: response.data?.id };
+  } catch (error) {
+    console.error("Failed to send trial ending email:", error);
+    return { success: false, error };
+  }
+}
+
 export const sendReportReadyEmail = sendMonthlyReportReadyEmail;
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { getStripe } from "./stripe";
-import { isPurchasablePlan, priceIdForPlan } from "./plans";
+import { isPurchasablePlan, priceIdForPlan, TRIAL_DAYS } from "./plans";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { captureServerEvent } from "@/lib/posthog-server";
@@ -54,6 +54,12 @@ export async function createCheckoutSession(plan: string, couponCode?: string) {
     throw new Error("User not found");
   }
 
+  // Un seul essai gratuit par compte : un abonnement ou un essai déjà eu
+  // (marqueur posé au premier abonnement, jamais effacé, même après
+  // résiliation) exclut tout nouvel essai. Le paiement démarre alors
+  // immédiatement, comme avant l'essai gratuit.
+  const eligibleForTrial = !user.trialUsedAt;
+
   // Create checkout session
   const stripeSession = await stripe.checkout.sessions.create({
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
@@ -70,7 +76,15 @@ export async function createCheckoutSession(plan: string, couponCode?: string) {
         quantity: 1,
       },
     ],
+    // La carte est toujours demandée dès le tunnel, essai ou pas : sans
+    // elle, Stripe ne prélève jamais à la fin de l'essai. C'est le
+    // comportement par défaut de Stripe, posé explicitement ici pour ne
+    // jamais dépendre d'une valeur par défaut qui pourrait changer.
+    payment_method_collection: "always",
     ...(coupon ? { discounts: [{ coupon }] } : {}),
+    ...(eligibleForTrial
+      ? { subscription_data: { trial_period_days: TRIAL_DAYS } }
+      : {}),
     client_reference_id: user.id,
   });
 
