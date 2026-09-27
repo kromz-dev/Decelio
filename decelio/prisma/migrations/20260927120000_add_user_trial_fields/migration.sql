@@ -7,3 +7,8 @@
 -- conversion (sert de marqueur anti-double-comptage pour trial_converted).
 ALTER TABLE "User" ADD COLUMN     "trialUsedAt" TIMESTAMP(3),
 ADD COLUMN     "stripeTrialEnd" TIMESTAMP(3);
+
+-- Un seul essai par compte : les abonnés existants avant la mise en place de la
+-- fonctionnalité doivent avoir trialUsedAt marqué comme utilisé, sinon ils
+-- pourraient se voir offrir un essai en se réabonnant après résiliation.
+UPDATE "User" SET "trialUsedAt" = NOW() WHERE "stripeSubscriptionId" IS NOT NULL OR "stripeCustomerId" IS NOT NULL;

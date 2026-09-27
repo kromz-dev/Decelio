@@ -140,4 +140,20 @@ describe("createCheckoutSession", () => {
     // La carte reste toujours demandée, essai ou pas.
     expect(call.payment_method_collection).toBe("always");
   });
+
+  it("n'accorde aucun essai si l'utilisateur a un stripeSubscriptionId même sans trialUsedAt", async () => {
+    vi.mocked(db.user.findUnique).mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      stripeCustomerId: "cus_123",
+      stripeSubscriptionId: "sub_456",
+      trialUsedAt: null,
+    } as unknown as MaybeUser);
+
+    await createCheckoutSession("SOLO");
+
+    const call = createStripeSessionMock.mock.calls[0][0];
+    expect(call.subscription_data).toBeUndefined();
+    expect(call.payment_method_collection).toBe("always");
+  });
 });

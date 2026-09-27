@@ -53,6 +53,40 @@ function fakeRequest() {
   });
 }
 
+// Test pour trialEndOf : vérifier qu'il retourne null quand status !== "trialing"
+describe("trialEndOf helper", () => {
+  it("retourne null quand status n'est pas 'trialing' même si trial_end est défini", async () => {
+    const event = {
+      id: "evt_test_trial_end",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_1",
+          customer: "cus_1",
+          status: "active",
+          trial_end: 1_700_600_000,
+          items: { data: [{ price: { id: "price_solo" }, current_period_end: 1_700_000_000 }] },
+        },
+      },
+    };
+
+    vi.mocked(getStripe).mockReturnValue({
+      webhooks: { constructEvent: vi.fn(() => event) },
+    } as unknown as ReturnType<typeof getStripe>);
+    txUserFindUnique.mockResolvedValue({ id: "user-1", plan: "SOLO" });
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    // stripeTrialEnd doit être null car la subscription n'est pas en "trialing"
+    expect(txUserUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ stripeTrialEnd: null }),
+      }),
+    );
+  });
+});
+
 function fakeSubscription() {
   return {
     id: "sub_1",
@@ -308,7 +342,7 @@ function mockStripeSubscriptionUpdated(status: string) {
 describe("POST /api/webhooks/stripe — customer.subscription.updated", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    txUserFindUnique.mockResolvedValue({ id: "user-1" });
+    txUserFindUnique.mockResolvedValue({ id: "user-1", plan: "SOLO" });
   });
 
   it("traite trialing comme un plan actif", async () => {
@@ -322,6 +356,69 @@ describe("POST /api/webhooks/stripe — customer.subscription.updated", () => {
         data: expect.objectContaining({ plan: "SOLO", stripeTrialEnd: new Date(1_700_600_000 * 1000) }),
       }),
     );
+  });
+
+  it("émet trial_converted lors de la transition trialing → active", async () => {
+    const event = {
+      id: "evt_trialing_to_active",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_1",
+          customer: "cus_1",
+          status: "active",
+          items: { data: [{ price: { id: "price_solo" }, current_period_end: 1_700_000_000 }] },
+          trial_end: null,
+        },
+        previous_attributes: {
+          status: "trialing",
+        },
+      },
+    };
+
+    vi.mocked(getStripe).mockReturnValue({
+      webhooks: { constructEvent: vi.fn(() => event) },
+    } as unknown as ReturnType<typeof getStripe>);
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ plan: "SOLO", stripeTrialEnd: null }),
+      }),
+    );
+    expect(captureServerEventMock).toHaveBeenCalledWith("user-1", "trial_converted", {
+      plan: "SOLO",
+    });
+  });
+
+  it("n'émet pas trial_converted lors d'une transition active → active", async () => {
+    const event = {
+      id: "evt_active_to_active",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_1",
+          customer: "cus_1",
+          status: "active",
+          items: { data: [{ price: { id: "price_solo" }, current_period_end: 1_700_000_000 }] },
+          trial_end: null,
+        },
+        previous_attributes: {
+          status: "active",
+        },
+      },
+    };
+
+    vi.mocked(getStripe).mockReturnValue({
+      webhooks: { constructEvent: vi.fn(() => event) },
+    } as unknown as ReturnType<typeof getStripe>);
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(captureServerEventMock).not.toHaveBeenCalledWith(expect.anything(), "trial_converted", expect.anything());
   });
 
   it.each(["past_due", "canceled", "incomplete_expired"])(
@@ -341,7 +438,7 @@ describe("POST /api/webhooks/stripe — customer.subscription.updated", () => {
   );
 });
 
-function mockStripeTrialWillEnd() {
+function mockStripeTrialWillEnd(cancelledOrCanceledAtPeriodEnd: boolean = false) {
   const event = {
     id: "evt_trial_will_end_1",
     type: "customer.subscription.trial_will_end",
@@ -349,9 +446,12 @@ function mockStripeTrialWillEnd() {
       object: {
         id: "sub_1",
         customer: "cus_1",
+        status: "trialing",
         trial_end: 1_700_600_000,
+        cancel_at_period_end: cancelledOrCanceledAtPeriodEnd,
+        cancel_at: null,
         items: {
-          data: [{ price: { id: "price_solo", unit_amount: 4900, currency: "eur" } }],
+          data: [{ price: { id: "price_solo" } }],
         },
       },
     },
@@ -362,6 +462,12 @@ function mockStripeTrialWillEnd() {
     billingPortal: {
       sessions: { create: vi.fn(async () => ({ url: "https://billing.stripe.com/session" })) },
     },
+    invoices: {
+      createPreview: vi.fn(async () => ({
+        amount_due: 4900,
+        currency: "eur",
+      })),
+    },
   } as unknown as ReturnType<typeof getStripe>);
 }
 
@@ -370,7 +476,7 @@ describe("POST /api/webhooks/stripe — customer.subscription.trial_will_end", (
     vi.clearAllMocks();
   });
 
-  it("envoie un e-mail avec la date, le montant et le lien du portail", async () => {
+  it("envoie un e-mail avec la date, le montant (via aperçu de facture) et le lien du portail", async () => {
     mockStripeTrialWillEnd();
     txUserFindUnique.mockResolvedValueOnce({
       id: "user-1",
@@ -381,6 +487,9 @@ describe("POST /api/webhooks/stripe — customer.subscription.trial_will_end", (
     const res = await POST(fakeRequest());
 
     expect(res.status).toBe(200);
+    expect(vi.mocked(getStripe).mock.results[0].value.invoices?.createPreview).toHaveBeenCalledWith({
+      subscription: "sub_1",
+    });
     expect(sendTrialEndingEmailMock).toHaveBeenCalledWith({
       to: "agence@example.com",
       recipientName: "Agence Test",
@@ -389,6 +498,20 @@ describe("POST /api/webhooks/stripe — customer.subscription.trial_will_end", (
       currency: "eur",
       portalUrl: "https://billing.stripe.com/session",
     });
+  });
+
+  it("n'envoie pas d'e-mail si l'abonnement a été résilié (cancel_at_period_end === true)", async () => {
+    mockStripeTrialWillEnd(true);
+    txUserFindUnique.mockResolvedValueOnce({
+      id: "user-1",
+      email: "agence@example.com",
+      name: "Agence Test",
+    });
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendTrialEndingEmailMock).not.toHaveBeenCalled();
   });
 
   it("n'envoie pas deux fois le même e-mail quand l'événement est rejoué", async () => {
@@ -416,71 +539,3 @@ describe("POST /api/webhooks/stripe — customer.subscription.trial_will_end", (
   });
 });
 
-function mockStripeInvoicePaid(billingReason: string) {
-  const event = {
-    id: `evt_invoice_paid_${billingReason}`,
-    type: "invoice.paid",
-    data: {
-      object: {
-        id: "in_1",
-        customer: "cus_1",
-        billing_reason: billingReason,
-      },
-    },
-  };
-
-  vi.mocked(getStripe).mockReturnValue({
-    webhooks: { constructEvent: vi.fn(() => event) },
-  } as unknown as ReturnType<typeof getStripe>);
-}
-
-describe("POST /api/webhooks/stripe — invoice.paid (trial_converted)", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("émet trial_converted et efface stripeTrialEnd pour la facture de sortie d'essai", async () => {
-    mockStripeInvoicePaid("subscription_cycle");
-    txUserFindUnique.mockResolvedValueOnce({
-      id: "user-1",
-      plan: "SOLO",
-      stripeTrialEnd: new Date("2026-02-01T00:00:00Z"),
-    });
-
-    const res = await POST(fakeRequest());
-
-    expect(res.status).toBe(200);
-    expect(txUserUpdate).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { stripeTrialEnd: null },
-    });
-    expect(captureServerEventMock).toHaveBeenCalledWith("user-1", "trial_converted", {
-      plan: "SOLO",
-    });
-  });
-
-  it("n'émet rien pour un renouvellement déjà comptabilisé (stripeTrialEnd déjà à null)", async () => {
-    mockStripeInvoicePaid("subscription_cycle");
-    txUserFindUnique.mockResolvedValueOnce({
-      id: "user-1",
-      plan: "SOLO",
-      stripeTrialEnd: null,
-    });
-
-    const res = await POST(fakeRequest());
-
-    expect(res.status).toBe(200);
-    expect(txUserUpdate).not.toHaveBeenCalled();
-    expect(captureServerEventMock).not.toHaveBeenCalled();
-  });
-
-  it("n'émet rien pour une facture qui n'est pas un renouvellement de cycle", async () => {
-    mockStripeInvoicePaid("subscription_create");
-
-    const res = await POST(fakeRequest());
-
-    expect(res.status).toBe(200);
-    expect(txUserUpdate).not.toHaveBeenCalled();
-    expect(captureServerEventMock).not.toHaveBeenCalled();
-  });
-});

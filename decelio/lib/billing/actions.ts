@@ -58,7 +58,7 @@ export async function createCheckoutSession(plan: string, couponCode?: string) {
   // (marqueur posé au premier abonnement, jamais effacé, même après
   // résiliation) exclut tout nouvel essai. Le paiement démarre alors
   // immédiatement, comme avant l'essai gratuit.
-  const eligibleForTrial = !user.trialUsedAt;
+  const eligibleForTrial = !user.trialUsedAt && !user.stripeSubscriptionId;
 
   // Create checkout session
   const stripeSession = await stripe.checkout.sessions.create({

@@ -30,6 +30,9 @@ function planOf(subscription: Stripe.Subscription) {
 
 /** Fin de l'essai en cours, ou `null` si l'abonnement n'est pas en essai. */
 function trialEndOf(subscription: Stripe.Subscription): Date | null {
+  // Stripe conserve trial_end même après la fin de l'essai (valeur historique).
+  // On ne retourne la date que si l'abonnement est actuellement en essai.
+  if (subscription.status !== "trialing") return null;
   return typeof subscription.trial_end === "number"
     ? new Date(subscription.trial_end * 1000)
     : null;
@@ -93,19 +96,34 @@ export async function POST(req: Request) {
       }
     }
 
-    // Lien du portail client à glisser dans l'e-mail de fin d'essai. Créé
-    // avant la transaction, comme la relecture de l'abonnement ci-dessus :
-    // un appel Stripe supplémentaire sur un rejeu ne coûte rien, l'écriture
-    // en base (et donc l'envoi de l'e-mail) reste protégée par
+    // Lien du portail client et aperçu de facture à glisser dans l'e-mail de fin
+    // d'essai. Créés avant la transaction, comme la relecture de l'abonnement
+    // ci-dessus : les appels Stripe supplémentaires sur un rejeu ne coûtent rien,
+    // l'écriture en base (et donc l'envoi de l'e-mail) reste protégée par
     // `ProcessedWebhook`.
     let trialWillEndPortalUrl: string | null = null;
+    let invoicePreview: Stripe.Invoice | null = null;
     if (event.type === "customer.subscription.trial_will_end") {
       const subscription = event.data.object as Stripe.Subscription;
-      const portalSession = await stripe.billingPortal.sessions.create({
-        customer: subscription.customer as string,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-      });
-      trialWillEndPortalUrl = portalSession.url;
+      // Vérifier que l'abonnement est bien en essai, non résilié, avant de créer
+      // la session du portail et de chercher un montant.
+      if (
+        subscription.status === "trialing" &&
+        subscription.cancel_at_period_end !== true &&
+        !subscription.cancel_at
+      ) {
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: subscription.customer as string,
+          return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+        });
+        trialWillEndPortalUrl = portalSession.url;
+
+        // Créer un aperçu de facture pour lire le montant réel (prenant en compte
+        // les coupons comme FONDATEUR50).
+        invoicePreview = await stripe.invoices.createPreview({
+          subscription: subscription.id,
+        });
+      }
     }
 
     // Le marqueur d'idempotence et l'écriture métier sont dans la même
@@ -182,7 +200,7 @@ export async function POST(req: Request) {
           const subscription = event.data.object;
           const user = await tx.user.findUnique({
             where: { stripeCustomerId: subscription.customer as string },
-            select: { id: true },
+            select: { id: true, plan: true },
           });
           if (!user) break;
 
@@ -207,6 +225,15 @@ export async function POST(req: Request) {
               stripeTrialEnd: trialEndOf(subscription),
             },
           });
+
+          // Détection de conversion d'essai : transition trialing → active.
+          // On lit previous_attributes pour vérifier l'état antérieur.
+          const previousStatus = event.data.previous_attributes?.status;
+          if (previousStatus === "trialing" && subscription.status === "active") {
+            pendingFunnelEvents.push(() =>
+              captureServerEvent(user.id, "trial_converted", { plan: plan || user.plan }),
+            );
+          }
           break;
         }
 
@@ -249,9 +276,8 @@ export async function POST(req: Request) {
           if (!user) break;
 
           const trialEnd = trialEndOf(subscription);
-          const price = subscription.items?.data?.[0]?.price;
-          const amountCents = price?.unit_amount;
-          const currency = price?.currency;
+          const amountCents = invoicePreview?.amount_due;
+          const currency = invoicePreview?.currency;
 
           if (
             !trialEnd ||
@@ -259,9 +285,9 @@ export async function POST(req: Request) {
             !currency ||
             !trialWillEndPortalUrl
           ) {
-            // Un abonnement sans prix ou sans date de fin d'essai lisible ne
-            // doit jamais produire un e-mail avec un montant ou une date
-            // inventés (docs/08-constitution.md, honnêteté de la mesure).
+            // Un abonnement sans aperçu de facture ou sans date de fin d'essai
+            // lisible ne doit jamais produire un e-mail avec un montant ou une
+            // date inventés (docs/08-constitution.md, honnêteté de la mesure).
             console.error(
               `Webhook trial_will_end incomplet pour l'abonnement ${subscription.id} : e-mail non envoyé.`,
             );
@@ -281,30 +307,6 @@ export async function POST(req: Request) {
           break;
         }
 
-        case "invoice.paid": {
-          const invoice = event.data.object;
-          if (invoice.billing_reason !== "subscription_cycle") break;
-
-          const user = await tx.user.findUnique({
-            where: { stripeCustomerId: invoice.customer as string },
-            select: { id: true, plan: true, stripeTrialEnd: true },
-          });
-          // `stripeTrialEnd` non nul signifie que ce compte sortait d'un
-          // essai : c'est ce qui distingue la facture de conversion des
-          // factures de renouvellement suivantes (elles aussi
-          // `subscription_cycle`, mais avec `stripeTrialEnd` déjà remis à
-          // `null` par cette même écriture la première fois).
-          if (!user || !user.stripeTrialEnd) break;
-
-          await tx.user.update({
-            where: { id: user.id },
-            data: { stripeTrialEnd: null },
-          });
-          pendingFunnelEvents.push(() =>
-            captureServerEvent(user.id, "trial_converted", { plan: user.plan }),
-          );
-          break;
-        }
       }
     });
 
