@@ -55,11 +55,11 @@ export default async function ConfidentialitePage() {
                 </li>
                 <li>
                   Mesure d&apos;audience : PostHog (hébergé dans l&apos;Union européenne), sans cookie, sans
-                  enregistrement de session, avec un identifiant interne et jamais l&apos;e-mail.{" "}
+                  enregistrement de session, avec un identifiant interne et jamais l&apos;e-mail. Les données de mesure
+                  transitent par notre propre domaine.{" "}
                   <ToFill>
-                    à confirmer après la correction PostHog (branche fix/posthog-proxy-domaine, pas encore
-                    fusionnée) : les données transitent par notre propre domaine, votre adresse IP n&apos;est pas
-                    transmise à PostHog
+                    à confirmer par le fondateur après vérification dans le navigateur qu&apos;aucune requête ne part
+                    vers posthog.com : « votre adresse IP n&apos;est pas transmise à PostHog »
                   </ToFill>
                 </li>
                 <li>
@@ -85,8 +85,8 @@ export default async function ConfidentialitePage() {
               <ul>
                 <li>Stripe Payments Europe, Limited (Irlande) : paiement et facturation.</li>
                 <li>
-                  Resend, exploité par Plus Five Five, Inc. (États-Unis) : envoi des e-mails transactionnels et
-                  d&apos;alerte.
+                  Resend, exploité par Plus Five Five, Inc. (États-Unis ; envoi depuis la région Irlande) : envoi des
+                  e-mails transactionnels et d&apos;alerte.
                 </li>
                 <li>PostHog (hébergement PostHog Cloud EU, Francfort, Allemagne) : mesure d&apos;audience.</li>
                 <li>Neon, LLC, filiale de Databricks, Inc. (États-Unis ; base hébergée à Francfort, Allemagne) : base de données.</li>
