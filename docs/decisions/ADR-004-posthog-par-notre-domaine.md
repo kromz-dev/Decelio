@@ -2,7 +2,7 @@
 
 ## Statut
 
-Accepté. Correction en cours sur la branche `fix/posthog-proxy-domaine`, pas encore fusionnée au 27/09/2026. Complète l'ADR-001.
+Accepté. Mis en œuvre par la demande de fusion #134, fusionnée le 27/09/2026 : relais `app/ingest/[...path]/route.ts`, qui retire les en-têtes d'IP et les cookies. Complète l'ADR-001.
 
 ## Date
 
@@ -23,6 +23,6 @@ Constat de l'agent Design, confirmé par l'Ingénierie en navigateur réel : sur
 
 ## Conséquences
 
-- La politique de confidentialité peut écrire « les données transitent par notre propre domaine ; votre adresse IP n'est pas transmise à PostHog », **une fois la PR fusionnée et vérifiée**.
+- La politique de confidentialité peut écrire « les données transitent par notre propre domaine ; votre adresse IP n'est pas transmise à PostHog », **une fois la vérification dans un vrai navigateur faite** (la demande de fusion est fusionnée).
 - PostHog reste un sous-traitant (Union européenne), à citer dans la politique de confidentialité.
 - Les événements serveur (`captureServerEvent`, `captureServerException`) ne passent pas par le navigateur et ne sont pas concernés.

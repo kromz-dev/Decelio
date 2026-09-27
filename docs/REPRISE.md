@@ -17,7 +17,7 @@
 | Branche | Contenu | État |
 |---|---|---|
 | Scanner #128 à #131 | Faux « COQUILLE VIDE », 429 provoqués par le scanner, rebinding DNS (IP épinglée, dépendance `undici`), 413 sur `/api/pdf/diagnostic` | **Fusionnées le 27/09**, 633 tests |
-| `fix/posthog-proxy-domaine` | ADR-004 : route `/ingest/[...path]`, qui retire IP, cookies et `forwarded`, limite de 256 Kio, hôtes fixes. CSP sans hôte PostHog. `skipTrailingSlashRedirect: true`. | Demande de fusion ouverte avec cette mise à jour. Après fusion : vérifier dans un vrai navigateur qu'aucune requête ne part vers `*.posthog.com`. |
+| `fix/posthog-proxy-domaine` | ADR-004 : route `/ingest/[...path]`, qui retire IP, cookies et `forwarded`, limite de 256 Kio, hôtes fixes. CSP sans hôte PostHog. `skipTrailingSlashRedirect: true`. | **Fusionnée le 27/09 (#134)**, 637 tests. Reste : vérifier dans un vrai navigateur qu'aucune requête ne part vers `*.posthog.com`. |
 | `feat/essai-gratuit-14-jours` | ADR-002 : essai avec carte dès le départ | Un commit poussé, à relire : e-mail `trial_will_end`, événements PostHog, prop `trialEndsAt` pour le Design |
 | `chore/avant-lancement` | `AUTH_TRUST_HOST` dans `.env.example`, `signup_completed` après une connexion Google, retrait du texte « visibilité IA », suppression du client Stripe à la purge. **Commit `wip`, non vérifié.** | À terminer et vérifier |
 | `docs/etat-2026-09-27` | Mise à jour de `PROGRESS.md` et des tâches. **Commit `wip`, incomplet.** | À terminer. Ce fichier-ci la remplace en partie. |
@@ -32,7 +32,7 @@ Branches déjà fusionnées, à supprimer : 17 branches de ce lot. La session cl
 
 ### Code (Ingénierie), dans l'ordre
 1. **Prochaine tâche : essai gratuit** (`feat/essai-gratuit-14-jours`), puis `chore/avant-lancement`, puis les docs, puis Dependabot. Tâche à part, plus petite : le même biais reste dans l'ancienne route : `analyzeResponse` / `EMPTY_JS_REQUIRED` (`lib/scanner/analyzer.ts`, utilisé par `/api/audit`). Tâche à part.
-2. PostHog : vérification dans un navigateur après la fusion.
+2. PostHog : vérification dans un vrai navigateur (onglet Réseau, aucune requête vers `posthog.com`).
 3. Essai gratuit de 14 jours, puis `chore/avant-lancement`.
 4. Mettre à jour `PROGRESS.md` et `tasks/mvp-tasks.md` depuis ce fichier.
 5. Dependabot.
