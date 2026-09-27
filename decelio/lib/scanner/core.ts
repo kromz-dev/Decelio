@@ -209,6 +209,12 @@ export function summarizeForBot(report: ScanReport, bot: BotAgent): ScanCoreResu
   if (simpleStatus === "OK" && (jsDependency.verdict === "js_dependent" || jsDependency.verdict === "likely_js_dependent")) {
     simpleStatus = "COQUILLE VIDE";
     reasons.push(`${jsDependency.verdict}: ${jsDependency.rawWordCount} words in raw HTML`);
+  } else if (simpleStatus === "OK" && jsDependency.verdict === "low_text") {
+    // Texte court sans aucun indice de rendu côté client : ni preuve de
+    // dépendance JS, ni certitude que le peu de texte est délibéré. « À
+    // vérifier », jamais « COQUILLE VIDE » (constitution, principe I).
+    simpleStatus = "À VÉRIFIER";
+    reasons.push(`low_text: ${jsDependency.rawWordCount} words in raw HTML, no JS-rendering signal`);
   }
   if (indexing.perBot.find((i) => i.bot === bot)?.noindex) reasons.push("noindex");
 
