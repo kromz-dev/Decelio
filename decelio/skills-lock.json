@@ -73,6 +73,12 @@
       "skillPath": "skills/frontend-ui-engineering/SKILL.md",
       "computedHash": "cb4e981ecb5f701b451fc4e937a38049b49fd4523f213e06cffbd00b007060dc"
     },
+    "fullstack-guardian": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/fullstack-guardian/SKILL.md",
+      "computedHash": "22a1c39c86be63fafce6e2aaa5b667a588de346c359dbb67231e75d5c0fe990c"
+    },
     "git-workflow-and-versioning": {
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
@@ -97,6 +103,18 @@
       "skillPath": "skills/interview-me/SKILL.md",
       "computedHash": "efded91ac7f7626239b338ce8622afeb557151b86532b632f3c9eb5b2ff9048f"
     },
+    "next-cache-components-adoption": {
+      "source": "vercel/next.js",
+      "sourceType": "github",
+      "skillPath": "skills/next-cache-components-adoption/SKILL.md",
+      "computedHash": "72e2f33433ab3bb9dcd087ce6e47954dec2a5f779f8b82df8d02d2409d72f6b4"
+    },
+    "next-dev-loop": {
+      "source": "vercel/next.js",
+      "sourceType": "github",
+      "skillPath": "skills/next-dev-loop/SKILL.md",
+      "computedHash": "ff2ba55895cd8d8303441a07b0d56168dd1669cafe290a2dc4a42724457fb86c"
+    },
     "observability-and-instrumentation": {
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
@@ -114,6 +132,18 @@
       "sourceType": "github",
       "skillPath": "skills/planning-and-task-breakdown/SKILL.md",
       "computedHash": "0dc14a1402cdabd376f2d81d2225fcb4a18ee63d58b945ff83affeb024285b8f"
+    },
+    "posthog-feature-flags-nextjs": {
+      "source": "PostHog/skills",
+      "sourceType": "github",
+      "skillPath": "skills/posthog/feature-flags/skills/nextjs/SKILL.md",
+      "computedHash": "f1bb9cc0e1ad5691389378e5e194cb395a806087009252470892d97610b99692"
+    },
+    "posthog-integration-nextjs-app-router": {
+      "source": "PostHog/skills",
+      "sourceType": "github",
+      "skillPath": "skills/posthog/integration/skills/nextjs-app-router/SKILL.md",
+      "computedHash": "d3d8d6b0335d49bb026b0169f205b63672641c48a49ab23cc928b635762031a0"
     },
     "security-and-hardening": {
       "source": "addyosmani/agent-skills",
@@ -144,6 +174,12 @@
       "sourceType": "github",
       "skillPath": "skills/test-driven-development/SKILL.md",
       "computedHash": "efb654aa37612ab1e7470e547b06a322c5e1837b6879525e32aa432d1281692b"
+    },
+    "upgrade-stripe": {
+      "source": "stripe/agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/upgrade-stripe/SKILL.md",
+      "computedHash": "98f569fb32723668c0107fdfdccaf0a63db8d01b87431d757349baf870e349c6"
     },
     "using-agent-skills": {
       "source": "addyosmani/agent-skills",
