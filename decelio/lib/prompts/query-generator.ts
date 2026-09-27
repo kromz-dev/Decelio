@@ -5,6 +5,7 @@
 
 import { groqPlainJson } from "../engines/groq";
 import type { EngineConnector } from "../engines/types";
+import { captureServerException } from "../posthog-server";
 import { z } from "zod";
 
 export type PromptFamily = "PROBLEM" | "SOLUTION" | "COMPARISON" | "DISCOVERY" | "BRAND";
@@ -58,7 +59,15 @@ export async function generateSmartPrompts(
     if (hasExpectedFamilies(parsed.prompts)) return parsed.prompts;
     throw new Error("Répartition de familles invalide");
   } catch (error) {
+    // Repli volontaire, mais rendu visible : le modele Groq code en dur
+    // n'existait plus, donc ce chemin etait pris a CHAQUE appel et les prompts
+    // "intelligents" n'ont jamais ete generes. Seule une ligne de console le
+    // disait. PostHog est le canal d'erreurs du projet (ADR-001).
     console.error("Erreur lors de la génération intelligente des prompts:", error);
+    await captureServerException(error, undefined, {
+      source: "query-generator.generateSmartPrompts",
+      degraded_to: "prompts-generiques",
+    });
     return [
       { text: `Comment résoudre le problème principal lié à ${domain} ?`, family: "PROBLEM" },
       { text: `Quels sont les défis rencontrés par les clients de ${domain} ?`, family: "PROBLEM" },
@@ -88,15 +97,27 @@ export async function detectBrandContext(
     entre 15 et 20 requêtes naturelles de clients potentiels.
   `;
   const schemaHint = `
-    Retourne STRICTEMENT:
+    Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, de la forme :
     {"industry":"string","competitors":[{"name":"string","domain":"string"}],"prompts":["string"]}
   `;
+  // Le mot « JSON » doit figurer littéralement dans le message : Groq refuse
+  // tout appel utilisant `response_format: json_object` dont les messages ne
+  // le contiennent pas ("'messages' must contain the word 'json' in some
+  // form"). Sans lui, cet appel echouait a 100 % et `detectBrandContext`
+  // rendait toujours son repli code en dur — verifie par appel reel.
+  // `groqPlainJson` l'insere automatiquement quand on lui passe un schema Zod,
+  // mais pas quand on lui passe un schema en chaine brute, comme ici.
 
   try {
     const rawData = await groqPlainJson(prompt, schemaHint);
     return GenerationSchema.parse(rawData);
   } catch (error) {
+    // Meme repli silencieux que ci-dessus, meme cause. Voir DEFAULT_GROQ_MODEL.
     console.error("Erreur détection marque:", error);
+    await captureServerException(error, undefined, {
+      source: "query-generator.detectBrandContext",
+      degraded_to: "contexte-par-defaut",
+    });
     return {
       industry: "Secteur inconnu",
       competitors: [],

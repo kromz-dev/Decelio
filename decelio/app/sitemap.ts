@@ -3,13 +3,13 @@ import { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: "https://decelio.app",
+      url: "https://decelio.fr",
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: "https://decelio.app/pricing",
+      url: "https://decelio.fr/pricing",
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,

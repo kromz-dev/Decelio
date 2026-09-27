@@ -19,7 +19,7 @@ describe("sendFounderOffer", () => {
     sendMock.mockResolvedValue({ data: { id: "email_123" }, error: null });
     process.env.RESEND_API_KEY = "re_test_key";
     process.env.STRIPE_FOUNDER_COUPON = "FOUNDER50";
-    process.env.NEXT_PUBLIC_APP_URL = "https://decelio.app";
+    process.env.NEXT_PUBLIC_APP_URL = "https://decelio.fr";
   });
 
   afterEach(() => {
