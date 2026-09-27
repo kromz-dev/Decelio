@@ -75,8 +75,8 @@ describe("Fan-Out Inngest Scans", () => {
     it("should fetch sites in batches and send events", async () => {
       vi.mocked(db.monitoredSite.count).mockResolvedValue(2);
       vi.mocked(db.monitoredSite.findMany).mockResolvedValue([
-        { id: "site-1" },
-        { id: "site-2" },
+        { id: "site-1", userId: "user-1", user: { plan: "SOLO" } },
+        { id: "site-2", userId: "user-1", user: { plan: "SOLO" } },
       ] as unknown as MonitoredSiteRows);
 
       const step: DailyScanStep = {
@@ -92,6 +92,50 @@ describe("Fan-Out Inngest Scans", () => {
           { name: "app/scan.site", data: { siteIds: ["site-1", "site-2"] } },
         ]
       );
+    });
+
+    it("ne demande à Prisma que les sites d'un compte payant et à jour", async () => {
+      vi.mocked(db.monitoredSite.findMany).mockResolvedValue([] as unknown as MonitoredSiteRows);
+
+      const step: DailyScanStep = {
+        run: vi.fn().mockImplementation(async (name, fn) => await fn()),
+        sendEvent: vi.fn(),
+      };
+
+      await invokeHandler<{ step: DailyScanStep }>(dailyScanJob, { step });
+
+      const call = vi.mocked(db.monitoredSite.findMany).mock.calls[0]?.[0];
+      expect(call?.where).toMatchObject({
+        user: { plan: { in: ["SOLO", "PRO", "SCALE"] } },
+      });
+    });
+
+    it("plafonne un compte rétrogradé à son quota actuel sans rien supprimer", async () => {
+      // Compte passé de PRO (30 sites) à SOLO (10 sites) : 12 sites en base.
+      const sites = Array.from({ length: 12 }, (_, i) => ({
+        id: `site-${i}`,
+        userId: "user-1",
+        user: { plan: "SOLO" },
+      }));
+      vi.mocked(db.monitoredSite.findMany).mockResolvedValue(
+        sites as unknown as MonitoredSiteRows,
+      );
+
+      const step: DailyScanStep = {
+        run: vi.fn().mockImplementation(async (name, fn) => await fn()),
+        sendEvent: vi.fn(),
+      };
+
+      const result = (await invokeHandler<{ step: DailyScanStep }>(dailyScanJob, {
+        step,
+      })) as { totalSites: number };
+
+      expect(result.totalSites).toBe(10);
+      const dispatched = vi.mocked(step.sendEvent).mock.calls[0]?.[1] as Array<{
+        data: { siteIds: string[] };
+      }>;
+      const dispatchedIds = dispatched.flatMap((batch) => batch.data.siteIds);
+      expect(dispatchedIds).toEqual(sites.slice(0, 10).map((s) => s.id));
     });
   });
 
