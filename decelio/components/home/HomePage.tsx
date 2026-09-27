@@ -90,11 +90,11 @@ const PLANS = [
 ] as const;
 
 /** Coche des listes de paliers. */
-function Check({ muted }: { muted?: boolean }) {
+function Check() {
   return (
     <svg
       aria-hidden="true"
-      className={muted ? "shrink-0 text-ink-3" : "shrink-0 text-ok"}
+      className="shrink-0 text-ok"
       xmlns="http://www.w3.org/2000/svg"
       width="20"
       height="20"
@@ -439,10 +439,10 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                       const absent = value === false;
                       const tone = plan.featured
                         ? absent
-                          ? "text-surface-2/50"
+                          ? "text-surface-2"
                           : "text-surface-2"
                         : absent
-                          ? "text-ink-3"
+                          ? "text-ink-2"
                           : "text-ink-2";
                       return (
                         <li key={feature} className="flex items-start gap-3">
@@ -577,6 +577,12 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 </tbody>
               </table>
             </div>
+            {/* Un prix concurrent non date devient faux avec le temps. */}
+            <p className="mt-4 text-sm text-ink-2">
+              Prix des suites SEO relevés sur leurs pages publiques en septembre 2026, pour leur
+              premier palier mensuel. Ils changent&nbsp;: vérifiez chez l’éditeur avant de
+              vous décider.
+            </p>
           </div>
         </section>
 
@@ -588,8 +594,13 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
             </div>
             
             <div className="space-y-4 mb-16">
-              {faqs.map((f) => (
-                <details key={f.q} className="group bg-paper rounded-2xl border border-line overflow-hidden">
+              {faqs.map((f, i) => (
+                <details
+                  key={f.q}
+                  /* La premiere reponse est ouverte : six barres fermees ne montrent rien a lire. */
+                  open={i === 0}
+                  className="group bg-paper rounded-2xl border border-line overflow-hidden"
+                >
                   <summary className="cursor-pointer px-6 py-4 font-bold text-ink flex items-center justify-between list-none">
                     {f.q}
                     <span className="text-ink-3 group-open:rotate-45 transition-transform">
@@ -603,7 +614,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-6 text-sm font-semibold text-ink-3">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-6 text-sm font-semibold text-ink-2">
               <span className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Paiement s&eacute;curis&eacute; Stripe</span>
               <span className="hidden sm:block text-line-strong">&bull;</span>
               <span className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg> H&eacute;berg&eacute; en Europe</span>
