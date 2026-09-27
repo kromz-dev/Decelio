@@ -516,12 +516,23 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               ))}
             </div>
 
-            <p className="mt-10 text-center text-sm text-ink-2">
-              Paiement par Stripe. Le diagnostic d&apos;une URL reste gratuit et sans compte&nbsp;:
-              {" "}
+            {/* Les quatre questions qu'une agence se pose devant trois prix.
+                Chaque reponse est verifiable dans le code de facturation :
+                abonnement Stripe mensuel, sans periode d'essai, carte requise,
+                et quota applique par PLAN_LIMITS. */}
+            <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-2">
+              <li>Facturation mensuelle, sans engagement</li>
+              <li aria-hidden="true" className="text-ink-3">&middot;</li>
+              <li>Paiement par carte, via Stripe</li>
+              <li aria-hidden="true" className="text-ink-3">&middot;</li>
+              <li>Au-del&agrave; du quota, Decelio indique le palier suivant</li>
+            </ul>
+            <p className="mt-4 text-center text-sm text-ink-2">
+              Pas de p&eacute;riode d&apos;essai&nbsp;: le diagnostic d&apos;une URL est gratuit et sans compte, autant
+              l&apos;utiliser avant de payer.{" "}
               <a href="#scan" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">
-                testez avant de payer
-              </a>.
+                Scanner un site
+              </a>
             </p>
           </div>
         </section>
