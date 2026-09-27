@@ -174,7 +174,7 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
 
         {/* Subheadline */}
         <p className="animate-cascade delay-700 text-lg sm:text-xl text-ink-2 mb-10 max-w-2xl mx-auto leading-relaxed font-medium">
-          Surveillez en temps r&eacute;el l&apos;accessibilit&eacute; de votre portefeuille client aux robots comme ChatGPT, Claude et Perplexity. Gardez votre agence une &eacute;tape en avance.
+          Surveillez chaque jour l&apos;accessibilit&eacute; de votre portefeuille client aux robots comme ChatGPT, Claude et Perplexity. Gardez votre agence une &eacute;tape en avance.
         </p>
 
         {/* CTA Buttons */}

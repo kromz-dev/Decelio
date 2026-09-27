@@ -129,7 +129,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                       <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                       </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Suivi multi-robots</strong> &mdash; V&eacute;rifiez chaque jour, avec preuve &agrave; l&apos;appui, que GPTBot, ClaudeBot et les autres robots IA acc&egrave;dent bien aux sites de vos clients.</span>
+                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Suivi multi-robots</strong> &mdash; V&eacute;rifiez chaque jour, avec la cause identifi&eacute;e, si GPTBot, ClaudeBot et les autres robots IA sont bloqu&eacute;s sur les sites de vos clients.</span>
                     </li>
                     <li className="flex items-start gap-4">
                       <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
@@ -147,7 +147,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                       <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                       </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Analyse du DOM pur</strong> &mdash; Sachez exactement quel texte est dig&eacute;r&eacute; par l&apos;IA, sans le bruit visuel du JavaScript.</span>
+                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Analyse du DOM pur</strong> &mdash; Sachez quel texte est pr&eacute;sent dans le HTML servi, sans d&eacute;pendre du JavaScript.</span>
                     </li>
                   </ul>
                 </div>
@@ -241,7 +241,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                   <div className="flex-1">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface/10 text-surface text-xs font-bold uppercase tracking-wider mb-6">
                       <span className="w-2 h-2 rounded-full bg-ok" />
-                      Fortement demand&eacute;
+                      Inclus &agrave; partir du plan Agence
                     </div>
                     <h3 className="text-2xl font-bold text-surface mb-3">Rapports AEO Marque Blanche</h3>
                     <p className="text-surface-2 text-lg max-w-md">
@@ -339,8 +339,8 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               </div>
               <div className="bg-paper p-8 rounded-3xl relative overflow-hidden group">
                 <div className="text-6xl font-black text-line-strong mb-6 opacity-50 group-hover:opacity-100 transition-opacity">2</div>
-                <h3 className="text-2xl font-bold text-ink mb-3">Surveillance 24/7</h3>
-                <p className="text-ink-2 text-lg">Decelio interroge chaque site depuis l&apos;ext&eacute;rieur, simulant les vrais robots IA pour d&eacute;tecter les blocages WAF.</p>
+                <h3 className="text-2xl font-bold text-ink mb-3">Une v&eacute;rification par jour</h3>
+                <p className="text-ink-2 text-lg">Decelio interroge chaque site depuis l&apos;ext&eacute;rieur, en imitant l&apos;en-t&ecirc;te des robots IA pour d&eacute;tecter les blocages WAF.</p>
               </div>
               <div className="bg-paper p-8 rounded-3xl relative overflow-hidden group">
                 <div className="text-6xl font-black text-line-strong mb-6 opacity-50 group-hover:opacity-100 transition-opacity">3</div>
@@ -374,7 +374,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 <ul className="space-y-4 mb-8 flex-1">
                   <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Jusqu&apos;&agrave; <strong className="text-ink font-semibold">10 sites</strong> clients</span></li>
                   <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Scan AEO quotidien</span></li>
-                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Alertes temps r&eacute;el par e-mail</span></li>
+                  <li className="flex items-center gap-3"><svg className="text-ok shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span className="text-ink-2">Alerte par e-mail au prochain scan</span></li>
                 </ul>
                 <Link href="/register?plan=freelance" className="w-full text-center px-6 py-3 rounded-full border border-line text-ink font-bold hover:bg-surface-2 transition-colors">D&eacute;marrer</Link>
               </div>
@@ -382,7 +382,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               {/* Agence (Highlighted) */}
               <div className="bg-ink rounded-3xl p-8 shadow-xl border border-ink flex flex-col relative transform md:-translate-y-4">
                 <div className="absolute top-0 inset-x-0 transform -translate-y-1/2 flex justify-center">
-                  <span className="bg-ok text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">Le plus choisi</span>
+                  <span className="bg-ok text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">Pour 10 &agrave; 30 sites</span>
                 </div>
                 <h3 className="text-2xl font-bold text-surface mb-2">Agence</h3>
                 <p className="text-surface-2 mb-6">Id&eacute;al pour le portefeuille complet d&apos;une agence.</p>
