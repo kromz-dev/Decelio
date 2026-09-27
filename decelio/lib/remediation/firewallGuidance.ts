@@ -2,7 +2,7 @@ import type { CmsKey, FirewallKey, PlatformGuidance } from "./types";
 
 /**
  * Marche à suivre par pare-feu / CDN / hébergeur pour laisser passer un
- * robot de citation IA qui se heurte à un défi anti-bot ou à un refus direct
+ * robot d'assistant IA qui se heurte à un défi anti-bot ou à un refus direct
  * (401/403/429/503). Partagée entre les causes « défi de sécurité » et
  * « accès bloqué », dont le correctif est le même : autoriser ce robot dans
  * la couche qui l'intercepte avant même d'atteindre le site.

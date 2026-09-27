@@ -4,7 +4,7 @@ import type { CmsKey, PlatformGuidance } from "./types";
  * Marche à suivre par plateforme pour une page « coquille vide » : le HTML
  * brut ne contient presque pas de texte, le contenu n'arrivant qu'après
  * exécution de JavaScript. Un robot qui n'exécute pas de script (la plupart
- * des robots de citation IA aujourd'hui) ne voit alors rien à citer.
+ * des robots des assistants IA aujourd'hui) ne voit alors presque rien à lire.
  *
  * Rappel de fiabilité (voir `RemediationCause.caveat`) : ce diagnostic est
  * une présomption basée sur un seul indice — le nombre de mots dans le HTML
@@ -31,17 +31,17 @@ export const JS_DEPENDENCY_CMS_GUIDANCE: Partial<Record<CmsKey, PlatformGuidance
   wix: {
     supported: false,
     steps: [],
-    note: "Les sites Wix classiques (éditeur Wix, Wix Studio standard) rendent l'essentiel du contenu côté serveur : ce diagnostic est rare. S'il apparaît, il s'agit probablement d'un contenu ajouté via une app tierce ou du code embarqué (iframe/JavaScript), qui restera invisible aux robots sans exécution de script — sans correctif simple depuis l'interface Wix.",
+    note: "Les sites Wix classiques (éditeur Wix, Wix Studio standard) rendent l'essentiel du contenu côté serveur : ce diagnostic est rare. S'il apparaît, il s'agit probablement d'un contenu ajouté via une app tierce ou du code embarqué (iframe/JavaScript), qu'un robot sans exécution de script ne pourra pas lire — sans correctif simple depuis l'interface Wix.",
   },
   squarespace: {
     supported: false,
     steps: [],
-    note: "Les sites Squarespace sont rendus côté serveur par défaut : ce diagnostic est rare, sauf contenu tiers embarqué en JavaScript, qui restera invisible aux robots sans exécution de script — sans correctif simple depuis l'interface Squarespace.",
+    note: "Les sites Squarespace sont rendus côté serveur par défaut : ce diagnostic est rare, sauf contenu tiers embarqué en JavaScript, qu'un robot sans exécution de script ne pourra pas lire — sans correctif simple depuis l'interface Squarespace.",
   },
   webflow: {
     supported: false,
     steps: [],
-    note: "Les sites Webflow sont rendus côté serveur/statique par défaut : ce diagnostic est rare, sauf contenu interactif tiers en JavaScript, qui restera invisible aux robots sans exécution de script — sans correctif simple depuis l'interface Webflow.",
+    note: "Les sites Webflow sont rendus côté serveur/statique par défaut : ce diagnostic est rare, sauf contenu interactif tiers en JavaScript, qu'un robot sans exécution de script ne pourra pas lire — sans correctif simple depuis l'interface Webflow.",
   },
   drupal: {
     supported: true,

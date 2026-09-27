@@ -22,7 +22,7 @@ export const REMEDIATION_CAUSES: RemediationCause[] = [
     matches: (reason) => reason.startsWith("robots.txt disallows"),
     title: "Le fichier robots.txt interdit explicitement ce robot.",
     clientImpact:
-      "Ce robot respecte les règles que vous publiez et s'interdit donc de lire votre site : il ne peut ni l'indexer ni le citer dans ses réponses. Concrètement, votre entreprise n'apparaît dans aucune réponse de cet assistant IA, même si le contenu du site est excellent.",
+      "Ce robot respecte les règles que vous publiez et s'interdit donc de lire votre site. Un assistant IA ne peut pas s'appuyer sur un contenu qu'il n'a pas pu lire, même si ce contenu est excellent.",
     severity: "élevée",
     effort: "faible",
     cms: ROBOTS_TXT_CMS_GUIDANCE,
@@ -43,7 +43,7 @@ export const REMEDIATION_CAUSES: RemediationCause[] = [
     matches: (reason) => reason.startsWith("access challenged"),
     title: "Un pare-feu ou un système anti-robot répond à la place de votre contenu (défi de sécurité).",
     clientImpact:
-      "Le robot ne voit ni la page ni son contenu : il reçoit une page de vérification (souvent un défi Cloudflare ou équivalent) et abandonne. Le site est donc invisible pour cet assistant IA, même si le contenu affiché aux visiteurs humains est irréprochable.",
+      "Le robot ne voit ni la page ni son contenu : il reçoit une page de vérification (souvent un défi Cloudflare ou équivalent) et abandonne. Ce robot ne peut donc rien lire sur cette page, même si le contenu affiché aux visiteurs humains est irréprochable.",
     severity: "élevée",
     effort: "moyen",
     firewalls: AI_BOT_FIREWALL_GUIDANCE,
@@ -53,7 +53,7 @@ export const REMEDIATION_CAUSES: RemediationCause[] = [
     matches: (reason) => reason.startsWith("access blocked"),
     title: "Le site refuse directement la requête de ce robot.",
     clientImpact:
-      "Le robot reçoit un refus explicite (accès interdit, authentification requise, ou trop de requêtes) : il ne peut pas lire le site, donc ne peut rien en citer. C'est souvent involontaire (protection par mot de passe restée active, réglage de pare-feu trop strict).",
+      "Le robot reçoit un refus explicite (accès interdit, authentification requise, ou trop de requêtes) : il ne peut donc rien lire sur le site. C'est souvent involontaire (protection par mot de passe restée active, réglage de pare-feu trop strict).",
     severity: "élevée",
     effort: "moyen",
     cms: ACCESS_BLOCKED_CMS_GUIDANCE,
@@ -64,7 +64,7 @@ export const REMEDIATION_CAUSES: RemediationCause[] = [
     matches: (reason) => reason.startsWith("js_dependent:") || reason.startsWith("likely_js_dependent:"),
     title: "Le contenu semble n'apparaître qu'après exécution de JavaScript (probablement une « coquille vide » pour ce robot).",
     clientImpact:
-      "Si ce robot n'exécute pas de JavaScript (c'est le cas de la plupart des robots de citation IA aujourd'hui), il ne verra quasiment aucun texte à citer, même si la page paraît complète dans un navigateur. Le site resterait alors invisible dans les réponses des assistants IA.",
+      "Si ce robot n'exécute pas de JavaScript (c'est le cas de la plupart des robots des assistants IA aujourd'hui), il ne verra quasiment aucun texte sur cette page, même si elle paraît complète dans un navigateur. Un assistant IA ne peut pas s'appuyer sur un contenu qu'il n'a pas pu lire.",
     severity: "à vérifier",
     effort: "élevé",
     caveat:
@@ -87,7 +87,7 @@ export const REMEDIATION_CAUSES: RemediationCause[] = [
     matches: (reason) => reason.startsWith("unreachable:"),
     title: "Le site n'a pas répondu à la requête de ce robot.",
     clientImpact:
-      "Un site qui ne répond pas ne peut être ni lu, ni cité par aucun assistant IA — c'est le scénario le plus grave. Mais attention avant d'alerter le client sur une « panne » : voir la remarque ci-dessous.",
+      "Un site qui ne répond pas ne peut être lu par aucun robot — c'est le scénario le plus grave. Mais attention avant d'alerter le client sur une « panne » : voir la remarque ci-dessous.",
     severity: "à vérifier",
     effort: "variable",
     caveat:
@@ -112,7 +112,7 @@ export const REMEDIATION_CAUSES: RemediationCause[] = [
     generalSteps: [
       "Rechargez la page dans un navigateur pour voir si l'erreur persiste.",
       "Consultez les journaux d'erreurs du serveur (ou ceux fournis par l'hébergeur) autour de l'heure du contrôle pour identifier la cause exacte du code retourné.",
-      "Si l'erreur persiste, elle nécessite une investigation applicative (page cassée, base de données inaccessible, quota d'hébergement dépassé) plutôt qu'un simple réglage de visibilité.",
+      "Si l'erreur persiste, elle nécessite une investigation applicative (page cassée, base de données inaccessible, quota d'hébergement dépassé) plutôt qu'un simple réglage de robots.txt ou de balise noindex.",
     ],
   },
 ];

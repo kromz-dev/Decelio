@@ -214,7 +214,7 @@ const DiagnosticPdf = ({ report, results }: { report: ScanReport; results: ScanC
         <View style={styles.header}>
           <Text style={styles.logo}>Decelio.</Text>
           <View>
-            <Text style={styles.headerText}>Rapport de visibilité IA</Text>
+            <Text style={styles.headerText}>Rapport de lecture par les robots IA</Text>
             <Text style={styles.headerText}>{formatDate(report.scannedAt)}</Text>
           </View>
         </View>
