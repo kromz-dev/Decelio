@@ -15,7 +15,7 @@ import {
 
 export const metadata = {
   title: "Rapports | Decelio",
-  description: "Rapports mensuels de visibilité IA par client, exportables en PDF.",
+  description: "Rapports mensuels de lecture par les robots IA, par client, exportables en PDF.",
 };
 
 export default async function ReportsPage() {

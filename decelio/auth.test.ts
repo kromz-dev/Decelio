@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { authorizeCredentials, credentialsProvider } from "./auth";
+import { authorizeCredentials, credentialsProvider, handleUserCreated } from "./auth";
 import authConfig from "./auth.config";
 import { db } from "@/lib/db";
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password";
+import { captureServerEvent } from "@/lib/posthog-server";
 
 const DUMMY_HASH = "scrypt:dummysalt:dummykey";
 
@@ -17,6 +18,10 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/password", () => ({
   verifyPassword: vi.fn(),
   getDummyPasswordHash: vi.fn(),
+}));
+
+vi.mock("@/lib/posthog-server", () => ({
+  captureServerEvent: vi.fn(async () => undefined),
 }));
 
 describe("NextAuth Credentials Provider & Configuration", () => {
@@ -193,6 +198,22 @@ describe("NextAuth Credentials Provider & Configuration", () => {
 
       expect(db.user.findUnique).not.toHaveBeenCalled();
       expect(verifyPassword).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("handleUserCreated (événement createUser, inscription Google)", () => {
+    it("émet signup_completed avec method: google pour un nouveau compte", async () => {
+      await handleUserCreated({ user: { id: "user_google_1" } });
+
+      expect(captureServerEvent).toHaveBeenCalledWith("user_google_1", "signup_completed", {
+        method: "google",
+      });
+    });
+
+    it("n'émet rien si le message ne porte aucun identifiant", async () => {
+      await handleUserCreated({ user: {} });
+
+      expect(captureServerEvent).not.toHaveBeenCalled();
     });
   });
 });
