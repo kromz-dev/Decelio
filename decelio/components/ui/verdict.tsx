@@ -40,7 +40,7 @@ export const VERDICTS: Record<
   },
   inconnu: {
     label: "Inconnu",
-    description: "Pas encore vérifié, ou mesure impossible aujourd'hui.",
+    description: "Pas encore vérifié, ou impossible de conclure : à vérifier.",
     tone: "unknown",
   },
 }
@@ -51,6 +51,7 @@ export function verdictFromStatus(status: string | null | undefined): VerdictVal
   if (["OK", "ACTIVE", "LU", "READABLE", "200"].includes(s)) return "lu"
   if (["BLOQUÉ", "BLOQUE", "BLOCKED", "REFUSÉ", "REFUSE", "403", "401", "429"].includes(s)) return "refuse"
   if (["COQUILLE VIDE", "VIDE", "EMPTY", "THIN"].includes(s)) return "vide"
+  // « À VÉRIFIER » (blocage général sans preuve de ciblage) reste « Inconnu », jamais « Refusé ».
   return "inconnu"
 }
 

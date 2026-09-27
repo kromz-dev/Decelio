@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { scanSiteJob } from "./scan-site";
+import { causeForBot, scanSiteJob } from "./scan-site";
 import { db } from "@/lib/db";
 import { runCoreScan } from "@/lib/scanner/core";
 import { sendRegressionAlert } from "@/lib/alerting/sendAlert";
@@ -35,15 +35,19 @@ function invokeHandler<TContext>(inngestFunction: object, context: TContext): un
 
 interface ScanSiteStep {
   run: <T>(name: string, fn: () => Promise<T> | T) => Promise<T>;
+  sleep: (name: string, duration: string) => Promise<void>;
 }
 
 function createdRows() {
   return vi.mocked(db.scanLog.create).mock.calls.map((call) => call[0].data);
 }
 
+// L'attente durable n'a rien à faire dans les tests : elle se résout tout de
+// suite, comme le fait `@inngest/test` en mémoire.
 function stepThatRuns(): ScanSiteStep {
   return {
     run: vi.fn().mockImplementation(async (_name: string, fn: () => unknown) => await fn()),
+    sleep: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -52,6 +56,20 @@ const reportBots = [
   { agent: "ClaudeBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows ClaudeBot"], httpStatus: 200, durationMs: 10, wordCount: 80 },
   { agent: "PerplexityBot", simpleStatus: "COQUILLE VIDE", reasons: ["js_dependent: 12 words in raw HTML"], httpStatus: 200, durationMs: 10, wordCount: 12 },
 ] as const;
+
+describe("causeForBot", () => {
+  it("translates a general block (à vérifier) reason into French", () => {
+    expect(causeForBot("GPTBot", ["general block (status:403) — no bot-specific evidence"])).toBe(
+      "GPTBot : le site bloque tout (HTTP 403), sans rien qui vise spécifiquement ce robot : à vérifier",
+    );
+  });
+
+  it("translates an unverified-probe (indice) reason into French", () => {
+    expect(causeForBot("GPTBot", ["unverified probe blocked (status:403) while honest request ok"])).toBe(
+      "GPTBot : une requête non vérifiée se présentant comme ce robot a été bloquée (HTTP 403) alors que notre visite passe : un indice, pas une preuve",
+    );
+  });
+});
 
 describe("scanSiteJob", () => {
   beforeEach(() => {
@@ -134,10 +152,13 @@ describe("scanSiteJob", () => {
   });
 
   it("écrit le payload seulement pour le bot dont le verdict change", async () => {
+    // status déjà à BLOQUÉ (comme le verdict attendu) : ce test porte sur le
+    // contenu du payload, pas sur la confirmation de régression (testée à
+    // part), donc oldStatus === newStatus pour rester hors de ce chemin.
     vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
       id: "site-1",
       url: "https://exemple.fr",
-      status: "OK",
+      status: "BLOQUÉ",
       user: { email: "agence@exemple.fr" },
     } as unknown as MonitoredSiteWithUser);
     vi.mocked(db.scanLog.findMany).mockResolvedValue([
@@ -189,7 +210,10 @@ describe("scanSiteJob", () => {
     ]);
   });
 
-  it("prévient une fois si le pire verdict régresse", async () => {
+  it("prévient une fois si le pire verdict régresse (site sans historique : comportement actuel)", async () => {
+    // db.scanLog.findMany renvoie [] (beforeEach) : site tout juste ajouté,
+    // aucun ScanLog antérieur. EF-034 : premier verdict dégradé signalé
+    // immédiatement, sans confirmation à attendre.
     vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
       id: "site-1",
       url: "https://exemple.fr",
@@ -201,9 +225,10 @@ describe("scanSiteJob", () => {
       results: reportBots,
     } as unknown as CoreScanOutput);
 
+    const step = stepThatRuns();
     await invokeHandler(scanSiteJob, {
       event: { data: { siteIds: ["site-1"] } },
-      step: stepThatRuns(),
+      step,
     });
 
     expect(db.monitoredSite.update).toHaveBeenCalledWith({
@@ -211,6 +236,144 @@ describe("scanSiteJob", () => {
       data: { status: "BLOQUÉ" },
     });
     expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+    expect(step.sleep).not.toHaveBeenCalled();
+  });
+
+  it("confirme une régression après un second scan identique et envoie une seule alerte", async () => {
+    // Site avec historique (au moins un ScanLog) : la dégradation doit être
+    // confirmée par un second scan avant toute alerte (constitution
+    // principe I, zéro faux positif).
+    const blocked = [
+      { agent: "GPTBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows GPTBot"], httpStatus: 200, durationMs: 10, wordCount: 80 },
+    ] as const;
+
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan).mockResolvedValue({
+      report: {},
+      results: blocked,
+    } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, {
+      event: { data: { siteId: "site-1" } },
+      step,
+    });
+
+    expect(step.sleep).toHaveBeenCalledTimes(1);
+    expect(step.sleep).toHaveBeenCalledWith("wait-regression-confirmation-site-1", "10m");
+    expect(step.run).toHaveBeenCalledTimes(2);
+    expect(db.monitoredSite.update).toHaveBeenCalledTimes(1);
+    expect(db.monitoredSite.update).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: { status: "BLOQUÉ" },
+    });
+    expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+    expect(sendRegressionAlert).toHaveBeenCalledWith("agence@exemple.fr", "https://exemple.fr", "OK", "BLOQUÉ");
+  });
+
+  it("n'alerte pas si le second scan ne confirme pas la dégradation (raté transitoire)", async () => {
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [{ agent: "GPTBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows GPTBot"], httpStatus: 200, durationMs: 10, wordCount: 80 }],
+      } as unknown as CoreScanOutput)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [{ agent: "GPTBot", simpleStatus: "OK", reasons: [], httpStatus: 200, durationMs: 10, wordCount: 80 }],
+      } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, {
+      event: { data: { siteId: "site-1" } },
+      step,
+    });
+
+    expect(step.sleep).toHaveBeenCalledTimes(1);
+    expect(step.run).toHaveBeenCalledTimes(2);
+    expect(db.monitoredSite.update).not.toHaveBeenCalled();
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
+  });
+
+  it("confirme avec le statut le plus grave quand le second scan est pire que le premier", async () => {
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [{ agent: "GPTBot", simpleStatus: "COQUILLE VIDE", reasons: ["js_dependent: 12 words in raw HTML"], httpStatus: 200, durationMs: 10, wordCount: 12 }],
+      } as unknown as CoreScanOutput)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [{ agent: "GPTBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows GPTBot"], httpStatus: 200, durationMs: 10, wordCount: 80 }],
+      } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, {
+      event: { data: { siteId: "site-1" } },
+      step,
+    });
+
+    expect(db.monitoredSite.update).toHaveBeenCalledTimes(1);
+    expect(db.monitoredSite.update).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: { status: "BLOQUÉ" },
+    });
+    expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+    expect(sendRegressionAlert).toHaveBeenCalledWith("agence@exemple.fr", "https://exemple.fr", "OK", "BLOQUÉ");
+  });
+
+  it("une amélioration (retour à OK) ne demande pas de confirmation ni de second scan", async () => {
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "BLOQUÉ",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "BLOQUÉ", cause: "GPTBot : robots.txt interdit GPTBot" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan).mockResolvedValue({
+      report: {},
+      results: [{ agent: "GPTBot", simpleStatus: "OK", reasons: [], httpStatus: 200, durationMs: 10, wordCount: 80 }],
+    } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, {
+      event: { data: { siteId: "site-1" } },
+      step,
+    });
+
+    expect(step.sleep).not.toHaveBeenCalled();
+    expect(step.run).toHaveBeenCalledTimes(1);
+    expect(db.monitoredSite.update).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: { status: "OK" },
+    });
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
   });
 
   it("parcours P2 complet : ajout, scan, changement de statut, une seule alerte même après un second scan identique", async () => {
@@ -268,6 +431,115 @@ describe("scanSiteJob", () => {
 
     expect(db.monitoredSite.update).toHaveBeenCalledTimes(1);
     expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it("enregistre À VÉRIFIER sans jamais envoyer d'alerte de régression (blocage général sans preuve)", async () => {
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(runCoreScan).mockResolvedValue({
+      report: {},
+      results: [
+        {
+          agent: "GPTBot",
+          simpleStatus: "À VÉRIFIER",
+          reasons: ["general block (status:403) — no bot-specific evidence"],
+          httpStatus: 403,
+          durationMs: 10,
+          wordCount: 0,
+        },
+      ],
+    } as unknown as CoreScanOutput);
+
+    await invokeHandler(scanSiteJob, { event: { data: { siteId: "site-1" } }, step: stepThatRuns() });
+
+    expect(db.monitoredSite.update).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: { status: "À VÉRIFIER" },
+    });
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
+  });
+
+  it("un site avec historique qui passe à À VÉRIFIER n'attend pas de confirmation et n'alerte jamais", async () => {
+    // À VÉRIFIER est un statut d'incertitude (indice, pas preuve) : il ne
+    // doit jamais, à lui seul, déclencher le circuit de confirmation ni une
+    // alerte de régression, même quand le site a déjà un historique.
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan).mockResolvedValue({
+      report: {},
+      results: [
+        {
+          agent: "GPTBot",
+          simpleStatus: "À VÉRIFIER",
+          reasons: ["general block (status:403) — no bot-specific evidence"],
+          httpStatus: 403,
+          durationMs: 10,
+          wordCount: 0,
+        },
+      ],
+    } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, { event: { data: { siteId: "site-1" } }, step });
+
+    expect(step.sleep).not.toHaveBeenCalled();
+    expect(step.run).toHaveBeenCalledTimes(1);
+    expect(db.monitoredSite.update).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: { status: "À VÉRIFIER" },
+    });
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
+  });
+
+  it("un second scan qui retombe à À VÉRIFIER ne confirme pas une régression BLOQUÉ en attente", async () => {
+    // Le second scan doit être « même statut, ou pire » pour confirmer :
+    // À VÉRIFIER (rang 1) est moins grave que BLOQUÉ (rang 3), donc il ne
+    // confirme rien, même si un blocage général demeure suspect.
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [{ agent: "GPTBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows GPTBot"], httpStatus: 200, durationMs: 10, wordCount: 80 }],
+      } as unknown as CoreScanOutput)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [
+          {
+            agent: "GPTBot",
+            simpleStatus: "À VÉRIFIER",
+            reasons: ["general block (status:403) — no bot-specific evidence"],
+            httpStatus: 403,
+            durationMs: 10,
+            wordCount: 0,
+          },
+        ],
+      } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, { event: { data: { siteId: "site-1" } }, step });
+
+    expect(step.sleep).toHaveBeenCalledTimes(1);
+    expect(db.monitoredSite.update).not.toHaveBeenCalled();
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
   });
 
   it("enregistre ERREUR pour un site injoignable et BLOQUÉ pour un robots.txt", async () => {

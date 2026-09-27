@@ -116,7 +116,7 @@ export function SiteFooter({ isLoggedIn }: { isLoggedIn?: boolean }) {
         <div className="flex flex-col items-start justify-between gap-6 border-t border-paper/20 pt-8 text-sm text-paper/70 md:flex-row">
           <p>&copy; {new Date().getFullYear()} Decelio. Tous droits r&eacute;serv&eacute;s.</p>
           <p className="max-w-xl md:text-right">
-            <strong className="font-semibold text-paper">Ce que mesure l&apos;outil :</strong> Decelio v&eacute;rifie l&apos;acc&egrave;s technique des robots aux sites. Cela ne garantit pas qu&apos;une IA citera votre marque.
+            <strong className="font-semibold text-paper">Ce que mesure l&apos;outil :</strong> Decelio v&eacute;rifie l&apos;acc&egrave;s technique des robots aux sites. Un acc&egrave;s ouvert ne suffit pas &agrave; ce qu&apos;une IA cite votre marque.
           </p>
         </div>
       </div>
