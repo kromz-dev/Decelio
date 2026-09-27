@@ -21,6 +21,9 @@ import {
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Verdict, VERDICTS, type VerdictValue } from "@/components/ui/verdict";
+import { Wordmark } from "@/components/home/SiteChrome";
+import { RingsWatermark } from "@/components/home/MarketingBits";
+import { describePlatform } from "@/components/scan/platformLabel";
 
 export const metadata: Metadata = {
   title: "Système de design | Decelio",
@@ -96,6 +99,45 @@ function Label({ children }: { children: React.ReactNode }) {
   return <div className="mb-3 type-table font-medium text-ink-2">{children}</div>;
 }
 
+function Marque() {
+  const examplePlatform = describePlatform({
+    cms: "wordpress",
+    seoPlugin: "yoast",
+    firewall: "cloudflare",
+    signals: ["meta generator=WordPress", "en-tête X-Yoast-SEO", "règle Cloudflare Bot Fight Mode"],
+  });
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col items-start gap-3 rounded-lg border border-line bg-surface p-5">
+          <Label>Sur fond clair</Label>
+          <Wordmark size="lg" />
+        </div>
+        <div className="flex flex-col items-start gap-3 rounded-lg border border-line bg-ink p-5">
+          <Label>Sur fond sombre (pied de page, en-tête d&apos;onboarding)</Label>
+          <Wordmark light size="lg" />
+        </div>
+      </div>
+      <div>
+        <Label>Halo de marque : réservé au héros de la page d&apos;accueil marketing, jamais dans l&apos;application</Label>
+        <div className="relative flex h-40 items-center justify-center overflow-hidden rounded-lg border border-line bg-surface">
+          <RingsWatermark className="pointer-events-none absolute h-[260px] w-[260px] text-brand-soft" />
+          <Wordmark size="lg" />
+        </div>
+      </div>
+      <div>
+        <Label>Plateforme détectée (fiche d&apos;un site, résultat du scan public)</Label>
+        <div className="max-w-md rounded-lg border border-line bg-surface p-4">
+          <p className="type-caption text-ink-2">
+            <span className="font-medium text-ink">Plateforme détectée&nbsp;: </span>
+            {examplePlatform} (d&apos;après les indices de la page)
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Colors() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -131,8 +173,13 @@ function Typography() {
           <p className="type-display text-ink">Sachez avant votre client.</p>
         </div>
         <div>
-          <Label>Titre 1, 28px / 34px, 600</Label>
-          <p className="text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink">Portefeuille</p>
+          <Label>Titre 1 (page), 28px / 34px, 600, en font-display</Label>
+          <p className="font-display text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink">Portefeuille</p>
+          <p className="mt-1.5 type-caption text-ink-2">
+            Depuis l&apos;harmonisation de septembre 2026, chaque titre de page de l&apos;application (Portefeuille,
+            Alertes, Rapports, Paramètres) reprend Bricolage Grotesque, comme les titres marketing : c&apos;est le
+            seul endroit où l&apos;application utilise cette famille.
+          </p>
         </div>
         <div>
           <Label>Titre 2, 22px / 28px, 600</Label>
@@ -555,6 +602,9 @@ function Showcase({ prefix, theme }: { prefix: string; theme: "Clair" | "Sombre"
           <span className="type-table font-medium text-ink-2">Thème {theme.toLowerCase()}</span>
           <Badge variant="outline">{theme === "Clair" ? "marketing et application" : "application"}</Badge>
         </div>
+        <Section id={`${prefix}-marque`} title="Marque" lead="Le logo est un « D » tracé en anneaux concentriques, toujours suivi du mot « Decelio » : seul, il n'est pas encore reconnaissable.">
+          <Marque />
+        </Section>
         <Section id={`${prefix}-couleurs`} title="Couleurs" lead="Onze jetons. Le chrome est monochrome ; la couleur est réservée aux verdicts et à l'interactif. Chaque carte montre la valeur claire puis la valeur sombre.">
           <Colors />
         </Section>
