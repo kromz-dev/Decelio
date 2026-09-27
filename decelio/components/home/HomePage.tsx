@@ -652,7 +652,14 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
         {/* 7bis. Qui est derriere : sans clients, le meilleur signal de confiance est une personne identifiable */}
         <section aria-labelledby="fondateur-titre" className="px-4 pb-16 sm:px-6 lg:px-8">
           <div className="reveal mx-auto flex max-w-[800px] flex-col items-center gap-6 rounded-[1.75rem] border border-line bg-surface p-8 text-center sm:flex-row sm:text-left">
-            <span aria-hidden="true" className="font-display flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-ink text-2xl font-bold text-paper">K</span>
+            {/* Avatar servi depuis notre domaine : le charger depuis GitHub enverrait l'IP du visiteur a un tiers. */}
+            <Image
+              src="/fondateur-kromz.jpg"
+              alt="Avatar de kromz-dev, fondateur de Decelio"
+              width={400}
+              height={400}
+              className="h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-brand-soft"
+            />
             <div>
               <h2 id="fondateur-titre" className="font-display mb-2 text-[22px] font-bold tracking-[-0.02em] text-ink">
                 Construit par un fondateur ind&eacute;pendant, en France
