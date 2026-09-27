@@ -1,13 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/scanner/crawler", () => ({
-  assertSafeUrl: vi.fn(),
+  resolveSafeTarget: vi.fn(),
+  // Par défaut, l'épinglage est désactivé dans ces tests (comme en
+  // développement derrière un proxy sortant) : ils portent sur la logique
+  // de `loadBrandLogo` (type MIME, taille, signature), pas sur le mécanisme
+  // d'épinglage lui-même — couvert séparément par crawler.test.ts.
+  isPinningUnavailable: vi.fn(() => true),
+  createPinnedDispatcher: vi.fn(),
 }));
 
-import { assertSafeUrl } from "@/lib/scanner/crawler";
+import { createPinnedDispatcher, isPinningUnavailable, resolveSafeTarget } from "@/lib/scanner/crawler";
 import { loadBrandLogo, MAX_LOGO_BYTES } from "./brandLogo";
 
-const mockedAssertSafeUrl = vi.mocked(assertSafeUrl);
+const mockedResolveSafeTarget = vi.mocked(resolveSafeTarget);
+const mockedIsPinningUnavailable = vi.mocked(isPinningUnavailable);
+const mockedCreatePinnedDispatcher = vi.mocked(createPinnedDispatcher);
+
+/** Résolution valide par défaut : URL inchangée, IP publique quelconque. */
+const resolved = (url: string, ip = "93.184.216.34") => ({ url, ip });
 
 const SIGNATURES: Record<string, number[]> = {
   "image/png": [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
@@ -48,7 +59,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("rejects a private/internal IP resolved via assertSafeUrl", async () => {
-    mockedAssertSafeUrl.mockRejectedValueOnce(new Error("Forbidden IP resolved: 127.0.0.1"));
+    mockedResolveSafeTarget.mockRejectedValueOnce(new Error("Forbidden IP resolved: 127.0.0.1"));
 
     const result = await loadBrandLogo("https://internal.example/logo.png");
 
@@ -57,7 +68,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("loads a valid PNG logo as a data URI", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.png");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
     vi.mocked(fetch).mockResolvedValueOnce(fakeImageResponse(4, "image/png"));
 
     const result = await loadBrandLogo("https://cdn.example.com/logo.png");
@@ -68,7 +79,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("rejects a body whose bytes do not match the declared image type", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.png");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
     vi.mocked(fetch).mockResolvedValueOnce(fakeImageResponse(64, "image/png", true, false));
 
     const result = await loadBrandLogo("https://cdn.example.com/logo.png");
@@ -77,7 +88,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("loads a valid JPEG logo as a data URI", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.jpg");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.jpg"));
     vi.mocked(fetch).mockResolvedValueOnce(fakeImageResponse(3, "image/jpeg"));
 
     const result = await loadBrandLogo("https://cdn.example.com/logo.jpg");
@@ -86,7 +97,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("rejects a response with a disallowed MIME type", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.svg");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.svg"));
     const headers = new Headers({ "content-type": "image/svg+xml" });
     vi.mocked(fetch).mockResolvedValueOnce(new Response("<svg></svg>", { status: 200, headers }));
 
@@ -96,7 +107,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("rejects a response whose declared Content-Length exceeds the size cap", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.png");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
     const headers = new Headers({
       "content-type": "image/png",
       "content-length": String(MAX_LOGO_BYTES + 1),
@@ -109,7 +120,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("rejects a body that exceeds the size cap when no Content-Length is declared", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.png");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
     vi.mocked(fetch).mockResolvedValueOnce(fakeImageResponse(MAX_LOGO_BYTES + 10, "image/png", false));
 
     const result = await loadBrandLogo("https://cdn.example.com/logo.png");
@@ -118,7 +129,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("returns null on a network failure instead of throwing", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.png");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
     vi.mocked(fetch).mockRejectedValueOnce(new Error("network down"));
 
     const result = await loadBrandLogo("https://cdn.example.com/logo.png");
@@ -127,7 +138,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("returns null on a non-2xx response", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.png");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
     vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }));
 
     const result = await loadBrandLogo("https://cdn.example.com/logo.png");
@@ -136,7 +147,7 @@ describe("loadBrandLogo", () => {
   });
 
   it("never follows redirects to an unrevalidated target", async () => {
-    mockedAssertSafeUrl.mockResolvedValueOnce("https://cdn.example.com/logo.png");
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
     vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 302, headers: { location: "https://internal/secret" } }));
 
     const result = await loadBrandLogo("https://cdn.example.com/logo.png");
@@ -144,5 +155,32 @@ describe("loadBrandLogo", () => {
     expect(result).toBeNull();
     const [, options] = vi.mocked(fetch).mock.calls[0];
     expect((options as RequestInit).redirect).toBe("manual");
+  });
+
+  it("pins the connection on the IP validated by resolveSafeTarget when pinning is available", async () => {
+    mockedIsPinningUnavailable.mockReturnValueOnce(false);
+    const fakeDispatcher = { pinned: true };
+    mockedCreatePinnedDispatcher.mockReturnValueOnce(fakeDispatcher as never);
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png", "203.0.113.9"));
+    vi.mocked(fetch).mockResolvedValueOnce(fakeImageResponse(4, "image/png"));
+
+    const result = await loadBrandLogo("https://cdn.example.com/logo.png");
+
+    expect(result).not.toBeNull();
+    expect(mockedCreatePinnedDispatcher).toHaveBeenCalledWith("203.0.113.9");
+    const [, options] = vi.mocked(fetch).mock.calls[0];
+    expect((options as { dispatcher?: unknown }).dispatcher).toBe(fakeDispatcher);
+  });
+
+  it("does not pin the connection when pinning is unavailable (dev behind a mandatory proxy)", async () => {
+    mockedIsPinningUnavailable.mockReturnValueOnce(true);
+    mockedResolveSafeTarget.mockResolvedValueOnce(resolved("https://cdn.example.com/logo.png"));
+    vi.mocked(fetch).mockResolvedValueOnce(fakeImageResponse(4, "image/png"));
+
+    await loadBrandLogo("https://cdn.example.com/logo.png");
+
+    expect(mockedCreatePinnedDispatcher).not.toHaveBeenCalled();
+    const [, options] = vi.mocked(fetch).mock.calls[0];
+    expect((options as { dispatcher?: unknown }).dispatcher).toBeUndefined();
   });
 });
