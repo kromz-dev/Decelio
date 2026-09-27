@@ -26,7 +26,7 @@ export const EMAIL_COLORS = {
  * enverrait l'IP du destinataire à un service externe.
  */
 const FONT_STACK =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
 export interface RenderEmailLayoutOptions {
   /** Texte d'aperçu (masqué visuellement, lu par le client mail dans la liste des messages). */

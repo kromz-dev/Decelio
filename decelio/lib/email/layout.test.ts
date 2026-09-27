@@ -10,7 +10,7 @@ describe("renderEmailLayout", () => {
   it("n'utilise que la pile de polices systeme, aucune police web", () => {
     const html = renderEmailLayout({ bodyHtml: "<p>Bonjour</p>" });
     expect(html).toContain(
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     );
     expect(html).not.toMatch(/@import/i);
     expect(html).not.toMatch(/fonts\.googleapis\.com/i);
@@ -107,5 +107,13 @@ describe("renderVerdict", () => {
       const html = renderVerdict(value);
       expect(html).not.toContain("—");
     }
+  });
+
+  it("garde chaque attribut style entier : le texte du bouton reste blanc après la police", () => {
+    const html = renderButton("https://decelio.fr/settings", "Gérer");
+    const linkStyle = html.match(/<a [^>]*style="([^"]*)"/)?.[1] ?? "";
+    expect(linkStyle).toContain("font-family:");
+    expect(linkStyle).toContain("color: #ffffff");
+    expect(html).not.toContain('"Segoe UI"');
   });
 });
