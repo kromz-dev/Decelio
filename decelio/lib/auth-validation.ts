@@ -7,6 +7,16 @@ export const registerSchema = z.object({
   email,
   password,
   name: z.string().trim().min(1, "Le nom est requis.").max(100),
+  acceptTerms: z
+    .unknown()
+    .superRefine((val, ctx) => {
+      if (val !== true) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Vous devez accepter les conditions générales de vente.",
+        });
+      }
+    }),
 });
 
 export const loginSchema = z.object({ email, password });

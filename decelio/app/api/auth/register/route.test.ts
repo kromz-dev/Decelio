@@ -30,6 +30,10 @@ vi.mock("@/lib/posthog-server", () => ({
   captureServerEvent: vi.fn(async () => undefined),
 }));
 
+vi.mock("@/lib/legal/terms", () => ({
+  TERMS_VERSION: "2026-09-27",
+}));
+
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { captureServerEvent } from "@/lib/posthog-server";
@@ -55,7 +59,7 @@ describe("POST /api/auth/register — événement signup_completed", () => {
     >);
 
     const res = await POST(
-      fakeRequest({ email: "nouvel.utilisateur@example.com", name: "Nouvel utilisateur", password: "un-mot-de-passe-solide" }),
+      fakeRequest({ email: "nouvel.utilisateur@example.com", name: "Nouvel utilisateur", password: "un-mot-de-passe-solide", acceptTerms: true }),
     );
 
     expect(res.status).toBe(201);
@@ -73,10 +77,75 @@ describe("POST /api/auth/register — événement signup_completed", () => {
           email: "echec@example.com",
           name: "Échec",
           password: "un-mot-de-passe-solide",
+          acceptTerms: true,
         }),
       ),
     ).rejects.toThrow("échec base");
 
     expect(captureServerEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/auth/register — acceptation des CGV", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(rateLimit).mockResolvedValue({ allowed: true, remaining: 4, resetAt: new Date() });
+    vi.mocked(db.user.findUnique).mockResolvedValue(null);
+  });
+
+  it("rejette une inscription sans acceptTerms avec le message approprié", async () => {
+    const res = await POST(
+      fakeRequest({
+        email: "sans-acceptation@example.com",
+        name: "Test",
+        password: "un-mot-de-passe-solide",
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("Vous devez accepter les conditions générales de vente.");
+  });
+
+  it("rejette une inscription avec acceptTerms: false", async () => {
+    const res = await POST(
+      fakeRequest({
+        email: "false-acceptation@example.com",
+        name: "Test",
+        password: "un-mot-de-passe-solide",
+        acceptTerms: false,
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("Vous devez accepter les conditions générales de vente.");
+  });
+
+  it("enregistre termsAcceptedAt et termsVersion lors d'une inscription réussie", async () => {
+    vi.mocked(db.user.create).mockResolvedValue({ id: "user-with-terms" } as Awaited<
+      ReturnType<typeof db.user.create>
+    >);
+
+    const res = await POST(
+      fakeRequest({
+        email: "avec-acceptation@example.com",
+        name: "Test",
+        password: "un-mot-de-passe-solide",
+        acceptTerms: true,
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(db.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          email: "avec-acceptation@example.com",
+          name: "Test",
+          termsAcceptedAt: expect.any(Date),
+          termsVersion: "2026-09-27",
+        }),
+      }),
+    );
   });
 });
