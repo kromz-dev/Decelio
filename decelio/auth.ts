@@ -70,8 +70,14 @@ export async function authorizeCredentials(credentials: unknown, request?: Reque
  */
 export async function handleUserCreated({ user }: { user: { id?: string } }) {
   if (!user.id) return;
-  // Acceptation des CGV (T069) : elle repose sur la mention « En continuant
-  // avec Google, vous acceptez les CGV » affichée à côté du bouton Google.
+  // Acceptation des CGV (T069) : Google est configuré côté serveur
+  // (`auth.config.ts`) mais aucune page n'offre aujourd'hui de bouton
+  // « Continuer avec Google ». Le chemin reste néanmoins atteignable en
+  // appelant directement le point de terminaison de connexion de NextAuth,
+  // donc ce code doit rester correct. La valeur juridique de l'acceptation
+  // enregistrée ici dépendra de l'affichage, à côté du futur bouton, de la
+  // mention « En continuant avec Google, vous acceptez les CGV » — à poser
+  // dans la même fusion que ce bouton, le jour où il est ajouté.
   //
   // `@auth/core` appelle cet événement sans try/catch (voir
   // node_modules/@auth/core/src/lib/actions/callback/handle-login.ts) : une
