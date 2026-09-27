@@ -96,6 +96,53 @@ describe("libellés de plateformes", () => {
   });
 });
 
+/**
+ * Principe non négociable (docs/08-constitution.md, principe I) : Decelio ne
+ * mesure ni les citations ni la présence dans les réponses des assistants
+ * IA. Le seul fait constaté est qu'un robot donné n'a pas pu lire (ou n'a
+ * presque rien pu lire) une page. Aucun texte destiné au client ne doit donc
+ * affirmer une conséquence non mesurée (citation, visibilité, présence dans
+ * une réponse d'assistant IA).
+ */
+// \b avant « cit » évite les faux positifs sur des mots sans rapport (« explicitement »,
+// « explicite ») qui contiennent la sous-chaîne « cit » sans être une citation.
+const FORBIDDEN_WORDING = /\bcit(e|er|é|ation)|invisible|apparaî?t dans|visibilité/i;
+
+/** Tous les champs de texte, destinés au client, d'une entrée du catalogue. */
+function collectClientFacingTexts(): { label: string; text: string }[] {
+  const out: { label: string; text: string }[] = [];
+  for (const cause of [...REMEDIATION_CAUSES, UNKNOWN_CAUSE]) {
+    out.push({ label: `${cause.id}.title`, text: cause.title });
+    out.push({ label: `${cause.id}.clientImpact`, text: cause.clientImpact });
+    if (cause.caveat) out.push({ label: `${cause.id}.caveat`, text: cause.caveat });
+    for (const [idx, step] of (cause.generalSteps ?? []).entries()) {
+      out.push({ label: `${cause.id}.generalSteps[${idx}]`, text: step });
+    }
+    const platformGroups: [string, Partial<Record<string, PlatformGuidance>> | undefined][] = [
+      ["cms", cause.cms],
+      ["firewalls", cause.firewalls],
+    ];
+    for (const [groupName, group] of platformGroups) {
+      for (const [key, guidance] of Object.entries(group ?? {})) {
+        if (!guidance) continue;
+        if (guidance.note) out.push({ label: `${cause.id}.${groupName}.${key}.note`, text: guidance.note });
+        for (const [idx, step] of guidance.steps.entries()) {
+          out.push({ label: `${cause.id}.${groupName}.${key}.steps[${idx}]`, text: step });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+describe("honnêteté de la mesure (docs/08-constitution.md, principe I)", () => {
+  it("aucun texte client n'évoque de citation, de visibilité ou de présence dans les réponses IA", () => {
+    for (const { label, text } of collectClientFacingTexts()) {
+      expect(text, label).not.toMatch(FORBIDDEN_WORDING);
+    }
+  });
+});
+
 describe("UNKNOWN_CAUSE", () => {
   it("ne correspond jamais automatiquement à une raison (elle n'est choisie qu'en repli)", () => {
     expect(UNKNOWN_CAUSE.matches("n'importe quoi")).toBe(false);
