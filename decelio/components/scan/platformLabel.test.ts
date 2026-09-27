@@ -10,7 +10,7 @@ describe("describePlatform", () => {
   it("assemble CMS, extension SEO, pare-feu et hébergeur", () => {
     expect(
       describePlatform({ cms: "wordpress", seoPlugin: "yoast", firewall: "cloudflare", host: "ovh", signals: [] }),
-    ).toBe("WordPress, Yoast, derrière Cloudflare, hébergé chez OVH");
+    ).toBe("WordPress, Yoast SEO, derrière Cloudflare, hébergé chez OVHcloud");
   });
 
   it("n'expose jamais les signaux bruts", () => {
