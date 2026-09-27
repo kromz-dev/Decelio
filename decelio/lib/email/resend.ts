@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { escapeHtml } from "./escapeHtml";
 
 function getResend(): Resend {
   const apiKey = process.env.RESEND_API_KEY;
@@ -6,60 +7,6 @@ function getResend(): Resend {
     throw new Error("RESEND_API_KEY is required to send emails.");
   }
   return new Resend(apiKey);
-}
-
-export async function sendAuditReportEmail(
-  to: string,
-  data: {
-    brandName: string;
-    domain: string;
-    score: number;
-    mentionsCount: number;
-    totalRuns: number;
-    competitorMentions: { name: string; count: number }[];
-  }
-) {
-  const { domain, mentionsCount, totalRuns, competitorMentions } = data;
-  const bestCompetitor = competitorMentions.length > 0 ? competitorMentions[0] : null;
-  const competitorText = bestCompetitor 
-    ? `Son concurrent ${bestCompetitor.name} apparaît dans ${bestCompetitor.count} réponses.` 
-    : "Aucun concurrent direct n'a été détecté dans les réponses.";
-
-  const html = `
-    <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
-      <p>Bonjour,</p>
-      <p>J'ai fait passer ${domain} dans notre outil de mesure de visibilité IA.</p>
-      <p>Votre marque ressort dans ${mentionsCount} réponses sur ${totalRuns}. ${competitorText}</p>
-      <p>Le rapport complet est ici : <a href="${process.env.NEXT_PUBLIC_APP_URL}/analyse/${domain}">Voir mon rapport détaillé</a></p>
-      <p>Si vous voulez corriger ça, l'outil génère le contenu à modifier, le JSON-LD à ajouter et le fichier llms.txt à mettre en place : <a href="${process.env.NEXT_PUBLIC_APP_URL}">Découvrir Decelio</a></p>
-      <br />
-      <p>À bientôt,<br/>L'équipe Decelio</p>
-    </div>
-  `;
-
-  try {
-    const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
-      to,
-      subject: `Votre marque est citée ${mentionsCount} fois sur ${totalRuns} par ChatGPT`,
-      html,
-    });
-
-    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
-    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
-    // etait rapporte comme reussi — et pour une alerte, une ligne
-    // `AlertEvent` etait ecrite affirmant que le client avait ete
-    // prevenu alors qu'aucun e-mail n'etait parti.
-    if (response.error) {
-      console.error("Echec d'envoi (sendAuditReportEmail) :", response.error);
-      return { success: false, error: response.error };
-    }
-
-    return { success: true, id: response.data?.id };
-  } catch (error) {
-    console.error("Failed to send email:", error);
-    return { success: false, error };
-  }
 }
 
 export async function sendPasswordResetEmail(to: string, token: string) {
@@ -104,7 +51,7 @@ export async function sendPasswordResetEmail(to: string, token: string) {
 // T046 (EF-064/EF-065) : découverte écrite envoyée 3 jours après l'inscription.
 // Réponse par simple retour d'e-mail, pas de formulaire — voir docs/06-kit-prospection.md §5.
 export async function sendDiscoveryEmail(to: string, name?: string | null) {
-  const greeting = name ? `Bonjour ${name},` : "Bonjour,";
+  const greeting = name ? `Bonjour ${escapeHtml(name)},` : "Bonjour,";
 
   const html = `
     <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
@@ -192,9 +139,9 @@ export async function sendMonthlyReportReadyEmail({
   reportUrl,
 }: SendMonthlyReportReadyEmailOptions) {
   const greeting = recipientName
-    ? `Bonjour ${recipientName},`
+    ? `Bonjour ${escapeHtml(recipientName)},`
     : agencyName
-      ? `Bonjour ${agencyName},`
+      ? `Bonjour ${escapeHtml(agencyName)},`
       : "Bonjour,";
 
   const periodLabel = formatReportPeriodFr(period);
@@ -213,7 +160,7 @@ export async function sendMonthlyReportReadyEmail({
       ? `<p style="margin-bottom: 8px;"><strong>${
           isMultiple ? "Rapports disponibles pour :" : "Rapport disponible pour :"
         }</strong></p><ul style="margin-top: 0; padding-left: 20px;">${clientNames
-          .map((name) => `<li style="margin-bottom: 4px;">${name}</li>`)
+          .map((name) => `<li style="margin-bottom: 4px;">${escapeHtml(name)}</li>`)
           .join("")}</ul>`
       : "";
 
@@ -227,7 +174,7 @@ export async function sendMonthlyReportReadyEmail({
       }</p>
       ${clientListHtml}
       <p>Vous pouvez consulter et télécharger vos rapports PDF en marque blanche directement depuis votre espace :</p>
-      <p style="margin: 24px 0;"><a href="${targetUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 500;">Accéder aux rapports</a></p>
+      <p style="margin: 24px 0;"><a href="${escapeHtml(targetUrl)}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 500;">Accéder aux rapports</a></p>
       <p style="font-size: 13px; color: #64748b;">Ces rapports sont prêts à être partagés avec vos clients sous votre propre identité visuelle.</p>
       <br />
       <p>À bientôt,<br/>L'équipe Decelio</p>

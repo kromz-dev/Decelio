@@ -23,3 +23,5 @@ export {
   matchReasonsWithSource,
 } from "./match";
 export type { MatchedReason } from "./match";
+export { remediationForPlatform } from "./platformMatch";
+export type { DetectedPlatformGuidance, PlatformRemediationResult } from "./platformMatch";

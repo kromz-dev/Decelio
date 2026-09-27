@@ -281,8 +281,10 @@ export default async function PricingPage() {
             </h2>
             <p>
               Decelio s&apos;ajoute à votre forfait de maintenance comme une
-              ligne de plus. Vos clients paient un peu plus cher leur
-              maintenance ; vous gardez la différence.
+              ligne de plus, avec un rapport mensuel à votre logo : prouvez
+              chaque mois à votre client que les robots des assistants IA
+              peuvent lire son site. Voici un exemple de calcul, pas une
+              promesse de résultat.
             </p>
           </div>
           <div className={styles.equation}>
@@ -292,7 +294,7 @@ export default async function PricingPage() {
               <span className={styles.num}>300 €</span> facturés par mois
             </div>
             <div className={styles.equationRow}>
-              − <span className={styles.num}>99 €</span> payés à Decelio
+              moins <span className={styles.num}>99 €</span> payés à Decelio
               (palier Agence)
             </div>
             <div className={styles.equationResult}>

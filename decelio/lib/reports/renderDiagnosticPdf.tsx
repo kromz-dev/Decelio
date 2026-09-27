@@ -1,11 +1,13 @@
 import * as React from 'react';
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 import { ScanReport, ScanCoreResult } from '../scanner/core';
+import type { PlatformDetection } from '../scanner/platform';
 import {
   CMS_LABELS,
   FIREWALL_LABELS,
   collectUniqueCauses,
   matchReasons,
+  remediationForPlatform,
   type CmsKey,
   type FirewallKey,
   type PlatformGuidance,
@@ -173,8 +175,14 @@ const PlatformEntry = ({ label, guidance }: { label: string; guidance: PlatformG
   </View>
 );
 
-/** Fiche complète d'une cause en annexe : titre, checklist générique, puis CMS et pare-feu concernés. */
-const RemediationAppendixEntry = ({ cause }: { cause: RemediationCause }) => {
+/**
+ * Fiche complète d'une cause en annexe, toutes plateformes confondues :
+ * titre, checklist générique, puis CMS et pare-feu couverts par le
+ * catalogue. Utilisée quand aucune plateforme n'a pu être identifiée pour ce
+ * site (`platform` absent ou `cms === "unknown"`) : sans indice fiable pour
+ * réduire la liste, montrer tout le catalogue reste le seul choix honnête.
+ */
+const GenericRemediationAppendixEntry = ({ cause }: { cause: RemediationCause }) => {
   const cmsEntries = (Object.entries(cause.cms ?? {}) as [CmsKey, PlatformGuidance][]).filter(
     ([, guidance]) => guidance !== undefined,
   );
@@ -203,6 +211,62 @@ const RemediationAppendixEntry = ({ cause }: { cause: RemediationCause }) => {
       ))}
     </View>
   );
+};
+
+/**
+ * Fiche d'une cause en annexe, réduite à la plateforme détectée pour ce
+ * site : ses marches à suivre (CMS et/ou pare-feu/hébergeur) apparaissent en
+ * tête, suivies d'une ligne renvoyant au reste du catalogue sans le lister.
+ * La phrase « Plateforme détectée : … (d'après les indices de la page) »
+ * rappelle qu'il s'agit d'une estimation par indices, jamais d'une certitude
+ * (principe I, `docs/08-constitution.md`).
+ */
+const DetectedPlatformAppendixEntry = ({
+  cause,
+  result,
+}: {
+  cause: RemediationCause;
+  result: ReturnType<typeof remediationForPlatform>;
+}) => {
+  return (
+    <View style={styles.botResult}>
+      <Text style={styles.botName}>{cause.title}</Text>
+      {cause.caveat && <Text style={styles.caveatText}>À noter : {cause.caveat}</Text>}
+      {result.cmsLabel && (
+        <Text style={styles.platformNote}>
+          Plateforme détectée : {result.cmsLabel} (d&apos;après les indices de la page).
+        </Text>
+      )}
+      {cause.generalSteps?.map((step, idx) => (
+        <Text key={idx} style={styles.value}>
+          • {step}
+        </Text>
+      ))}
+      {result.cms && <PlatformEntry label={result.cms.label} guidance={result.cms.guidance} />}
+      {result.firewalls.map((entry) => (
+        <PlatformEntry key={entry.key} label={entry.label} guidance={entry.guidance} />
+      ))}
+      <Text style={styles.footerNote}>
+        D&apos;autres plateformes sont couvertes par notre catalogue de correctifs : contactez-nous si la vôtre
+        n&apos;apparaît pas ci-dessus.
+      </Text>
+    </View>
+  );
+};
+
+/**
+ * Point d'entrée de l'annexe pour une cause : bascule entre la fiche réduite
+ * (plateforme détectée) et la fiche complète (repli générique), selon ce que
+ * `remediationForPlatform` a pu établir pour ce site.
+ */
+const RemediationAppendixEntry = ({ cause, platform }: { cause: RemediationCause; platform?: PlatformDetection }) => {
+  const result = remediationForPlatform(cause, platform);
+
+  if (result.usedGeneralSteps) {
+    return <GenericRemediationAppendixEntry cause={cause} />;
+  }
+
+  return <DetectedPlatformAppendixEntry cause={cause} result={result} />;
 };
 
 const DiagnosticPdf = ({ report, results }: { report: ScanReport; results: ScanCoreResult[] }) => {
@@ -251,7 +315,7 @@ const DiagnosticPdf = ({ report, results }: { report: ScanReport; results: ScanC
               correspond à votre situation.
             </Text>
             {uniqueCauses.map((cause) => (
-              <RemediationAppendixEntry key={cause.id} cause={cause} />
+              <RemediationAppendixEntry key={cause.id} cause={cause} platform={report.platform} />
             ))}
           </View>
         )}
