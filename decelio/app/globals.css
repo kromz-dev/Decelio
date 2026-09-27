@@ -395,19 +395,21 @@
   animation-delay: calc(350ms + var(--i, 0) * 75ms);
 }
 
-@keyframes rise {
-  from { opacity: 0; transform: translateY(36px) scale(0.985); filter: blur(6px); }
-  to   { opacity: 1; transform: none; filter: none; }
+/* Cascade au defilement, pilotee par components/home/RevealOnScroll.tsx :
+   l'etat masque n'existe que sous html.reveal-ready (pose par le script),
+   donc sans JavaScript tout est visible. Declenchee une fois, jouee jusqu'au
+   bout : aucun bloc ne reste a mi-course. */
+.reveal-ready .reveal {
+  opacity: 0;
+  transform: translateY(34px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: calc(var(--i, 0) * 110ms);
 }
-
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal {
-      animation: rise linear both;
-      animation-timeline: view();
-      animation-range: entry calc(var(--i, 0) * 6%) cover calc(24% + var(--i, 0) * 6%);
-    }
-  }
+.reveal-ready .reveal.is-visible {
+  opacity: 1;
+  transform: none;
 }
 
 /* Un soulignement qui se trace au survol, pour les liens de navigation. */

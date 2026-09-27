@@ -4,6 +4,7 @@ import Link from "next/link";
 import HeroConcentric, { NAV_LINKS } from "./HeroConcentric";
 import { Verdict } from "@/components/ui/verdict";
 import { StructuredData } from "./StructuredData";
+import { RevealOnScroll } from "./RevealOnScroll";
 import { bricolage, schibsted } from "./fonts";
 import tokens from "./tokens.module.css";
 import styles from "./home.module.css";
@@ -196,6 +197,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
       <a href="#contenu" className={styles.skipLink}>Aller au contenu</a>
 
       <StructuredData faqs={faqs} />
+      <RevealOnScroll />
 
       <HeroConcentric isLoggedIn={isLoggedIn} />
 
