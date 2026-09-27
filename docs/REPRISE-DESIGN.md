@@ -24,27 +24,29 @@
 | #145 | Corrections signalées par l'Ingénierie : erreur console des réglages, « Étape 1 sur 3 », débogage de la connexion |
 | #150 | Page « Qui est derrière Decelio » (T067) |
 | #151 | Essai gratuit de 14 jours annoncé sur l'accueil, `/pricing` et les CGV ; bandeau « Essai : X jours restants » dans l'espace client (`components/TrialBanner.tsx`), calculé en heure de Paris |
+| #155 | Case « J'accepte les conditions générales de vente » à l'inscription, qui envoie `acceptTerms: true`. Débloque #152 |
+| #156 | CGV : la carte est demandée à la souscription et non à la création du compte. La formulation de #151 était inexacte |
+| #157 | ADR-002 passé en « appliqué » : son statut demandait encore d'afficher « pas de période d'essai » |
 
 ## 2. En cours, non fusionné
 
-**Rien côté Design.** Les deux branches laissées en suspens à la session précédente sont fusionnées : `design/pages-legales` (#126) et `design/harmonisation-app` (#133).
+**Rien côté Design.** Tout ce qui était en cours est fusionné.
 
 À surveiller, hors périmètre Design :
 
 | Branche | PR | État |
 |---|---|---|
-| `feat/acceptation-cgv` | #152 | Ouverte, Ingénierie. **Ne peut pas être fusionnée seule** : elle exige `acceptTerms: true` côté serveur alors que la case n'existe pas encore dans l'interface. C'est la tâche 1 du §3. |
+| `feat/acceptation-cgv` | #152 | Ouverte, Ingénierie. **Débloquée** : la case existe désormais dans l'interface depuis #155. Avant de fusionner, l'Ingénierie doit poser la bonne valeur de `TERMS_VERSION` : #151 et #156 ont tous deux changé le texte des CGV, une seule valeur postérieure à ces deux fusions les couvre. |
 
 Un worktree `decelio-design-sombre` existe sur la branche `design/mode-sombre-app`. Elle n'a aucun commit au-dessus de `main` et n'est pas poussée : soit une session démarre dessus, soit c'est un worktree abandonné à retirer (`git worktree remove`).
 
 ## 3. À faire, dans l'ordre
 
-1. **Acceptation des CGV à l'inscription**, pour débloquer #152 :
-   - case obligatoire « J'accepte les CGV » dans `app/register/page.tsx`, qui envoie `acceptTerms: true` à `/api/auth/register` ;
-   - **le bouton « Continuer avec Google » n'existe pas dans l'interface** alors que le fournisseur est configuré côté Ingénierie (`auth.config.ts`) : il est à créer, pas seulement à annoter, avec la mention « En continuant avec Google, vous acceptez les CGV » ;
-   - le bouton d'inscription par e-mail reste inactif tant que la case n'est pas cochée.
-2. Brancher `PlatformLine` sur la fiche site quand l'Ingénierie aura passé la prop depuis `sites/[siteId]/page.tsx`. Le composant existe et sert déjà dans `ScanResultPanel` et `/design-system`.
+1. **Après la fusion de #152** : afficher la version des CGV en tête de `/cgv`. L'Ingénierie expose `TERMS_UPDATED_LABEL` depuis `lib/legal/terms.ts`, à côté de `TERMS_VERSION`, pour que les deux ne puissent pas diverger. L'étiquette remplace le `<ToFill>date</ToFill>` de `app/(marketing)/cgv/page.tsx:43`. **Jamais avant** : le fichier n'existe pas encore sur `main`.
+2. Brancher `PlatformLine` sur la fiche site quand l'Ingénierie aura passé la donnée. Vérifié le 27/09 : `app/(app)/sites/[siteId]/page.tsx` ne charge aucune détection de plateforme, ni depuis `monitoredSite.scanLogs` ni ailleurs. Il ne s'agit donc pas seulement d'ajouter le composant, il faut d'abord que la donnée existe dans la page. Le composant est prêt et sert déjà dans `ScanResultPanel` et `/design-system`.
 3. Ne rien créer pour les alertes Slack / Teams tant que l'Ingénierie ne les a pas construites.
+
+**Le bouton « Continuer avec Google » n'existe toujours pas dans l'interface**, ni sur `/login` ni sur `/register`, alors que le fournisseur est configuré côté serveur (`auth.config.ts`). Il n'est pas prévu pour l'instant : l'exposer demande de vérifier le flux OAuth de bout en bout, et le principe II interdit d'afficher un bouton dont on ne sait pas s'il fonctionne. Aucune faille n'en découle, `createUser` n'enregistrant l'acceptation que si quelqu'un se connecte par Google, ce que personne ne peut faire. Le jour où le bouton arrive, la mention « En continuant avec Google, vous acceptez les conditions générales de vente » doit arriver dans la même fusion : le code serveur enregistre l'acceptation sans rien afficher, donc sans la mention l'acceptation enregistrée ne vaut rien.
 
 ## 4. Décisions attendues du fondateur
 
@@ -53,15 +55,17 @@ Un worktree `decelio-design-sombre` existe sur la branche `design/mode-sombre-ap
   - `cgv` : date, politique de remboursement, plafond de responsabilité, ville du siège.
   - `confidentialite` : date, identité du responsable de traitement, cadre du transfert Inngest, suppression de la fiche Stripe à la purge.
   - `a-propos` : l'histoire du fondateur en deux ou trois phrases.
-- La promesse « résultat en 15 secondes » : à confirmer ou à retirer (elle apparaît plusieurs fois).
-- Exemple de rapport sur l'accueil : il montre le logo Decelio, alors que `/pricing` dit que le rapport porte le logo de l'agence.
-- `docs/decisions/ADR-002` n'est plus à jour : son statut dit encore « pas encore fusionné dans main, le site doit continuer d'afficher pas de période d'essai », alors que le code (#139) et le texte (#151) sont sur `main`.
+- Exemple de rapport sur l'accueil : il montre le logo Decelio, alors que `/pricing` dit que le rapport porte le logo de l'agence. La marque de l'agence est bien réelle dans le code (`lib/reports/renderMonthlyReportPdf.tsx`, `resolveBrandName` et `resolveAccentColor`) : il ne s'agit pas d'une promesse non tenue, seulement de savoir ce que l'exemple doit montrer.
+- Clause « Paiement » des CGV : les pénalités de retard et l'indemnité de 40 € « sont appliquées », au présent, alors qu'aucun code ne les applique. C'est une clause légale obligatoire entre professionnels (article L441-10 du Code de commerce), donc sa présence est normale sans automatisation, mais le présent de l'indicatif se lit comme un fait constaté. À verser à la relecture juridique.
+
+Deux points de la liste précédente sont réglés et retirés : la promesse « résultat en 15 secondes » n'existe plus nulle part dans l'interface (vérifié le 27/09), et le statut de l'ADR-002 est corrigé par #157.
 
 ## 5. Signalé à l'Ingénierie, non corrigé côté Design
 
 - `lib/billing/trial.ts` : `getTrialEndsAt` lit `stripeTrialEnd` tel quel et peut donc rendre une date passée. Le champ n'est remis à `null` que par le webhook `customer.subscription.updated`, et aucune tâche de réconciliation ne rattrape un webhook perdu. Le bandeau d'essai se protège à l'affichage, mais la donnée reste fausse pour tout autre usage.
 - **Aucun endpoint webhook n'est enregistré sur le compte Stripe de test** (`GET /v1/webhook_endpoints` renvoie une liste vide au 27/09). En l'état, `customer.subscription.trial_will_end` n'atteint jamais l'application en test : l'e-mail de rappel à J-3, pourtant écrit (`lib/email/resend.ts`), n'est pas exerçable de bout en bout. À vérifier aussi en production.
-- `TERMS_VERSION` (`lib/legal/terms.ts`, branche #152) doit être porté à une date postérieure à la fusion de #151 : la clause d'essai des CGV a changé de fond, elle crée désormais une obligation de prélèvement automatique. Le `LastUpdated` en tête de `app/(marketing)/cgv/page.tsx` doit porter la même date.
+- `TERMS_VERSION` (`lib/legal/terms.ts`, branche #152) doit être porté à une valeur postérieure à **#151 et #156**, qui ont tous deux changé le texte des CGV : la clause d'essai crée désormais une obligation de prélèvement automatique, et #156 a corrigé le moment où la carte est demandée. Les deux fusions étant faites, une seule valeur les couvre. `TERMS_UPDATED_LABEL` et le `LastUpdated` en tête de `app/(marketing)/cgv/page.tsx` doivent porter la même date.
+- **Règle de coordination convenue le 27/09** : toute demande de fusion qui change le fond de `/cgv` (une clause, un prix, une durée, un engagement, le responsable du traitement, une adresse de contact) annonce la nouvelle version dans sa description, et l'Ingénierie la pose dans `lib/legal/terms.ts` dans la même fusion. Mise en forme seule : pas de nouvelle version.
 - `data-trial-ends-at` est du code mort depuis #151 : le bandeau reçoit la prop directement. Présent en double, dans `app/(app)/layout.tsx` et `app/(app)/settings/SettingsClient.tsx`.
 - `lib/scanner/verdicts.ts` : « robots.txt autorise … à **citer** ce site » ; `accessSummary` affiche « Refusé » pour un blocage général.
 - `app/(app)/reports/page.tsx` : meta description « visibilité IA ».
