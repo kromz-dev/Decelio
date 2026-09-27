@@ -13,14 +13,14 @@ import { cn } from "cn"
  * Le libellé est un verbe ("Ajouter un site"), sans flèche ni icône décorative.
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border border-transparent text-sm font-medium whitespace-nowrap select-none outline-none transition-[background-color,border-color,color,box-shadow,opacity] duration-(--duration-1) ease-(--ease-brand) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-stop [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-transparent text-sm font-medium whitespace-nowrap select-none outline-none transition-[background-color,border-color,color,box-shadow,opacity] duration-(--duration-1) ease-(--ease-brand) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-stop [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
           "bg-primary text-primary-foreground hover:bg-ink/88 active:bg-ink/80 aria-expanded:bg-ink/88",
         outline:
-          "border-line-strong bg-surface text-ink hover:bg-surface-2 active:bg-line/60 aria-expanded:bg-surface-2",
+          "border-line bg-surface text-ink-2 hover:text-ink hover:bg-surface-2 active:bg-line/60 aria-expanded:bg-surface-2 shadow-sm",
         secondary:
           "bg-surface-2 text-ink hover:bg-line/70 active:bg-line aria-expanded:bg-line/70",
         ghost:

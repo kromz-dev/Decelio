@@ -24,6 +24,10 @@
   --surface: #ffffff;    /* cartes, tableaux, champs */
   --surface-2: #e9edf2;  /* survol, en-têtes de tableau, fonds discrets */
 
+  /* Marque — bleu du logo Decelio */
+  --brand: #1d4ca4;       /* 8,0:1 sur blanc et 7,3:1 sur --paper : utilisable pour du texte */
+  --brand-soft: #e8eefb;  /* fonds discrets, puces, filets */
+
   /* Encre */
   --ink: #18213a;        /* texte principal, bouton principal */
   --ink-2: #5a6478;      /* texte secondaire, libellés (5.9:1 sur blanc) */
@@ -61,6 +65,10 @@
   --paper: #0e131d;
   --surface: #151c29;
   --surface-2: #1e2736;
+
+  /* Le bleu de marque est trop sombre sur fond sombre : on l'eclaircit. */
+  --brand: #7ea6f0;
+  --brand-soft: #16233d;
 
   --ink: #e6eaf2;
   --ink-2: #a2acbf;
@@ -163,6 +171,8 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted-foreground: var(--muted-foreground);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -306,5 +316,33 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Sans cette ligne, les entrees en cascade restent invisibles pendant tout
+       leur delai : opacity part de 0, et raccourcir la duree ne raccourcit pas
+       l'attente. Le hero pouvait rester vide pres de deux secondes pour qui
+       demande moins d'animation. */
+    animation-delay: 0ms !important;
   }
 }
+
+@keyframes float-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-cascade {
+  opacity: 0;
+  animation: float-up 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-700 { animation-delay: 700ms; }
+.delay-900 { animation-delay: 900ms; }
+
+
+.delay-\[1100ms\] { animation-delay: 1100ms; }
+.delay-\[1300ms\] { animation-delay: 1300ms; }
+.delay-\[1500ms\] { animation-delay: 1500ms; }
+
+.rounded-full { border-radius: 9999px !important; }

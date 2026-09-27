@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "decelio-dev",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-Command",
+        "Set-Location -LiteralPath 'C:/Users/kkace/Desktop/business/saas/Cited/decelio'; npm run dev"
+      ],
+      "port": 3000
+    }
+  ]
+}
