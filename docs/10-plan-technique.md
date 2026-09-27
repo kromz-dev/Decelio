@@ -202,6 +202,14 @@ model User {
   isFounderMember  Boolean   @default(false)
   founderOfferAt   DateTime?
 
+  // Acceptation des CGV : date et version acceptées. Nullables parce que les
+  // comptes créés avant cette fonctionnalité n'ont accepté aucune version —
+  // `NULL` est ici l'information exacte, pas une valeur manquante à rattraper.
+  // La version de référence vit dans `lib/legal/terms.ts` ; la règle qui dit
+  // quand l'augmenter est en commentaire dans ce même fichier.
+  termsAcceptedAt DateTime?
+  termsVersion    String?
+
   clients        Client[]
   brandSettings  BrandSettings?
   monthlyReports MonthlyReport[]
@@ -302,7 +310,7 @@ Inngest Hobby compte **une exécution par lancement de fonction et une par step*
 | Authentification | NextAuth v5, session base de données | Ajouter la réinitialisation de mot de passe par e-mail (EF-014, absente aujourd'hui) |
 | Autorisation des tarifs Stripe | Résolution serveur uniquement (`lib/billing/plans.ts`) | Inchangé ; le coupon fondateur (§14 PRD) est un objet Stripe natif, jamais un pourcentage calculé côté client. Coupon créé en mode test le 24/09 (T037) : id `FONDATEUR50` (et non `founder-50`), −50 %, `duration: forever`, `max_redemptions: 10`. Le serveur ne l'accepte que s'il correspond à `STRIPE_FOUNDER_COUPON`. À recréer à l'identique en mode live. |
 | Secrets | Variables d'environnement (`.env.example` déjà exhaustif) | Répliquer dans les variables d'environnement Render + GitHub Actions (secrets chiffrés), jamais dans un fichier commité |
-| RGPD | Champs `purgeAt`/`dataExportedAt` déjà en base, non exposés | Exposer dans les paramètres (EF-015, T041) ; purge à 60 j déjà programmée par le webhook Stripe (EF-056) |
+| RGPD | Champs `purgeAt`/`dataExportedAt` déjà en base, non exposés | Exposer dans les paramètres (EF-015, T041) ; purge à 60 j déjà programmée par le webhook Stripe (EF-056). L'acceptation des CGV est enregistrée comme une donnée explicite sur `User` (date + version du texte accepté), à l'inscription par e-mail (`app/api/auth/register/route.ts`) et à la première connexion Google (événement `createUser` dans `auth.ts`). La valeur enregistrée n'est jamais réécrite : un compte garde la version qu'il a acceptée ce jour-là |
 
 ## 11. Observabilité
 
@@ -322,7 +330,7 @@ Inngest Hobby compte **une exécution par lancement de fonction et une par step*
 ## 13. Plan de déploiement
 
 1. **CI** (GitHub Actions, `.github/workflows/ci.yml`) : sur chaque push/PR, exécute dans l'ordre `npx tsc --noEmit`, `npm run lint`, `npx vitest run`, `npm run build`. Aucune fusion sur `main` sans les quatre portes vertes (constitution, portes de qualité).
-2. **Migrations** : `npx prisma migrate deploy` exécuté en étape de déploiement (avant le démarrage du nouveau processus), jamais `db push` en production.
+2. **Migrations** : `npx prisma migrate deploy` exécuté en étape de déploiement (avant le démarrage du nouveau processus), jamais `db push` en production. La base de production n'a aucun historique de migrations Prisma (elle a été montée par `db push`), donc `migrate deploy` ne peut pas tourner tel quel : un baseline est nécessaire au préalable, procédure détaillée dans `docs/runbooks/deploiement-render-neon.md`. Pour un changement additif comme l'acceptation des CGV (§6), la migration doit tourner avant que le nouveau processus ne serve du trafic, sinon le code écrit dans des colonnes absentes — c'est déjà le cas puisque `render.yaml` chaîne `migrate deploy` dans son `buildCommand`.
 3. **Déploiement continu** : push sur `main` → build Next.js → déploiement sur Render (service unique, région Francfort). Variables d'environnement répliquées depuis `.env.example`.
 4. **Bascule Inngest** : `INNGEST_SIGNING_KEY` et l'URL publique de `/api/inngest` enregistrées dans le tableau de bord Inngest à chaque changement d'hébergeur (pas d'automatisation nécessaire au stade MVP, un seul environnement de production).
 5. **Domaine** : sous-domaine `*.onrender.com` jusqu'au premier client payant, puis `decelio.app` (DNS pointé vers Render), TLS géré par l'hébergeur.

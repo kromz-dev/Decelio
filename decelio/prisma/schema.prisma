@@ -44,6 +44,11 @@ model User {
   isFounderMember Boolean   @default(false)
   founderOfferAt  DateTime?
 
+  // Acceptation des CGV à l'inscription : date et version.
+  // Null pour les comptes créés avant cette fonctionnalité.
+  termsAcceptedAt DateTime?
+  termsVersion    String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 

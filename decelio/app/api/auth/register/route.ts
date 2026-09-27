@@ -6,6 +6,7 @@ import { registerSchema } from "@/lib/auth-validation";
 import { callerKey, rateLimit } from "@/lib/rate-limit";
 import { REGISTER_LIMIT_PER_HOUR, REGISTER_WINDOW_MS } from "@/lib/auth-registration-policy";
 import { captureServerEvent } from "@/lib/posthog-server";
+import { TERMS_VERSION } from "@/lib/legal/terms";
 
 export const runtime = "nodejs";
 
@@ -32,7 +33,13 @@ export async function POST(request: Request) {
   let userId: string;
   try {
     const user = await db.user.create({
-      data: { email, name, passwordHash: await hashPassword(password) },
+      data: {
+        email,
+        name,
+        passwordHash: await hashPassword(password),
+        termsAcceptedAt: new Date(),
+        termsVersion: TERMS_VERSION,
+      },
       select: { id: true },
     });
     userId = user.id;

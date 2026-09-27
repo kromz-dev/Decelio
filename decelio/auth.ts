@@ -6,7 +6,8 @@ import authConfig from "./auth.config"
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password"
 import { loginSchema } from "@/lib/auth-validation"
 import { callerKey, rateLimit } from "@/lib/rate-limit"
-import { captureServerEvent } from "@/lib/posthog-server"
+import { captureServerEvent, captureServerException } from "@/lib/posthog-server"
+import { TERMS_VERSION } from "@/lib/legal/terms"
 import {
   LOGIN_IP_LIMIT,
   LOGIN_IP_WINDOW_MS,
@@ -69,6 +70,37 @@ export async function authorizeCredentials(credentials: unknown, request?: Reque
  */
 export async function handleUserCreated({ user }: { user: { id?: string } }) {
   if (!user.id) return;
+  // Acceptation des CGV (T069) : Google est configuré côté serveur
+  // (`auth.config.ts`) mais aucune page n'offre aujourd'hui de bouton
+  // « Continuer avec Google ». Le chemin reste néanmoins atteignable en
+  // appelant directement le point de terminaison de connexion de NextAuth,
+  // donc ce code doit rester correct. La valeur juridique de l'acceptation
+  // enregistrée ici dépendra de l'affichage, à côté du futur bouton, de la
+  // mention « En continuant avec Google, vous acceptez les CGV » — à poser
+  // dans la même fusion que ce bouton, le jour où il est ajouté.
+  //
+  // `@auth/core` appelle cet événement sans try/catch (voir
+  // node_modules/@auth/core/src/lib/actions/callback/handle-login.ts) : une
+  // exception non rattrapée ici casserait toute la connexion. Or l'adaptateur
+  // Prisma a déjà créé la ligne `User` avant que l'événement ne parte, donc
+  // une nouvelle tentative de connexion Google ne redéclenche jamais
+  // `createUser` — le compte resterait sans acceptation, définitivement, sans
+  // rien pour le signaler. On préfère une connexion qui marche plus une
+  // erreur bruyante plutôt qu'une connexion cassée ET aucune acceptation
+  // enregistrée.
+  //
+  // Requête de rattrapage pour retrouver les comptes concernés : un compte
+  // Google sans acceptation se reconnaît à `termsAcceptedAt IS NULL` combiné
+  // à `passwordHash IS NULL` (un compte créé par mot de passe a forcément
+  // les deux renseignés).
+  try {
+    await db.user.update({
+      where: { id: user.id },
+      data: { termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
+    });
+  } catch (error) {
+    await captureServerException(error, user.id, { source: "handleUserCreated" });
+  }
   await captureServerEvent(user.id, "signup_completed", { method: "google" });
 }
 

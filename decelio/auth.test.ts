@@ -3,7 +3,8 @@ import { authorizeCredentials, credentialsProvider, handleUserCreated } from "./
 import authConfig from "./auth.config";
 import { db } from "@/lib/db";
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password";
-import { captureServerEvent } from "@/lib/posthog-server";
+import { captureServerEvent, captureServerException } from "@/lib/posthog-server";
+import { TERMS_VERSION } from "@/lib/legal/terms";
 
 const DUMMY_HASH = "scrypt:dummysalt:dummykey";
 
@@ -11,6 +12,7 @@ vi.mock("@/lib/db", () => ({
   db: {
     user: {
       findUnique: vi.fn(),
+      update: vi.fn(async () => ({})),
     },
   },
 }));
@@ -22,6 +24,7 @@ vi.mock("@/lib/password", () => ({
 
 vi.mock("@/lib/posthog-server", () => ({
   captureServerEvent: vi.fn(async () => undefined),
+  captureServerException: vi.fn(async () => undefined),
 }));
 
 describe("NextAuth Credentials Provider & Configuration", () => {
@@ -210,10 +213,55 @@ describe("NextAuth Credentials Provider & Configuration", () => {
       });
     });
 
+    it("enregistre l'acceptation des CGV (date et version) pour un nouveau compte Google", async () => {
+      await handleUserCreated({ user: { id: "user_google_1" } });
+
+      expect(db.user.update).toHaveBeenCalledWith({
+        where: { id: "user_google_1" },
+        data: { termsAcceptedAt: expect.any(Date), termsVersion: TERMS_VERSION },
+      });
+    });
+
     it("n'émet rien si le message ne porte aucun identifiant", async () => {
       await handleUserCreated({ user: {} });
 
       expect(captureServerEvent).not.toHaveBeenCalled();
+      expect(db.user.update).not.toHaveBeenCalled();
+    });
+
+    it("ne relance pas d'exception si l'écriture de l'acceptation échoue", async () => {
+      vi.mocked(db.user.update).mockRejectedValueOnce(new Error("db down"));
+
+      await expect(handleUserCreated({ user: { id: "user_google_1" } })).resolves.toBeUndefined();
+    });
+
+    it("signale l'échec d'écriture via captureServerException avec l'identifiant utilisateur", async () => {
+      const writeError = new Error("db down");
+      vi.mocked(db.user.update).mockRejectedValueOnce(writeError);
+
+      await handleUserCreated({ user: { id: "user_google_1" } });
+
+      expect(captureServerException).toHaveBeenCalledWith(
+        writeError,
+        "user_google_1",
+        expect.anything(),
+      );
+    });
+
+    it("émet quand même signup_completed si l'écriture de l'acceptation échoue", async () => {
+      vi.mocked(db.user.update).mockRejectedValueOnce(new Error("db down"));
+
+      await handleUserCreated({ user: { id: "user_google_1" } });
+
+      expect(captureServerEvent).toHaveBeenCalledWith("user_google_1", "signup_completed", {
+        method: "google",
+      });
+    });
+
+    it("n'appelle pas captureServerException au cas nominal", async () => {
+      await handleUserCreated({ user: { id: "user_google_1" } });
+
+      expect(captureServerException).not.toHaveBeenCalled();
     });
   });
 });
