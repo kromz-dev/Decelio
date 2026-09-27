@@ -14,11 +14,13 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [siteSize, setSiteSize] = useState("6-20");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!acceptTerms) return;
     setLoading(true);
     setError("");
 
@@ -30,6 +32,7 @@ export default function RegisterPage() {
           name: agency,
           email,
           password,
+          acceptTerms: true,
         }),
       });
 
@@ -136,6 +139,39 @@ export default function RegisterPage() {
             {error}
           </p>
         )}
+
+        {/*
+          text-sm text-ink plutôt que le text-xs text-ink-2 des libellés de champ :
+          c'est un engagement contractuel à lire, pas un simple intitulé de champ,
+          il mérite la même taille et le même contraste que le texte courant.
+        */}
+        <label
+          htmlFor="i-accept-terms"
+          className="flex min-h-11 cursor-pointer items-start gap-2.5 text-sm text-ink"
+        >
+          <input
+            id="i-accept-terms"
+            type="checkbox"
+            required
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 rounded-xs border border-line-strong accent-cobalt"
+          />
+          <span>
+            J&apos;accepte les{" "}
+            <Link
+              href="/cgv"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-cobalt underline"
+              // Empêche la remontée du clic vers le <label> : sans ça, ouvrir les CGV coche la case CGV par effet de bord.
+              onClick={(event) => event.stopPropagation()}
+            >
+              conditions générales de vente
+            </Link>
+            .
+          </span>
+        </label>
 
         <Button type="submit" size="lg" disabled={loading} className="mt-1 w-full">
           {loading ? "Création du compte..." : "Créer mon compte"}
