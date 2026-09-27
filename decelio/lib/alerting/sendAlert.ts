@@ -11,7 +11,7 @@ export interface AlertSiteChange {
   fix: string;
 }
 
-const FROM = "Decelio <bonjour@decelio.app>";
+const FROM = "Decelio <bonjour@decelio.fr>";
 
 export function suggestFix(cause: string): string {
   if (/robots\.txt/i.test(cause)) {
