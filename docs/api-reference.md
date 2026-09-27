@@ -189,3 +189,23 @@ Deux points d'application, tous deux dans `decelio/app/actions/sites.ts` (server
 - **`addMonitoredSitesBulk`** (import en masse, jusqu'à 100 lignes) : applique la **même** logique de quota (mêmes vérifications d'abonnement, même `maxSitesFor`), mais **sans le verrou `FOR UPDATE`** que possède `addMonitoredSite`. Voir Constat n°4 du rapport d'audit pour la conséquence exacte (course possible entre deux imports en masse concurrents du même compte).
 
 Le prix payé ne peut pas non plus être choisi par le client : `priceIdForPlan`/`planForPriceId` (mêmes `lib/billing/plans.ts`) font de la table serveur `PRICE_ID_BY_PLAN` la seule autorité, et le webhook Stripe déduit toujours le plan du tarif que Stripe confirme avoir facturé (`fetchedSubscription`), jamais d'une valeur transmise par le client.
+
+---
+
+## Événements de tunnel
+
+Le tunnel de conversion est mesuré **côté serveur** (PostHog Cloud UE, `decelio/lib/posthog-server.ts`, fonction `captureServerEvent`), pour rester fiable même quand un bloqueur de publicité coupe le SDK client. Chaque événement porte un `distinctId` qui est **l'identifiant interne `User.id`** — le même que celui passé à `posthog.identify` côté client (`instrumentation-client.ts`) — afin que le parcours d'un même compte se recolle entre les deux sources.
+
+**Garantie sans donnée personnelle** : aucune propriété d'aucun de ces événements ne contient d'e-mail, de domaine client ni de nom. Le `distinctId` identifie déjà l'utilisateur ; les propriétés ne décrivent que l'action (méthode, quantités, plan). Sans `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`/`NEXT_PUBLIC_POSTHOG_HOST`, `captureServerEvent` est un no-op silencieux, et une erreur PostHog n'interrompt jamais l'action métier qui l'a déclenché.
+
+| Événement | Où | Propriétés |
+|---|---|---|
+| `signup_completed` | `decelio/app/api/auth/register/route.ts`, après la création réussie du compte | `{ method: "credentials" }` |
+| `site_added` | `decelio/app/actions/sites.ts` (`addMonitoredSite` et `addMonitoredSitesBulk`), après l'ajout effectif d'au moins un site | `{ count, total_sites, is_first_site }` — `count` = nombre de sites ajoutés par cette action, `total_sites` = total du compte après l'ajout, `is_first_site` = vrai si le compte n'avait aucun site avant |
+| `checkout_started` | `decelio/lib/billing/actions.ts` (`createCheckoutSession`), juste avant la redirection vers Stripe Checkout | `{ plan }` |
+| `subscription_activated` | `decelio/app/api/webhooks/stripe/route.ts`, dans le traitement de `checkout.session.completed`, quand le plan est effectivement écrit sur l'utilisateur | `{ plan }` |
+| `subscription_canceled` | `decelio/app/api/webhooks/stripe/route.ts`, dans le traitement de `customer.subscription.deleted`, quand le plan repasse à `FREE` | `{ plan: "FREE", previous_plan }` |
+
+**Inscription par Google** : non instrumentée dans cette itération. `signup_completed` n'est branché que sur l'inscription par identifiants (`app/api/auth/register/route.ts`) ; la création de compte via le fournisseur Google passe par `auth.ts`, hors périmètre de ce travail (un autre agent y intervient en parallèle).
+
+**Idempotence des événements Stripe** : les deux événements du webhook sont émis **après** la vérification d'idempotence (`ProcessedWebhook`, contrainte unique sur l'identifiant d'événement Stripe). Un événement Stripe rejoué échoue sur ce marqueur avant d'atteindre le code qui émet l'événement PostHog, donc un webhook rejoué n'émet jamais l'événement une seconde fois.
