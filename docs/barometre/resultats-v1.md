@@ -20,7 +20,7 @@ Sur les 270 domaines scannés, **20 ont été exclus du dénominateur** (site in
 
 **Dénominateur retenu pour tous les chiffres ci-dessous : 250 sites** (210 médias, 40 e-commerce).
 
-Un cas particulier est conservé dans le dénominateur sans être une exclusion : `booking.com` a répondu (code 202) mais son contenu dépend fortement du JavaScript côté client (`jsVerdict = likely_js_dependent`). Le scan ne peut rien affirmer sur ce que verrait un robot texte, statut publié en **COQUILLE VIDE**, jamais compté comme « bloqué » ni comme « ok ».
+Un cas particulier est conservé dans le dénominateur sans être une exclusion : un site e-commerce a répondu (code 202) mais son contenu dépend fortement du JavaScript côté client (`jsVerdict = likely_js_dependent`). Le scan ne peut rien affirmer sur ce que verrait un robot texte, statut publié en **COQUILLE VIDE**, jamais compté comme « bloqué » ni comme « ok ».
 
 ## 3. Chiffres clés : robots de recherche/citation (OAI-SearchBot, Claude-SearchBot, PerplexityBot)
 
