@@ -29,16 +29,26 @@ const POSTHOG_ASSETS_HOST = "https://eu-assets.i.posthog.com";
 /**
  * En-têtes qui révéleraient l'IP réelle du visiteur au tiers, ou qui
  * n'ont pas de sens une fois relayés vers un autre hôte (ex. `host`, qui
- * désignerait encore notre domaine et non celui de PostHog).
+ * désignerait encore notre domaine et non celui de PostHog). Inclus aussi
+ * les cookies (pas nécessaires pour PostHog, révèleraient d'autres données).
  */
 const STRIPPED_REQUEST_HEADERS = [
   "x-forwarded-for",
   "x-real-ip",
   "cf-connecting-ip",
+  "forwarded",
   "host",
   "connection",
   "content-length",
+  "cookie",
 ];
+
+/**
+ * Limite de taille du corps des requêtes (en octets). PostHog s'attend à
+ * des requêtes JSON classiques (quelques KB) ; au-delà, rejette. Cette
+ * limite défend contre les attaques par déni de service.
+ */
+const MAX_BODY_SIZE = 256 * 1024; // 256 KiB
 
 function buildTargetUrl(pathSegments: string[], search: string): URL {
   const base = pathSegments[0] === "static" ? POSTHOG_ASSETS_HOST : POSTHOG_INGEST_HOST;
@@ -55,13 +65,32 @@ async function proxy(request: NextRequest, pathSegments: string[]): Promise<Resp
   }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
+  let bodyBuffer: ArrayBuffer | undefined;
+
+  if (hasBody) {
+    const contentLength = request.headers.get("content-length");
+    const declaredSize = contentLength ? parseInt(contentLength, 10) : 0;
+    if (declaredSize > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: "payload_too_large" },
+        { status: 413 },
+      );
+    }
+    bodyBuffer = await request.arrayBuffer();
+    if (bodyBuffer.byteLength > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: "payload_too_large" },
+        { status: 413 },
+      );
+    }
+  }
 
   let upstreamResponse: Response;
   try {
     upstreamResponse = await fetch(targetUrl, {
       method: request.method,
       headers,
-      body: hasBody ? await request.arrayBuffer() : undefined,
+      body: bodyBuffer,
       redirect: "manual",
       // Ce relais est un proxy analytique côté serveur : on ne veut jamais
       // qu'un défaut réseau PostHog fasse échouer la page qui l'a déclenché

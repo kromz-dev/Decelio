@@ -16,7 +16,7 @@ describe("GET/POST /ingest/[...path]", () => {
     vi.restoreAllMocks();
   });
 
-  it("relaie un événement vers l'hôte d'ingestion PostHog EU sans transmettre l'IP du visiteur", async () => {
+  it("relaie un événement vers l'hôte d'ingestion PostHog EU sans transmettre l'IP du visiteur ni les cookies", async () => {
     const fetchSpy = vi.fn().mockResolvedValue(new Response("ok", { status: 200 }));
     vi.stubGlobal("fetch", fetchSpy);
 
@@ -26,6 +26,8 @@ describe("GET/POST /ingest/[...path]", () => {
         "x-forwarded-for": "203.0.113.42",
         "x-real-ip": "203.0.113.42",
         "cf-connecting-ip": "203.0.113.42",
+        "forwarded": "for=203.0.113.42",
+        "cookie": "session=abc123",
         "content-type": "application/json",
       },
       body: JSON.stringify({ event: "test" }),
@@ -42,6 +44,8 @@ describe("GET/POST /ingest/[...path]", () => {
     expect(forwardedHeaders.has("x-forwarded-for")).toBe(false);
     expect(forwardedHeaders.has("x-real-ip")).toBe(false);
     expect(forwardedHeaders.has("cf-connecting-ip")).toBe(false);
+    expect(forwardedHeaders.has("forwarded")).toBe(false);
+    expect(forwardedHeaders.has("cookie")).toBe(false);
     expect(forwardedHeaders.has("host")).toBe(false);
   });
 
@@ -97,5 +101,42 @@ describe("GET/POST /ingest/[...path]", () => {
     const response = await POST(request, params(["e"]));
 
     expect(response.status).toBe(502);
+  });
+
+  it("renvoie 413 Payload Too Large si la taille déclarée dépasse la limite", async () => {
+    const largeBody = JSON.stringify({ events: new Array(1000).fill({ event: "test" }) });
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const request = makeRequest("https://decelio.fr/ingest/e", {
+      method: "POST",
+      headers: {
+        "content-length": String(1024 * 1024), // 1 MiB
+        "content-type": "application/json",
+      },
+      body: largeBody,
+    });
+
+    const response = await POST(request, params(["e"]));
+
+    expect(response.status).toBe(413);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("renvoie 413 Payload Too Large si le corps réel dépasse la limite", async () => {
+    const largeBody = "x".repeat(300 * 1024); // 300 KiB
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const request = makeRequest("https://decelio.fr/ingest/e", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: largeBody,
+    });
+
+    const response = await POST(request, params(["e"]));
+
+    expect(response.status).toBe(413);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
