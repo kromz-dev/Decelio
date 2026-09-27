@@ -4,6 +4,7 @@ import { LayoutDashboard, Globe, Settings, LogOut, Bell, FileText } from "lucide
 import { redirect } from "next/navigation";
 import { Wordmark } from "@/components/home/SiteChrome";
 import { getTrialEndsAt } from "@/lib/billing/trial";
+import { TrialBanner } from "@/components/TrialBanner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -11,12 +12,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/login");
   }
 
-  // Essai gratuit (ADR-002) : `null` hors essai. Réservé au bandeau du
-  // Design ; posé en attribut de données tant qu'aucune interface ne l'affiche.
+  // Essai gratuit (ADR-002) : `null` hors essai, alors le bandeau ne s'affiche pas.
   const trialEndsAt = await getTrialEndsAt(session.user?.id);
 
   return (
     <div className="min-h-screen bg-paper text-ink" data-trial-ends-at={trialEndsAt ? trialEndsAt.toISOString() : undefined}>
+      <TrialBanner trialEndsAt={trialEndsAt} />
       <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4 md:hidden">
         <Link href="/dashboard" aria-label="Decelio, portefeuille">
           <Wordmark />
