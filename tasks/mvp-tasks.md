@@ -531,25 +531,25 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : `tsc`, `eslint`, `vitest` au vert ; rendu vérifié à 1440 px et à 375 px.
   - **Taille** : L
 
-- [ ] **T067** [MARKETING] Page « Qui est derrière Decelio », signée - `app/(marketing)/a-propos/page.tsx`
+- [x] **T067** [MARKETING] Page « Qui est derrière Decelio », signée - `app/(marketing)/a-propos/page.tsx`
   - **Dépendances** : Aucune
   - **EF/ENF** : `docs/11-audit-landing-page.md` §2.2
-  - **Note** : seul trou E-E-A-T de la page. Aucun nom humain n'apparaît nulle part, alors que « qui affirme cela » est un critère de sélection pour les moteurs de réponse, et une objection commerciale directe quand une agence confie son portefeuille.
+  - **Note** : preuve : #150. Fusionnée sur `main` le 27/09.
   - **Vérification** : la page existe, elle est liée depuis le pied de page, et porte un nom.
   - **Taille** : S
 
 - [ ] **T068** [MARKETING] Vérifier le domaine `decelio.fr` chez Resend - tableau de bord Resend
   - **Dépendances** : Aucune
-  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Domaine créé dans Resend le 27/09 (région eu-west-1), mais DNS OVH reste à ajouter (TXT `resend._domainkey`, MX `send`, TXT `send` SPF, CNAME `rsend`).
+  - **Note** : bloquant pour tous les e-mails produits. Domaine créé dans Resend (région eu-west-1), statut **`not_started`** au 27/09 (fin de journée) : la vérification n'a pas commencé. DNS OVH reste à ajouter (TXT `resend._domainkey`, MX `send`, TXT `send` SPF, CNAME `rsend`).
   - **Vérification** : `list-domains` renvoie `decelio.fr` avec le statut vérifié.
   - **Taille** : S
 
 ## Phase 11 : Avant le lancement (27/09)
 
-- [ ] **T069** [QUAL] Acceptation des CGV à l'inscription (case à cocher, horodatage, version acceptée) - `decelio/app/api/auth/register/route.ts`, `decelio/prisma/schema.prisma` (`User.termsAcceptedAt`)
+- [x] **T069** [QUAL] Acceptation des CGV à l'inscription (case à cocher, horodatage, version acceptée) - `decelio/app/api/auth/register/route.ts`, `decelio/prisma/schema.prisma` (`User.termsAcceptedAt`)
   - **Dépendances** : T070 (les CGV doivent exister pour qu'on puisse en accepter une version)
   - **EF/ENF** : constitution (honnêteté), obligation légale française
-  - **Note** : ne peut être fait qu'après la fusion des pages légales, sinon rien à accepter.
+  - **Note** : preuve : #152 (colonnes `User.termsAcceptedAt`/`termsVersion`, `lib/legal/terms.ts`), #155 (case à cocher côté formulaire), #160 (date et version en tête des CGV, `TERMS_VERSION = "2026-09-27-2"`).
   - **Vérification** : un compte créé sans cocher la case est refusé ; le compte créé porte `termsAcceptedAt` et la version acceptée.
   - **Taille** : S
 
@@ -559,15 +559,15 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : les trois pages existent, liées depuis le pied de page ; aucune mention inventée (numéro SIREN, adresse) tant que non disponible.
   - **Taille** : M
 
-- [ ] **T071** [FACT] Essai gratuit de 14 jours avec carte bancaire dès l'inscription (ADR-002) - `decelio/lib/billing/actions.ts`, webhook Stripe
+- [x] **T071** [FACT] Essai gratuit de 14 jours avec carte bancaire dès l'inscription (ADR-002) - `decelio/lib/billing/actions.ts`, webhook Stripe
   - **Dépendances** : Aucune
-  - **Note** : en cours sur la branche `feat/essai-gratuit-14-jours`, pas fusionnée au 27/09. Décision du fondateur consignée dans `docs/decisions/ADR-002-essai-gratuit-14-jours.md` (sur une autre branche, non fusionnée non plus).
+  - **Note** : preuve : #139 (fusion sur `main`), #151 (bandeau d'essai et annonce, Design). `docs/decisions/ADR-002-essai-gratuit-14-jours.md` passé au statut « appliqué » (#157).
   - **Vérification** : un Checkout de test crée un abonnement `trialing` de 14 jours ; à l'échéance sans annulation, le prélèvement se déclenche.
   - **Taille** : M
 
 - [ ] **T072** [ING] Proxy PostHog par notre propre domaine (ADR-004) - `decelio/next.config.ts` (rewrites), `decelio/instrumentation-client.ts`
   - **Dépendances** : Aucune
-  - **Note** : fusionnée par #134 (route `/ingest/[...path]`, IP/cookies/forwarded retirés, limite 256 Kio). Reste : vérification réseau dans un vrai navigateur que aucune requête ne part vers `*.posthog.com`.
+  - **Note** : fusionnée par #134 (route `/ingest/[...path]`, IP/cookies/forwarded retirés, limite 256 Kio). Vérification locale faite par le Design dans un navigateur le 27/09 : aucune requête hors `localhost`, événements bien sur `/ingest`. Reste : refaire cette vérification une fois l'application déployée.
   - **Vérification** : les requêtes PostHog partent du domaine `decelio.fr` dans l'onglet réseau, jamais de `*.posthog.com` directement.
   - **Taille** : S
 
@@ -595,14 +595,14 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : les quatre branches ci-dessus fusionnées sur main avec leurs tests verts.
   - **Taille** : M
 
-- [ ] **T077** [ING] Même faux « COQUILLE VIDE » dans `/api/audit` - `decelio/lib/scanner/analyzer.ts` (analyzeResponse / EMPTY_JS_REQUIRED)
+- [x] **T077** [ING] Même faux « COQUILLE VIDE » dans `/api/audit` - `decelio/lib/scanner/analyzer.ts` (analyzeResponse / EMPTY_JS_REQUIRED)
   - **Dépendances** : T076
-  - **Note** : la route `/api/audit` (ancienne, exposée en public) réutilise le moteur `lib/scanner/analyzer.ts` qui contient le même biais « COQUILLE VIDE » que le scanner. Correctif orthogonal, tâche séparée.
+  - **Note** : preuve : #146. La route `/api/audit` compte désormais le statut `LOW_TEXT` comme accessible, comme le scanner principal.
   - **Vérification** : une page courte sans indice de rendu JavaScript n'est plus classée « COQUILLE VIDE » par `/api/audit`.
   - **Taille** : S
 
-- [ ] **T078** [ING] Préparation du lancement - `decelio/auth.ts`, `.env.example`
+- [x] **T078** [ING] Préparation du lancement - `decelio/auth.ts`, `.env.example`
   - **Dépendances** : Aucune
-  - **Note** : en cours sur la branche `chore/avant-lancement` (demande #142). Contenu : `AUTH_TRUST_HOST=true` dans `.env.example`, `signup_completed` après connexion Google, suppression du texte « visibilité IA » du formulaire de prospection, suppression du client Stripe à la purge RGPD d'un compte.
+  - **Note** : preuve : #142, fusionnée sur `main`. `AUTH_TRUST_HOST=true` dans `.env.example`, `signup_completed` après connexion Google, suppression du texte « visibilité IA » du formulaire de prospection, suppression du client Stripe à la purge RGPD d'un compte.
   - **Vérification** : les quatre changements sont présents dans `main` ; `tsc`, `eslint`, `vitest` au vert.
   - **Taille** : S
