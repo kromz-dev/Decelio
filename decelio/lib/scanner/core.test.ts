@@ -106,12 +106,32 @@ describe("runCoreScan", () => {
     const ok = await runCoreScan("https://example.com", ["PerplexityBot"]);
     expect(ok.results[0]).toMatchObject({ agent: "PerplexityBot", simpleStatus: "OK", httpStatus: 200 });
 
+    // Blocage général (règle 1) : le challenge répond à toute UA sur ce domaine,
+    // y compris la sonde GPTBot (même statut, même page) : aucune preuve ne
+    // vise GPTBot en particulier, donc « À VÉRIFIER », jamais BLOQUÉ.
     const blocked = await runCoreScan("https://challenge.example.com", ["GPTBot"]);
-    expect(blocked.results[0]).toMatchObject({ simpleStatus: "BLOQUÉ", httpStatus: 403 });
+    expect(blocked.results[0]).toMatchObject({ simpleStatus: "À VÉRIFIER", httpStatus: 403 });
     expect(blocked.report.access.risk).toBe("challenged");
 
     const empty = await runCoreScan("https://spa.example.com", ["ClaudeBot"]);
     expect(empty.results[0]).toMatchObject({ simpleStatus: "COQUILLE VIDE", httpStatus: 200 });
+  });
+
+  it("marks every bot À VÉRIFIER (never BLOQUÉ) when the honest request itself gets a general 403", async () => {
+    // Reproduction du défaut réel (bug report) : un hôte qui répond 403 à
+    // tout, y compris DecelioBot. Rien ne prouve que GPTBot, ClaudeBot ou
+    // PerplexityBot soient visés en particulier.
+    stubFetch(() => new Response("Forbidden", { status: 403 }));
+    const { report, results } = await runCoreScan("https://example.com", [
+      "GPTBot",
+      "ClaudeBot",
+      "PerplexityBot",
+    ]);
+    expect(report.access.risk).toBe("blocked");
+    expect(report.access.httpStatus).toBe(403);
+    for (const result of results) {
+      expect(result.simpleStatus, `${result.agent} doit être À VÉRIFIER`).toBe("À VÉRIFIER");
+    }
   });
 
   it("marks a bot BLOQUÉ when robots.txt disallows it even if the page loads", async () => {
@@ -125,7 +145,7 @@ describe("runCoreScan", () => {
     expect(results.find((r) => r.agent === "GPTBot")?.simpleStatus).toBe("OK");
   });
 
-  it("labels spoofed-UA probes as unverified requesters", async () => {
+  it("marks BLOQUÉ (indice) when the honest request succeeds but a spoofed-UA probe is blocked", async () => {
     stubFetch((url, ua) => {
       if (url.endsWith("/robots.txt")) return new Response("", { status: 404 });
       if (ua.includes("GPTBot")) return new Response("Forbidden", { status: 403 });
@@ -141,7 +161,18 @@ describe("runCoreScan", () => {
         differsFromBaseline: true,
       },
     ]);
-    // Le résumé repose sur la requête honnête, pas sur la sonde.
+    // La requête honnête passe (règle 3) : la sonde bloquée devient un indice
+    // de valeur, présenté comme BLOQUÉ mais jamais comme une preuve certaine.
+    expect(results[0]).toMatchObject({ simpleStatus: "BLOQUÉ", httpStatus: 200 });
+    expect(results[0].reasons[0]).toContain("unverified probe blocked");
+  });
+
+  it("keeps OK when a spoofed-UA probe fails the same way the honest request does (no targeting evidence)", async () => {
+    // Même échec pour l'UA honnête et pour la sonde : aucune différence, donc
+    // aucun indice de ciblage. `differsFromBaseline` reste false.
+    stubFetch(() => new Response(LONG_PAGE));
+    const { report, results } = await runCoreScan("https://example.com", ["GPTBot"]);
+    expect(report.access.unverifiedProbes[0]).toMatchObject({ differsFromBaseline: false });
     expect(results[0].simpleStatus).toBe("OK");
   });
 
