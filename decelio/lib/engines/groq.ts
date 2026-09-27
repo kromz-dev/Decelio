@@ -20,8 +20,15 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
  * reproduire : Groq retire régulièrement ses modèles, et on doit pouvoir
  * basculer sans redéployer. `DEFAULT_GROQ_MODEL` reste la valeur de
  * référence, testée.
+ *
+ * Valeur vérifiée contre l'API Groq réelle, pas déduite : `GET /v1/models`
+ * ne liste aucun modèle `llama-*` sur ce compte. `llama-3.1-70b-versatile`
+ * répond `model_decommissioned`, et `llama-3.3-70b-versatile` — que le
+ * commentaire du registre citait — répond `model_not_found`. Le seul modèle
+ * généraliste disponible qui rend du JSON valide est celui-ci, confirmé par
+ * un appel réel renvoyant `{"isMentioned":true,"sentiment":"positif"}`.
  */
-export const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
+export const DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b";
 const GROQ_MODEL = process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
 
 /**
