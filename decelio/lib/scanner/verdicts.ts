@@ -83,6 +83,15 @@ export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary 
   // est bloquée : un indice à forte valeur, jamais une preuve (le site peut
   // vérifier ce robot par IP, ce que nous ne faisons pas).
   const probe = access.unverifiedProbes.find((p) => p.claimedBot === bot);
+  if (probe && probe.differsFromBaseline && probe.rateLimitUnconfirmed) {
+    // 429 isolé pendant la rafale de requêtes vers le même hôte, sans
+    // confirmation par une nouvelle tentative (budget insuffisant) : ce
+    // n'est pas la preuve d'un blocage (fix/scanner-sans-auto-429).
+    return {
+      value: "inconnu",
+      cause: `Une requête non vérifiée se présentant comme ${bot} a reçu un code 429 (limite de débit), non confirmé par une nouvelle tentative. Un 429 isolé n'est pas la preuve d'un blocage. À vérifier.`,
+    };
+  }
   if (probe && probe.differsFromBaseline && (probe.risk === "blocked" || probe.risk === "challenged")) {
     return {
       value: "refuse",
