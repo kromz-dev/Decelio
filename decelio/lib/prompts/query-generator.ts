@@ -97,9 +97,16 @@ export async function detectBrandContext(
     entre 15 et 20 requêtes naturelles de clients potentiels.
   `;
   const schemaHint = `
-    Retourne STRICTEMENT:
+    Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, de la forme :
     {"industry":"string","competitors":[{"name":"string","domain":"string"}],"prompts":["string"]}
   `;
+  // Le mot « JSON » doit figurer littéralement dans le message : Groq refuse
+  // tout appel utilisant `response_format: json_object` dont les messages ne
+  // le contiennent pas ("'messages' must contain the word 'json' in some
+  // form"). Sans lui, cet appel echouait a 100 % et `detectBrandContext`
+  // rendait toujours son repli code en dur — verifie par appel reel.
+  // `groqPlainJson` l'insere automatiquement quand on lui passe un schema Zod,
+  // mais pas quand on lui passe un schema en chaine brute, comme ici.
 
   try {
     const rawData = await groqPlainJson(prompt, schemaHint);

@@ -36,17 +36,33 @@ function calculateScoreForRuns(runs: RunData[]): number | null {
   return Math.round((totalWeight / runs.length) * 10) / 10;
 }
 
+/**
+ * Score pondéré et sa marge d'erreur.
+ *
+ * `marginOfError` vaut `null` quand la marge n'est pas estimable — c'est-à-dire
+ * sous deux observations. Elle valait auparavant `0`, ce qui affichait au client
+ * « 100 % de visibilité, marge ±0 » à partir d'une seule requête : une certitude
+ * parfaite tirée d'une mesure unique. La constitution du projet interdit cette
+ * fausse précision, et un client qui vérifie et constate l'exagération ne
+ * revient pas. `null` doit être présenté comme « non estimable », jamais rendu
+ * en 0 à l'affichage.
+ *
+ * Réserve à connaître : même au-dessus de deux observations, la marge reste très
+ * large à faible échantillon (mesuré : deux observations contrastées donnent un
+ * score de 50 pour une marge de 98). Relever le seuil de significativité est une
+ * décision produit, pas un correctif technique — elle n'est pas prise ici.
+ */
 export function scoreWithConfidence(runs: RunData[]): {
   score: number;
-  marginOfError: number;
+  marginOfError: number | null;
 } {
-  if (runs.length === 0) return { score: 0, marginOfError: 0 };
+  if (runs.length === 0) return { score: 0, marginOfError: null };
   const weights = runs.map((run) =>
     run.isMentioned ? getPositionWeight(run.position) : 0,
   );
   const mean = weights.reduce((sum, value) => sum + value, 0) / weights.length;
   if (weights.length < 2) {
-    return { score: Math.round(mean * 10) / 10, marginOfError: 0 };
+    return { score: Math.round(mean * 10) / 10, marginOfError: null };
   }
   const variance =
     weights.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
