@@ -128,10 +128,12 @@ describe("buildRobotsReport", () => {
     ]);
   });
 
-  it("treats 4xx as allow-all and 5xx or no response as full disallow (RFC 9309 §2.3.1)", () => {
+  it("treats a real 4xx (no firewall signal) as allow-all, and 5xx or no response as full disallow (RFC 9309 §2.3.1)", () => {
     expect(report(fetched(404)).policies.every((p) => p.verdict === "allowed")).toBe(true);
-    expect(report(fetched(403)).fetchStatus).toBe("unavailable");
+    expect(report(fetched(410)).policies.every((p) => p.verdict === "allowed")).toBe(true);
+    expect(report(fetched(503)).fetchStatus).toBe("unreachable");
     expect(report(fetched(503)).policies.every((p) => p.verdict === "disallowed")).toBe(true);
+    expect(report(fetched(500)).policies.every((p) => p.verdict === "disallowed")).toBe(true);
     expect(report(fetched(0)).fetchStatus).toBe("unreachable");
     expect(report({ ...fetched(0), errorKind: "too_many_redirects" as const }).fetchStatus).toBe("unavailable");
   });
@@ -140,5 +142,17 @@ describe("buildRobotsReport", () => {
     const r = report(fetched(403, "<title>Just a moment...</title>", { "cf-mitigated": "challenge" }));
     expect(r.fetchStatus).toBe("challenged");
     expect(r.policies.every((p) => p.verdict === "unknown")).toBe(true);
+  });
+
+  it("reports unknown — not allow-all — for a bare 403/401/429 with no recognised challenge", () => {
+    // RFC 9309 §2.3.1 treats a 4xx as « tout permis », but that rule targets a
+    // genuine « fichier absent » (404, 410...). Un 403/401/429 nu signale le plus
+    // souvent un pare-feu qui bloque la requête elle-même : on ne peut pas
+    // conclure « autorisé », donc on rend « à vérifier ».
+    for (const status of [403, 401, 429]) {
+      const r = report(fetched(status, "Forbidden"));
+      expect(r.fetchStatus).toBe("blocked");
+      expect(r.policies.every((p) => p.verdict === "unknown")).toBe(true);
+    }
   });
 });

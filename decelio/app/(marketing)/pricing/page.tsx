@@ -281,8 +281,10 @@ export default async function PricingPage() {
             </h2>
             <p>
               Decelio s&apos;ajoute à votre forfait de maintenance comme une
-              ligne de plus. Vos clients paient un peu plus cher leur
-              maintenance ; vous gardez la différence.
+              ligne de plus, avec un rapport mensuel à votre logo : prouvez
+              chaque mois à votre client que les robots des assistants IA
+              peuvent lire son site. Voici un exemple de calcul, pas une
+              promesse de résultat.
             </p>
           </div>
           <div className={styles.equation}>
@@ -292,7 +294,7 @@ export default async function PricingPage() {
               <span className={styles.num}>300 €</span> facturés par mois
             </div>
             <div className={styles.equationRow}>
-              − <span className={styles.num}>99 €</span> payés à Decelio
+              moins <span className={styles.num}>99 €</span> payés à Decelio
               (palier Agence)
             </div>
             <div className={styles.equationResult}>
@@ -337,6 +339,13 @@ export default async function PricingPage() {
                 Oui, à partir du palier Agence. Le rapport mensuel affiche le
                 logo de votre agence, pas celui de Decelio : vos clients voient
                 votre suivi.
+              </p>
+            </details>
+            <details className={styles.faqItem}>
+              <summary>Decelio remplace-t-il WP Umbrella ou ManageWP ?</summary>
+              <p className={styles.faqAnswer}>
+                Non, il les compl&egrave;te&nbsp;: eux g&egrave;rent les mises &agrave; jour et les sauvegardes, Decelio
+                v&eacute;rifie chaque jour que les robots des assistants IA peuvent lire les sites.
               </p>
             </details>
             <details className={styles.faqItem}>
