@@ -25,7 +25,7 @@
   --surface-2: #e9edf2;  /* survol, en-têtes de tableau, fonds discrets */
 
   /* Marque — bleu du logo Decelio */
-  --brand: #1d4ca4;       /* 8.3:1 sur blanc : utilisable pour du texte */
+  --brand: #1d4ca4;       /* 8,0:1 sur blanc et 7,3:1 sur --paper : utilisable pour du texte */
   --brand-soft: #e8eefb;  /* fonds discrets, puces, filets */
 
   /* Encre */
