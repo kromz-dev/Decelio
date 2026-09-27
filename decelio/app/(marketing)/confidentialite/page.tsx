@@ -80,28 +80,37 @@ export default async function ConfidentialitePage() {
             </LegalSection>
 
             <LegalSection id="sous-traitants" title="Sous-traitants">
+              {/* Entités relevées sur les pages officielles des prestataires le 27/09/2026 (DPA, politiques de
+                  confidentialité, conditions d'utilisation, registre dataprivacyframework.gov). */}
               <ul>
+                <li>Stripe Payments Europe, Limited (Irlande) : paiement et facturation.</li>
                 <li>
-                  Stripe (<ToFill>entité et pays</ToFill>) : paiement et facturation.
+                  Resend, exploité par Plus Five Five, Inc. (États-Unis) : envoi des e-mails transactionnels et
+                  d&apos;alerte.
                 </li>
+                <li>PostHog (hébergement PostHog Cloud EU, Francfort, Allemagne) : mesure d&apos;audience.</li>
+                <li>Neon, LLC, filiale de Databricks, Inc. (États-Unis ; base hébergée à Francfort, Allemagne) : base de données.</li>
+                <li>Render Services, Inc. (États-Unis ; serveurs à Francfort, Allemagne) : hébergement.</li>
+                <li>Inngest Inc (États-Unis) : tâches planifiées (purge des comptes résiliés, rapports).</li>
                 <li>
-                  Resend (<ToFill>pays</ToFill>) : envoi des e-mails transactionnels et d&apos;alerte.
+                  Google Ireland Limited (Irlande) : uniquement si le client se connecte avec un compte Google.
                 </li>
-                <li>PostHog (Union européenne) : mesure d&apos;audience.</li>
-                <li>Neon (Francfort, Allemagne) : base de données.</li>
-                <li>Render Services, Inc. (Francfort, Allemagne ; société de droit américain) : hébergement.</li>
-                <li>
-                  Inngest (<ToFill>pays</ToFill>) : tâches planifiées (purge des comptes résiliés, rapports).
-                </li>
-                <li>Google : uniquement si le client se connecte avec un compte Google.</li>
               </ul>
             </LegalSection>
 
             <LegalSection id="transferts" title="Transferts hors Union européenne">
               <p>
+                Certains prestataires sont des sociétés américaines, ou appartiennent à des groupes américains.
+                Les transferts de données vers les États-Unis sont encadrés par le Data Privacy Framework UE-États-Unis,
+                auquel sont certifiés Stripe, Inc., Plus Five Five, Inc. (Resend), Render Services, Inc., Databricks,
+                Inc. et Neon, LLC, PostHog et Google LLC, et, selon les prestataires, par les clauses contractuelles
+                types de la Commission européenne prévues dans leur accord de traitement des données.
+              </p>
+              <p>
+                Inngest Inc&nbsp;:{" "}
                 <ToFill>
-                  encadrement de chaque transfert hors Union européenne : clauses contractuelles types ou Data
-                  Privacy Framework, par prestataire
+                  cadre du transfert non publié (ni certification Data Privacy Framework ni clauses contractuelles
+                  types trouvées) ; à demander à Inngest ou à vérifier sur dataprivacyframework.gov
                 </ToFill>
               </p>
             </LegalSection>
