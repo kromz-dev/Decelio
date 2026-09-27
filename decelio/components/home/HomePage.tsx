@@ -194,6 +194,35 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
           </div>
         </section>
 
+        {/* 5. Proof (measurable, no invented metrics per constitution I & II) */}
+        <section className="py-24 bg-paper border-b border-line text-center">
+          <div className="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-ink tracking-tight mb-4">
+              Testez avant de nous croire
+            </h2>
+            <ul className="space-y-6 text-left mt-10">
+              <li className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <span className="text-lg text-ink-2">Le diagnostic est gratuit, sans compte, et vous donne la cause en 15 secondes.</span>
+              </li>
+              <li className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <span className="text-lg text-ink-2">Chaque verdict est reli&eacute; &agrave; une cause v&eacute;rifiable&nbsp;: r&egrave;gle robots.txt (le fichier qui autorise ou bloque les robots), code HTTP, challenge du pare-feu, ou d&eacute;pendance au JavaScript.</span>
+              </li>
+              <li className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <span className="text-lg text-ink-2">Quand nous ne pouvons pas conclure, nous &eacute;crivons &laquo;&nbsp;&agrave; v&eacute;rifier&nbsp;&raquo; &mdash; jamais un verdict tranch&eacute;.</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+
         <section id="produits" className="relative py-24 bg-paper">
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-16">
@@ -219,7 +248,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                     </div>
                     <h3 className="text-2xl font-bold text-ink mb-3">D&eacute;tection des blocages WAF silencieux</h3>
                     <p className="text-ink-2 text-lg mb-8 max-w-md">
-                      Cloudflare et Wordfence bloquent souvent les bots IA par d&eacute;faut. Nous v&eacute;rifions en continu que les requ&ecirc;tes de ChatGPT, Perplexity et Claude traversent votre pare-feu.
+                      Cloudflare et Wordfence bloquent souvent les bots IA par d&eacute;faut. Nous v&eacute;rifions chaque jour que les requ&ecirc;tes de ChatGPT, Perplexity et Claude traversent votre pare-feu.
                     </p>
                   </div>
                   {/* Mock UI snippet */}
@@ -310,34 +339,6 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               </div>
 
             </div>
-          </div>
-        </section>
-        {/* 5. Proof (measurable, no invented metrics per constitution I & II) */}
-        <section className="py-24 bg-paper text-center">
-          <div className="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-ink tracking-tight mb-4">
-              Testez avant de nous croire
-            </h2>
-            <ul className="space-y-6 text-left mt-10">
-              <li className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <span className="text-lg text-ink-2">Le diagnostic est gratuit, sans compte, et vous donne la cause en 15 secondes.</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <span className="text-lg text-ink-2">Chaque verdict est reli&eacute; &agrave; une cause v&eacute;rifiable&nbsp;: r&egrave;gle robots.txt (le fichier qui autorise ou bloque les robots), code HTTP, challenge du pare-feu, ou d&eacute;pendance au JavaScript.</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <span className="text-lg text-ink-2">Quand nous ne pouvons pas conclure, nous &eacute;crivons &laquo;&nbsp;&agrave; v&eacute;rifier&nbsp;&raquo; &mdash; jamais un verdict tranch&eacute;.</span>
-              </li>
-            </ul>
           </div>
         </section>
 
