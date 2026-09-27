@@ -25,6 +25,26 @@ export interface ResultSummary {
 export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary {
   const { access, robots, jsDependency } = report;
 
+  // robots.txt réellement lu qui nomme ce robot est une preuve indépendante
+  // de la requête honnête : elle prime sur tout le reste. Un simple défaut de
+  // lecture de robots.txt (injoignable / challengé) donne aussi un verdict
+  // « disallowed » par précaution, mais ce n'est pas un ciblage nommé — voir
+  // plus bas, une fois le blocage général écarté.
+  const policy = robots.policies.find((p) => p.bot === bot);
+  const robotsNamesThisBot = robots.fetchStatus === "ok" && policy?.verdict === "disallowed";
+  const robotsUnreadablePrecaution = robots.fetchStatus !== "ok" && policy?.verdict === "disallowed";
+
+  if (robotsNamesThisBot) {
+    return {
+      value: "refuse",
+      cause: `Le fichier robots.txt interdit ${policy!.token}.`,
+      fix: "Autoriser ce robot dans robots.txt.",
+    };
+  }
+
+  // Priorité à « inconnu » (site injoignable) : si la requête honnête n'a
+  // aucune réponse, c'est ce qu'il faut signaler, pas une précaution sur
+  // robots.txt.
   if (access.risk === "unreachable" || access.risk === "http_error") {
     return {
       value: "inconnu",
@@ -35,26 +55,39 @@ export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary 
     };
   }
 
-  const policy = robots.policies.find((p) => p.bot === bot);
-  if (policy?.verdict === "disallowed") {
+  // Blocage général : la requête honnête elle-même est refusée ou challengée.
+  // Rien (ni robots.txt, ni une sonde) ne prouve que ce robot précis est
+  // visé — un robots.txt illisible à cause du même blocage n'est pas un
+  // ciblage nommé — donc « à vérifier », jamais un verdict tranché
+  // (constitution, principe I).
+  if (access.risk === "challenged" || access.risk === "blocked") {
     return {
-      value: "refuse",
+      value: "inconnu",
       cause:
-        robots.fetchStatus === "unreachable"
-          ? "Le fichier robots.txt est injoignable ; par précaution, tout est interdit."
-          : `Le fichier robots.txt interdit ${policy.token}.`,
-      fix: "Autoriser ce robot dans robots.txt.",
+        "Le site refuse toutes les requêtes, y compris une visite ordinaire : impossible de dire si les robots IA sont visés en particulier. À vérifier.",
+      fix: "Vérifier manuellement, dans les journaux du serveur ou du pare-feu, si ce robot est explicitement visé.",
     };
   }
 
-  if (access.risk === "challenged" || access.risk === "blocked") {
+  // La page se charge normalement, mais robots.txt lui-même est injoignable
+  // ou challengé : par précaution, on refuse.
+  if (robotsUnreadablePrecaution) {
     return {
       value: "refuse",
-      cause:
-        access.risk === "challenged"
-          ? "Un pare-feu ou un challenge de sécurité répond avant le contenu."
-          : `Le site refuse la requête (HTTP ${access.httpStatus}).`,
-      fix: "Autoriser ce robot dans les règles du pare-feu ou du plugin de sécurité.",
+      cause: "Le fichier robots.txt est injoignable ; par précaution, tout est interdit.",
+      fix: "Vérifier que /robots.txt répond correctement depuis l'hébergeur.",
+    };
+  }
+
+  // La requête honnête passe, mais une sonde qui se présente comme ce robot
+  // est bloquée : un indice à forte valeur, jamais une preuve (le site peut
+  // vérifier ce robot par IP, ce que nous ne faisons pas).
+  const probe = access.unverifiedProbes.find((p) => p.claimedBot === bot);
+  if (probe && probe.differsFromBaseline && (probe.risk === "blocked" || probe.risk === "challenged")) {
+    return {
+      value: "refuse",
+      cause: `Une requête non vérifiée se présentant comme ${bot} a été bloquée (HTTP ${probe.httpStatus}) alors que notre visite ordinaire passe. Un indice, pas une preuve : le site vérifie peut-être ce robot par IP.`,
+      fix: "Vérifier dans les journaux du serveur si ce robot est explicitement bloqué, puis l'autoriser.",
     };
   }
 
@@ -71,6 +104,9 @@ export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary 
 
 export function robotsSummary(report: ScanReport): ResultSummary {
   const { robots } = report;
+  // Chaque valeur de `fetchStatus` a son propre retour anticipé : une nouvelle
+  // valeur s'ajoute comme un bloc `if` de plus, sans toucher au reste de la
+  // fonction. Seul un robots.txt réellement lu (« ok ») arrive au calcul final.
   if (robots.fetchStatus === "unreachable") {
     return {
       value: "inconnu",

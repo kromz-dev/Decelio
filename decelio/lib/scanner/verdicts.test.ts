@@ -78,9 +78,55 @@ describe("verdictForBot", () => {
     expect(result.fix).toBeDefined();
   });
 
-  it("returns 'refuse' when access is blocked by a firewall challenge", () => {
+  // Blocage général (règle 1) : la requête honnête elle-même est challengée,
+  // et aucune preuve (robots.txt, sonde) ne vise ce robot en particulier.
+  // Ancien comportement fautif : ce cas rendait "refuse" pour chaque robot,
+  // alors que rien ne prouve un ciblage des robots IA (voir docs/08-constitution.md,
+  // principe I). Corrigé pour rendre "inconnu".
+  it("returns 'inconnu' (à vérifier) when access is challenged by a firewall and nothing targets this bot", () => {
     const report = makeReport({ access: { risk: "challenged", signals: ["markup:turnstile"] } });
+    const result = verdictForBot(report, "OAI-SearchBot");
+    expect(result.value).toBe("inconnu");
+    expect(result.cause).toContain("impossible de dire");
+  });
+
+  it("returns 'inconnu' (à vérifier) when access is blocked by a general 403", () => {
+    const report = makeReport({ access: { risk: "blocked", httpStatus: 403 } });
+    for (const bot of ["OAI-SearchBot", "Claude-SearchBot", "PerplexityBot"] as const) {
+      expect(verdictForBot(report, bot).value, `${bot} doit être inconnu`).toBe("inconnu");
+    }
+  });
+
+  it("returns 'refuse' for the bot named by robots.txt, even when the honest request is 200", () => {
+    const report = makeReport({
+      robots: {
+        policies: [
+          { bot: "OAI-SearchBot", token: "OAI-SearchBot", purpose: "search", verdict: "disallowed", group: "none", rule: null },
+          { bot: "Claude-SearchBot", token: "Claude-SearchBot", purpose: "search", verdict: "allowed", group: "none", rule: null },
+        ],
+      },
+    });
     expect(verdictForBot(report, "OAI-SearchBot").value).toBe("refuse");
+    expect(verdictForBot(report, "Claude-SearchBot").value).toBe("lu");
+  });
+
+  it("returns 'refuse' (indice) when the honest request is 200 but a probe claiming to be this bot is blocked", () => {
+    const report = makeReport({
+      access: {
+        unverifiedProbes: [
+          {
+            claimedBot: "PerplexityBot",
+            label: "unverified requester claiming to be PerplexityBot",
+            risk: "blocked",
+            httpStatus: 403,
+            differsFromBaseline: true,
+          },
+        ],
+      },
+    });
+    const result = verdictForBot(report, "PerplexityBot");
+    expect(result.value).toBe("refuse");
+    expect(result.cause).toContain("indice");
   });
 
   it("returns 'vide' when the raw HTML is JS-dependent", () => {

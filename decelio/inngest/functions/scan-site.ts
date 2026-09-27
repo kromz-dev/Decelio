@@ -26,9 +26,12 @@ const SCAN_BATCH_SIZE = 10;
 
 const STATUS_RANK: Record<SimpleStatus, number> = {
   OK: 0,
-  "COQUILLE VIDE": 1,
-  "BLOQUÉ": 2,
-  ERREUR: 3,
+  // Blocage général sans preuve qu'il vise ce robot (voir core.ts) : plus
+  // grave qu'OK, mais jamais un verdict tranché, donc en dessous de BLOQUÉ.
+  "À VÉRIFIER": 1,
+  "COQUILLE VIDE": 2,
+  "BLOQUÉ": 3,
+  ERREUR: 4,
 };
 
 interface ScanEventData {
@@ -45,6 +48,14 @@ export function causeForBot(agent: string, reasons: string[]): string {
     .replace(/^http (\d+)$/, "réponse HTTP $1")
     .replace(/^access challenged.*/, "page de challenge")
     .replace(/^access blocked.*/, "accès bloqué")
+    .replace(
+      /^general block \(status:(\d+)\).*/,
+      "le site bloque tout (HTTP $1), sans rien qui vise spécifiquement ce robot : à vérifier",
+    )
+    .replace(
+      /^unverified probe blocked \(status:(\d+)\).*/,
+      "une requête non vérifiée se présentant comme ce robot a été bloquée (HTTP $1) alors que notre visite passe : un indice, pas une preuve",
+    )
     .replace(/^js_dependent: .*/, "la page dépend de JavaScript")
     .replace(/^likely_js_dependent: .*/, "la page dépend probablement de JavaScript")
     .replace(/^noindex$/, "balise noindex");
