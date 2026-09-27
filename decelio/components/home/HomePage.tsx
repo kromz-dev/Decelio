@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import HeroConcentric, { NAV_LINKS } from "./HeroConcentric";
 import { Verdict } from "@/components/ui/verdict";
+import { StripeMark } from "@/components/ui/stripe-logo";
 import { StructuredData } from "./StructuredData";
 import { RevealOnScroll } from "./RevealOnScroll";
 import { bricolage, schibsted } from "./fonts";
@@ -687,7 +688,10 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 "Rien à installer chez vos clients",
                 "Au-delà du quota, Decelio indique le palier suivant",
               ].map((item) => (
-                <li key={item} className="rounded-full border border-line bg-surface px-4 py-1.5">{item}</li>
+                <li key={item} className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-1.5">
+                  {item.endsWith("Stripe") && <StripeMark className="h-4 w-4" />}
+                  {item}
+                </li>
               ))}
             </ul>
             <p className="mt-5 text-center text-sm text-ink-2">
@@ -795,7 +799,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
             </div>
 
             <ul className="flex flex-col items-center justify-center gap-4 text-sm font-medium text-ink-2 sm:flex-row sm:gap-8">
-              <li className="flex items-center gap-2"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Paiement s&eacute;curis&eacute; Stripe</li>
+              <li className="flex items-center gap-2"><StripeMark className="h-5 w-5" /> Paiement s&eacute;curis&eacute; par Stripe</li>
               <li className="flex items-center gap-2"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg> H&eacute;berg&eacute; en Europe</li>
               <li className="flex items-center gap-2"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Conforme RGPD</li>
             </ul>
