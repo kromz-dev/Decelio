@@ -39,11 +39,21 @@ export async function sendAuditReportEmail(
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.app>", // Update with a verified domain
+      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
       to,
       subject: `Votre marque est citée ${mentionsCount} fois sur ${totalRuns} par ChatGPT`,
       html,
     });
+
+    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
+    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
+    // etait rapporte comme reussi — et pour une alerte, une ligne
+    // `AlertEvent` etait ecrite affirmant que le client avait ete
+    // prevenu alors qu'aucun e-mail n'etait parti.
+    if (response.error) {
+      console.error("Echec d'envoi (sendAuditReportEmail) :", response.error);
+      return { success: false, error: response.error };
+    }
 
     return { success: true, id: response.data?.id };
   } catch (error) {
@@ -68,11 +78,21 @@ export async function sendPasswordResetEmail(to: string, token: string) {
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.app>", // Update with a verified domain
+      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
       to,
       subject: "Réinitialisation de votre mot de passe Decelio",
       html,
     });
+
+    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
+    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
+    // etait rapporte comme reussi — et pour une alerte, une ligne
+    // `AlertEvent` etait ecrite affirmant que le client avait ete
+    // prevenu alors qu'aucun e-mail n'etait parti.
+    if (response.error) {
+      console.error("Echec d'envoi (sendPasswordResetEmail) :", response.error);
+      return { success: false, error: response.error };
+    }
 
     return { success: true, id: response.data?.id };
   } catch (error) {
@@ -104,11 +124,21 @@ export async function sendDiscoveryEmail(to: string, name?: string | null) {
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.app>", // Update with a verified domain
+      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
       to,
       subject: "5 questions pour régler Decelio sur votre parc",
       html,
     });
+
+    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
+    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
+    // etait rapporte comme reussi — et pour une alerte, une ligne
+    // `AlertEvent` etait ecrite affirmant que le client avait ete
+    // prevenu alors qu'aucun e-mail n'etait parti.
+    if (response.error) {
+      console.error("Echec d'envoi (sendDiscoveryEmail) :", response.error);
+      return { success: false, error: response.error };
+    }
 
     return { success: true, id: response.data?.id };
   } catch (error) {
@@ -175,7 +205,7 @@ export async function sendMonthlyReportReadyEmail({
     ? `Vos rapports mensuels sont disponibles — ${periodLabel}`
     : `Votre rapport mensuel est disponible — ${periodLabel}`;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://decelio.app";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://decelio.fr";
   const targetUrl = reportUrl || `${appUrl}/reports`;
 
   const clientListHtml =
@@ -228,7 +258,7 @@ export async function sendMonthlyReportReadyEmail({
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.app>", // Update with a verified domain
+      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
       to,
       subject,
       html,

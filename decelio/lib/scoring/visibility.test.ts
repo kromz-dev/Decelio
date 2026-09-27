@@ -53,6 +53,24 @@ describe("visibility scoring", () => {
       scoreWithConfidence([
         { engineId: "GEMINI", isMentioned: true, position: 1 },
       ]),
-    ).toEqual({ score: 100, marginOfError: 0 });
+    ).toEqual({ score: 100, marginOfError: null });
+  });
+});
+
+describe("marge d'erreur non estimable", () => {
+  // Regression : une observation unique renvoyait `marginOfError: 0`, soit une
+  // certitude parfaite affichee au client a partir d'une seule requete.
+  it("rend null sous deux observations, jamais zero", () => {
+    expect(scoreWithConfidence([{ engineId: "GEMINI", isMentioned: true, position: 1 }]).marginOfError).toBeNull();
+    expect(scoreWithConfidence([]).marginOfError).toBeNull();
+  });
+
+  it("estime la marge des deux observations", () => {
+    const r = scoreWithConfidence([
+      { engineId: "GEMINI", isMentioned: true, position: 1 },
+      { engineId: "GEMINI", isMentioned: false, position: null },
+    ]);
+    expect(r.marginOfError).not.toBeNull();
+    expect(r.marginOfError).toBeGreaterThan(0);
   });
 });
