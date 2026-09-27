@@ -93,9 +93,8 @@ export default async function CgvPage() {
 
             <LegalSection id="essai" title="Essai">
               <p>
-                <ToFill>
-                  période d&apos;essai de 14 jours, à activer après fusion du code d&apos;essai
-                </ToFill>
+                Une période d&apos;essai est en préparation. Tant qu&apos;elle n&apos;est pas proposée sur la page
+                des tarifs, l&apos;abonnement démarre au premier paiement.
               </p>
             </LegalSection>
 

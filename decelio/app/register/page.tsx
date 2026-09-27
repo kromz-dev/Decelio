@@ -52,7 +52,7 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="Créer le compte agence · Étape 1 sur 3"
+      eyebrow="Créer le compte agence"
       title="Un compte pour tout le portefeuille"
       lede="Vous pourrez inviter vos collègues ensuite : les scans et les alertes sont partagés à l'échelle de l'agence."
       footer={

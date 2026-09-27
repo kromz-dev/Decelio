@@ -36,7 +36,7 @@ export async function PersonalDataSection() {
       </p>
 
       <div className="flex flex-wrap items-center gap-2.5">
-        <Button type="button" size="lg" render={<a href="/api/account/export" download />}>
+        <Button size="lg" nativeButton={false} render={<a href="/api/account/export" download />}>
           Exporter mes données (JSON)
         </Button>
       </div>
