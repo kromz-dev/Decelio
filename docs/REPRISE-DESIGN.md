@@ -1,6 +1,6 @@
 # Reprise du travail Design (27 septembre 2026)
 
-État du périmètre Design (interface, pages publiques, design system) à la fin de la session du 27/09, et marche à suivre pour reprendre. Le reste du projet est dans `docs/REPRISE.md`.
+État du périmètre Design (interface, pages publiques, design system) et marche à suivre pour reprendre. Le reste du projet est dans `docs/REPRISE.md`.
 
 ## 1. Ce qui est sur `main`
 
@@ -17,40 +17,54 @@
 | #122 | Nettoyage : `CoverageGrid`, `AuditForm`, `MarketingHeader`, `pricing.module.css`, 75 classes CSS mortes |
 | #123 | « TVA non applicable (art. 293 B du CGI) » au lieu de « HT » |
 | #124 | Harmonisation 2/3 : `/login`, `/register`, `/forgot-password`, `/reset-password` (`components/home/AuthShell.tsx`) |
+| #126 | Pages légales : `/mentions-legales`, `/cgv`, `/confidentialite`, liens dans le pied de page. Les `[À REMPLIR]` restants sont listés en §4 |
+| #133 | Harmonisation 3/3 : coque de l'application, vitrine `/design-system` à jour, `PlatformLine` réel |
+| #140 | Corrections de l'audit anti-slop 001 |
+| #141 | Preuve réelle datée sur l'accueil, IP du visiteur non transmise à PostHog |
+| #145 | Corrections signalées par l'Ingénierie : erreur console des réglages, « Étape 1 sur 3 », débogage de la connexion |
+| #150 | Page « Qui est derrière Decelio » (T067) |
+| #151 | Essai gratuit de 14 jours annoncé sur l'accueil, `/pricing` et les CGV ; bandeau « Essai : X jours restants » dans l'espace client (`components/TrialBanner.tsx`), calculé en heure de Paris |
 
 ## 2. En cours, non fusionné
 
-| Branche | PR | État | Pour reprendre |
-|---|---|---|---|
-| `design/pages-legales` | #126 | Ouverte. `/mentions-legales`, `/cgv`, `/confidentialite`, liens dans le pied de page. Contrôles verts en local d'après l'agent. **Pas encore relue.** | Relire la PR (liste des `[À REMPLIR]` dans sa description), vérifier la CI, fusionner. Puis remplir les `[À REMPLIR]` avec le fondateur. |
-| `design/harmonisation-app` | aucune | 4 commits poussés : coque de l'application harmonisée, vitrine `/design-system` à jour, `PlatformLine` réel. Agent arrêté avant l'ouverture de la PR. **Contrôles non confirmés.** | `git fetch && git switch design/harmonisation-app && git merge origin/main`, lancer les 4 contrôles, prendre des captures, ouvrir la PR. |
+**Rien côté Design.** Les deux branches laissées en suspens à la session précédente sont fusionnées : `design/pages-legales` (#126) et `design/harmonisation-app` (#133).
 
-La branche `design/harmonisation` est fusionnée : elle peut être supprimée.
+À surveiller, hors périmètre Design :
+
+| Branche | PR | État |
+|---|---|---|
+| `feat/acceptation-cgv` | #152 | Ouverte, Ingénierie. **Ne peut pas être fusionnée seule** : elle exige `acceptTerms: true` côté serveur alors que la case n'existe pas encore dans l'interface. C'est la tâche 1 du §3. |
+
+Un worktree `decelio-design-sombre` existe sur la branche `design/mode-sombre-app`. Elle n'a aucun commit au-dessus de `main` et n'est pas poussée : soit une session démarre dessus, soit c'est un worktree abandonné à retirer (`git worktree remove`).
 
 ## 3. À faire, dans l'ordre
 
-1. Fusionner #126 (pages légales) puis finir `design/harmonisation-app` (harmonisation 3/3).
-2. **Après la fusion de `feat/essai-gratuit-14-jours` (Ingénierie)** : mettre à jour `/pricing` et l'accueil (« Pas de période d'essai » devient faux), la clause d'essai des CGV, et créer le bandeau « Essai : X jours restants » dans l'application (prop `trialEndsAt`, à confirmer avec l'Ingénierie). **Jamais avant.**
-3. **Après la fusion de `fix/posthog-proxy-domaine`** : retirer le `[À REMPLIR]` de la mesure d'audience dans `/confidentialite`, avec la formulation confirmée par l'Ingénierie.
-4. Brancher `PlatformLine` sur la fiche site quand l'Ingénierie aura passé la prop depuis `sites/[siteId]/page.tsx`.
-5. Ne rien créer pour les alertes Slack / Teams tant que l'Ingénierie ne les a pas construites.
+1. **Acceptation des CGV à l'inscription**, pour débloquer #152 :
+   - case obligatoire « J'accepte les CGV » dans `app/register/page.tsx`, qui envoie `acceptTerms: true` à `/api/auth/register` ;
+   - **le bouton « Continuer avec Google » n'existe pas dans l'interface** alors que le fournisseur est configuré côté Ingénierie (`auth.config.ts`) : il est à créer, pas seulement à annoter, avec la mention « En continuant avec Google, vous acceptez les CGV » ;
+   - le bouton d'inscription par e-mail reste inactif tant que la case n'est pas cochée.
+2. Brancher `PlatformLine` sur la fiche site quand l'Ingénierie aura passé la prop depuis `sites/[siteId]/page.tsx`. Le composant existe et sert déjà dans `ScanResultPanel` et `/design-system`.
+3. Ne rien créer pour les alertes Slack / Teams tant que l'Ingénierie ne les a pas construites.
 
 ## 4. Décisions attendues du fondateur
 
-- Un site public connu à scanner pour une preuve réelle et datée sur l'accueil.
+- Les `[À REMPLIR]` des pages légales, treize au 27/09. Ces textes sont un modèle, à faire relire par un professionnel du droit.
+  - `mentions-legales` : date, nom ou raison sociale, SIREN/SIRET, RCS ou RNE, adresse du siège, directeur de la publication.
+  - `cgv` : date, politique de remboursement, plafond de responsabilité, ville du siège.
+  - `confidentialite` : date, identité du responsable de traitement, cadre du transfert Inngest, suppression de la fiche Stripe à la purge.
+  - `a-propos` : l'histoire du fondateur en deux ou trois phrases.
 - La promesse « résultat en 15 secondes » : à confirmer ou à retirer (elle apparaît plusieurs fois).
 - Exemple de rapport sur l'accueil : il montre le logo Decelio, alors que `/pricing` dit que le rapport porte le logo de l'agence.
-- Les `[À REMPLIR]` des pages légales : identité et SIREN, adresse, directeur de la publication, pays des sous-traitants, plafond de responsabilité, tribunal, remboursement, dates. Ces textes sont un modèle à faire relire par un professionnel du droit.
+- `docs/decisions/ADR-002` n'est plus à jour : son statut dit encore « pas encore fusionné dans main, le site doit continuer d'afficher pas de période d'essai », alors que le code (#139) et le texte (#151) sont sur `main`.
 
 ## 5. Signalé à l'Ingénierie, non corrigé côté Design
 
-- `sites/[siteId]/page.tsx` : « Coquille vide » s'affiche « Inconnu » ; utiliser `verdictForSiteStatus` et le détail « à vérifier ».
+- `lib/billing/trial.ts` : `getTrialEndsAt` lit `stripeTrialEnd` tel quel et peut donc rendre une date passée. Le champ n'est remis à `null` que par le webhook `customer.subscription.updated`, et aucune tâche de réconciliation ne rattrape un webhook perdu. Le bandeau d'essai se protège à l'affichage, mais la donnée reste fausse pour tout autre usage.
+- **Aucun endpoint webhook n'est enregistré sur le compte Stripe de test** (`GET /v1/webhook_endpoints` renvoie une liste vide au 27/09). En l'état, `customer.subscription.trial_will_end` n'atteint jamais l'application en test : l'e-mail de rappel à J-3, pourtant écrit (`lib/email/resend.ts`), n'est pas exerçable de bout en bout. À vérifier aussi en production.
+- `TERMS_VERSION` (`lib/legal/terms.ts`, branche #152) doit être porté à une date postérieure à la fusion de #151 : la clause d'essai des CGV a changé de fond, elle crée désormais une obligation de prélèvement automatique. Le `LastUpdated` en tête de `app/(marketing)/cgv/page.tsx` doit porter la même date.
+- `data-trial-ends-at` est du code mort depuis #151 : le bandeau reçoit la prop directement. Présent en double, dans `app/(app)/layout.tsx` et `app/(app)/settings/SettingsClient.tsx`.
 - `lib/scanner/verdicts.ts` : « robots.txt autorise … à **citer** ce site » ; `accessSummary` affiche « Refusé » pour un blocage général.
 - `app/(app)/reports/page.tsx` : meta description « visibilité IA ».
-- `LoginForm.tsx` : `console.log` de débogage et `router` inutilisé.
-- Inscription : « Étape 1 sur 3 » alors que tout tient sur un écran.
-- PostHog charge des scripts depuis `eu-assets.i.posthog.com` sur les pages publiques (correction en cours, `fix/posthog-proxy-domaine`).
-- Case « J'accepte les CGV » à l'inscription (colonne en base et action serveur).
 - Un test instable : échoue parfois, réussit au lancement suivant.
 
 ## 6. Règles de travail retenues
