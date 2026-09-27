@@ -1,4 +1,13 @@
-import { assertSafeUrl } from "@/lib/scanner/crawler";
+import { createPinnedDispatcher, isPinningUnavailable, resolveSafeTarget } from "@/lib/scanner/crawler";
+import type { Dispatcher } from "undici";
+
+/**
+ * Node ne déclare pas encore `dispatcher` sur `RequestInit` (extension
+ * d'undici) : voir la même interface dans `lib/scanner/crawler.ts`.
+ */
+interface FetchInitWithDispatcher extends RequestInit {
+  dispatcher?: Dispatcher;
+}
 
 /** Types MIME acceptés pour un logo de marque blanche. */
 const ALLOWED_LOGO_CONTENT_TYPES = new Set(["image/png", "image/jpeg"]);
@@ -37,6 +46,11 @@ export interface LoadedBrandLogo {
  * Toute défaillance — DNS/IP interdite, réseau, type MIME, taille, délai —
  * renvoie `null`. Le rapport mensuel doit toujours pouvoir sortir : un logo
  * manquant n'est jamais une erreur bloquante pour la génération du PDF.
+ *
+ * La connexion réelle est épinglée sur l'IP validée par `resolveSafeTarget`
+ * (même garde que `lib/scanner/crawler.ts` — voir `createPinnedDispatcher`) :
+ * sans ça, `fetch` referait sa propre résolution DNS après la validation, ce
+ * qui laisserait la même fenêtre TOCTOU (rebinding DNS).
  */
 export async function loadBrandLogo(url: string | null | undefined): Promise<LoadedBrandLogo | null> {
   if (!url || !url.trim()) return null;
@@ -45,14 +59,19 @@ export async function loadBrandLogo(url: string | null | undefined): Promise<Loa
   const timeoutId = setTimeout(() => controller.abort(), LOGO_FETCH_TIMEOUT_MS);
 
   try {
-    const safeUrl = await assertSafeUrl(url);
+    const target = await resolveSafeTarget(url);
 
-    const response = await fetch(safeUrl, {
+    const fetchInit: FetchInitWithDispatcher = {
       signal: controller.signal,
       // Jamais suivie : une redirection pointerait vers une cible non
-      // revalidée par `assertSafeUrl` (même risque que dans crawler.ts).
+      // revalidée par `resolveSafeTarget` (même risque que dans crawler.ts).
       redirect: "manual",
-    });
+    };
+    if (!isPinningUnavailable()) {
+      fetchInit.dispatcher = createPinnedDispatcher(target.ip);
+    }
+
+    const response = await fetch(target.url, fetchInit);
 
     if (!response.ok) {
       await response.body?.cancel().catch(() => {});
