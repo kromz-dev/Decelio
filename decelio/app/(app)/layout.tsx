@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const trialEndsAt = await getTrialEndsAt(session.user?.id);
 
   return (
-    <div className="min-h-screen bg-paper text-ink" data-trial-ends-at={trialEndsAt ? trialEndsAt.toISOString() : undefined}>
+    <div className="flex min-h-screen flex-col bg-paper text-ink" data-trial-ends-at={trialEndsAt ? trialEndsAt.toISOString() : undefined}>
       <TrialBanner trialEndsAt={trialEndsAt} />
       <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4 md:hidden">
         <Link href="/dashboard" aria-label="Decelio, portefeuille">
@@ -35,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </nav>
         </details>
       </div>
-      <div className="flex min-h-[calc(100vh-65px)] md:min-h-screen">
+      <div className="flex flex-1">
         <aside className="hidden w-64 border-r border-line bg-surface p-5 md:flex md:flex-col">
           <Link href="/dashboard" aria-label="Decelio, portefeuille" className="mb-10">
             <Wordmark />

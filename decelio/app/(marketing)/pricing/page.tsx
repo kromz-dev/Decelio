@@ -82,7 +82,7 @@ const ROWS: FeatureRow[] = [
 const TERMS = [
   {
     title: "Essai gratuit de 14 jours",
-    body: "Sur les trois formules, un essai par compte. La carte est demandée au départ ; le premier prélèvement a lieu à la fin de l'essai, et un e-mail vous prévient 3 jours avant. Résiliez avant la fin et rien n'est prélevé.",
+    body: "Sur les trois formules, un essai par compte. La carte est demandée au départ ; le premier prélèvement a lieu à la fin de l'essai, et un e-mail vous prévient 3 jours avant. Résiliez avant la fin depuis « Gérer mon abonnement » et rien n'est prélevé.",
   },
   {
     title: "Au-delà de 100 sites",
@@ -100,8 +100,8 @@ const TERMS = [
 
 const PRICING_FAQ = [
   {
-    q: "Comment fonctionne l'essai gratuit ?",
-    a: "14 jours sur la formule de votre choix, un essai par compte. La carte est demandée au départ par Stripe ; le premier prélèvement a lieu à la fin de l'essai, et un e-mail vous prévient 3 jours avant. Vous pouvez résilier avant depuis « Gérer mon abonnement ».",
+    q: "Ai-je accès à toute la formule pendant l'essai ?",
+    a: "Oui. Pendant les 14 jours, la formule choisie fonctionne comme un abonnement payé : même nombre de sites, mêmes options. Les conditions de l'essai (carte, prélèvement, résiliation) sont détaillées plus haut.",
   },
   {
     q: "Y a-t-il un engagement de durée ?",
