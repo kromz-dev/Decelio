@@ -1,6 +1,6 @@
 # Liste de contrôle avant la mise en production
 
-État relevé le **27/09/2026** par les MCP (Stripe, Neon, Resend, Render, PostHog) et par la CI. À mettre à jour à chaque étape franchie. Une case cochée doit avoir été **vérifiée**, pas seulement supposée.
+État relevé le **27/09/2026** par la CI et par les MCP. **Revérifiés dans cette passe** : Stripe (test) et Neon. **Non revérifiés dans cette passe** : Resend, Render, PostHog — leurs lignes reflètent un relevé antérieur, à ne pas prendre pour un état frais. À mettre à jour à chaque étape franchie. Une case cochée doit avoir été **vérifiée**, pas seulement supposée.
 
 Légende : ✅ fait et vérifié · ⚠️ partiel · ❌ à faire · 🔒 bloqué par un prérequis.
 
@@ -9,33 +9,33 @@ Légende : ✅ fait et vérifié · ⚠️ partiel · ❌ à faire · 🔒 bloqu
 | | Élément | État |
 |---|---|---|
 | 🔒 | Immatriculation en micro-entreprise (SIREN) | En cours. **Aucune vente avant.** |
-| 🔒 | Mentions légales, CGV, politique de confidentialité | Pages en cours (Design, branche `design/pages-legales`), avec des `[À REMPLIR]` tant que le SIREN manque. Relecture juridique conseillée. |
+| ⚠️ | Mentions légales, CGV, politique de confidentialité | Pages fusionnées (#126, puis #135 pour la franchise de TVA) : elles existent sur `main` et sont liées depuis le pied de page. Reste les `[À REMPLIR]` tant que le SIREN manque, et la relecture juridique. |
 | ✅ | Régime fiscal | Micro-entreprise, franchise de TVA (ADR-003). |
 
 ## 2. Code (`main`)
 
 | | Élément | État |
 |---|---|---|
-| ✅ | 4 contrôles : tsc, eslint, vitest, build | Verts sur `main` (608 tests au 27/09, après #120). |
+| ✅ | 4 contrôles : tsc, eslint, vitest, build | Verts sur `main`, vérifiables sur la dernière exécution du flux `ci.yml` (681 tests, 84 fichiers, run après la fusion de #155). |
 | ✅ | Audit de sécurité | Critique et hauts corrigés : #115, #116, #120. Aucune faille de contrôle d'accès entre comptes trouvée. |
-| ✅ | Fiabilité du scanner | Corrections fusionnées : #103, #107, #110, #111, puis #128 à #131 (faux « COQUILLE VIDE », 429 provoqués par le scanner, rebinding DNS, taille du corps de `/api/pdf/diagnostic`). Reste mineur : le même faux « COQUILLE VIDE » dans l'ancienne route `/api/audit`. |
-| ⚠️ | Essai gratuit de 14 jours (ADR-002) | Branche `feat/essai-gratuit-14-jours` en cours. |
-| ⚠️ | PostHog par notre domaine (ADR-004) | Fusionné (#134). Reste la vérification dans un vrai navigateur. |
-| ❌ | Acceptation des CGV à l'inscription | À faire après la fusion des pages légales : colonne `termsAcceptedAt` avec la version. |
+| ✅ | Fiabilité du scanner | Corrections fusionnées : #103, #107, #110, #111, #128 à #131 (faux « COQUILLE VIDE », 429 provoqués par le scanner, rebinding DNS, taille du corps de `/api/pdf/diagnostic`), puis #146 (le même faux « COQUILLE VIDE » dans l'ancienne route `/api/audit`, qui compte désormais `LOW_TEXT` comme accessible). |
+| ✅ | Essai gratuit de 14 jours (ADR-002) | Fusionné (#139). L'ADR-002 est passé au statut « appliqué » (#157). |
+| ⚠️ | PostHog par notre domaine (ADR-004) | Fusionné (#134). Vérification statique faite aujourd'hui : `api_host: "/ingest"` est écrit en dur dans `instrumentation-client.ts` (pas lu depuis l'environnement), le relais `app/ingest/[...path]/route.ts` retire `x-forwarded-for`, `x-real-ip`, `cf-connecting-ip` et `host` avant de transmettre, et même les fichiers statiques de `posthog-js` passent par `/ingest/static`. Aucun appel visiteur vers un tiers dans le code. Reste une confirmation dans l'onglet réseau d'un vrai navigateur, qui exige l'application déployée. |
+| ⚠️ | Acceptation des CGV à l'inscription | La case à cocher est fusionnée (#155, `app/register/page.tsx` envoie `acceptTerms: true`, case non pré-cochée). Le côté serveur (colonnes `User.termsAcceptedAt` / `termsVersion`, migration `20260927180000_add_user_terms_acceptance`, version des CGV dans `lib/legal/terms.ts`) est en attente dans la demande #152. |
 
 ## 3. Services externes
 
 | | Service | État relevé | Reste à faire |
 |---|---|---|---|
-| ❌ | **Resend** | **Aucun domaine** | Ajouter `decelio.fr`, créer les enregistrements DNS SPF et DKIM chez le registraire, attendre la vérification. **Sans ça, aucun e-mail ne part** : alertes, rapports, rappel de fin d'essai, réinitialisation du mot de passe. |
-| ⚠️ | **Stripe (test)** | ✅ 3 prix (39, 99 et 249 €/mois) ; ✅ coupon `FONDATEUR50` ; ✅ produits renommés « Decelio » (ils s'appelaient « Cited ») ; ✅ portail client créé (résiliation en fin de période, carte, factures, changement de formule) | Pied de page des factures (ADR-003). Webhook `https://decelio.fr/api/webhooks/stripe` et son secret, au déploiement. URL des CGV et de la confidentialité dans le portail, après les pages légales. |
-| 🔒 | **Stripe (réel)** | Non activé | Activation avec le SIREN, puis recréer les prix, le coupon, le portail et le webhook en mode réel. |
+| ❌ | **Resend** | **Aucun domaine** (non revérifié le 27/09) | Ajouter `decelio.fr`, créer les enregistrements DNS SPF et DKIM chez le registraire, attendre la vérification. **Sans ça, aucun e-mail ne part** : alertes, rapports, rappel de fin d'essai, réinitialisation du mot de passe. |
+| ⚠️ | **Stripe (test)** | Relevé à l'instant par le MCP Stripe (compte `acct_1UJ3taE0KhuxlY8k`, mode test). ✅ 3 prix actifs (SOLO 39 €, PRO 99 €, SCALE 249 €/mois, en euros), tous à `trial_period_days: null` (l'essai de 14 jours est posé par le code au moment du Checkout, pas par le prix) ; ✅ coupon `FONDATEUR50` (−50 %, `duration: forever`, 10 utilisations maximum, 0 utilisée) ; ✅ produits renommés « Decelio » (ils s'appelaient « Cited ») ; ✅ portail client créé (résiliation en fin de période, carte, factures, changement de formule). **Aucun point de terminaison de webhook** (`/v1/webhook_endpoints` renvoie une liste vide) — c'est le point dur : sans lui, un paiement, une résiliation ou un coupon ne met jamais la base à jour. | Créer le webhook `https://decelio.fr/api/webhooks/stripe` et son secret, au déploiement. Pied de page des factures (ADR-003). URL des CGV et de la confidentialité dans le portail, après les pages légales. Point de vigilance : les 3 prix sont en `tax_behavior: "exclusive"` alors que le régime est la franchise de TVA (art. 293 B, ADR-003) — à 0 % de taxe le montant affiché est bien le montant payé, donc aucun défaut de calcul, mais « exclusive » annonce « hors taxes » et la facture devra porter la mention de franchise ; à trancher au moment de l'activation en mode réel. |
+| 🔒 | **Stripe (réel)** | Non activé. Revérifié aujourd'hui : le MCP Stripe ne voit qu'un seul compte, en mode test. Aucun compte en mode réel. | Activation avec le SIREN, puis recréer les prix, le coupon, le portail et le webhook en mode réel. |
 | ⚠️ | **Neon `main` (production)** | Constat du 27/09/2026 : tables présentes, **aucun historique de migrations Prisma** (pas de table `_prisma_migrations`), montée par `db push`. 3 utilisateurs, 0 abonné. Vérifié : les 2 premières migrations (`20260925000000_init`, `20260926230000_add_updated_at_and_site_unique`) sont déjà en base (cas 1, tranché) ; 3 migrations restent réellement en attente (`audit_lead_brand_name_optional`, `add_user_trial_fields`, `add_user_terms_acceptance`, la dernière pas encore fusionnée). **Branche non protégée** (offre gratuite Neon). | Protéger la branche n'est pas possible en gratuit — ne jamais donner sa chaîne de connexion à un outil automatisé. Faire le « baseline » (voir `deploiement-render-neon.md` §a) avant tout `prisma migrate deploy` : **sans lui, le premier déploiement Render échoue**, `render.yaml` chaînant `migrate deploy` dans son `buildCommand`. |
-| ⚠️ | **Neon `local-dev`** | 2 migrations sur 3 appliquées | `npx prisma migrate deploy` avant les tests locaux (la migration `AuditLead.brandName` manque, et celle de l'essai gratuit est à venir). |
-| ❌ | **Render** | Service `decelio` jamais déployé : `rootDir: cited`, variables absentes, déploiement automatique coupé | Root Directory `decelio`. Variables de `.env.example`, dont `DIRECT_URL`, `AUTH_TRUST_HOST=true`, `NEXT_PUBLIC_APP_URL=https://decelio.fr`, `TRUSTED_PROXY_HOPS=1`. Domaine `decelio.fr`. |
-| ❌ | **Inngest** | — | Déclarer l'application avec l'URL de production, puis `INNGEST_SIGNING_KEY` et `INNGEST_EVENT_KEY`. |
-| ❌ | **Google OAuth** | — | Ajouter l'URL de redirection de production. |
-| ⚠️ | **PostHog** | Ingestion vérifiée ; tableau de bord « Decelio — lancement » créé (tunnel, activité, erreurs) | Jeton de production ; fuseau Europe/Paris ; réglage éventuel « Discard client IP data » (ADR-004). |
+| ✅ | **Neon `local-dev`** | Les 5 migrations du dossier `decelio/prisma/migrations/` y sont appliquées. `npx prisma migrate status` répond « Database schema is up to date! », et `npx prisma migrate diff` répond « No difference detected » dans les deux sens (dossier des migrations vers le schéma, et base vers le schéma). | — |
+| ❌ | **Render** | Service `decelio` jamais déployé (relevé antérieur, non revérifié le 27/09) : le tableau de bord Render indiquait `rootDir: cited` — `render.yaml` à la racine du dépôt déclare `rootDir: decelio`, donc si l'écart existe encore, c'est dans la configuration Render, pas dans le dépôt, à vérifier au déploiement. Variables absentes, déploiement automatique coupé. | Root Directory `decelio`. Variables de `.env.example`, dont `DIRECT_URL`, `AUTH_TRUST_HOST=true`, `NEXT_PUBLIC_APP_URL=https://decelio.fr`, `TRUSTED_PROXY_HOPS=1`. Domaine `decelio.fr`. |
+| ❌ | **Inngest** | — (non revérifié le 27/09) | Déclarer l'application avec l'URL de production, puis `INNGEST_SIGNING_KEY` et `INNGEST_EVENT_KEY`. |
+| ❌ | **Google OAuth** | — (non revérifié le 27/09) | Ajouter l'URL de redirection de production. |
+| ⚠️ | **PostHog** | Ingestion vérifiée ; tableau de bord « Decelio — lancement » créé (tunnel, activité, erreurs). Non revérifié le 27/09 dans cette passe. | Jeton de production ; fuseau Europe/Paris ; réglage éventuel « Discard client IP data » (ADR-004). |
 
 ## 4. Tests locaux (fondateur, Neon `local-dev`)
 
