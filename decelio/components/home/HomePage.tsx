@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import HeroConcentric from "./HeroConcentric";
+import { StructuredData } from "./StructuredData";
 import { schibsted } from "./fonts";
 import tokens from "./tokens.module.css";
 import styles from "./home.module.css";
@@ -42,6 +43,8 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
   return (
     <div className={`${schibsted.variable} ${tokens.root} ${styles.page}`}>
       <a href="#contenu" className={styles.skipLink}>Aller au contenu</a>
+
+      <StructuredData faqs={faqs} />
 
       <HeroConcentric isLoggedIn={isLoggedIn} />
 

@@ -207,36 +207,26 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
           {/* Ambient Glow */}
           <div className="absolute inset-0 bg-gradient-to-tr from-cobalt/20 via-cobalt-soft/10 to-transparent blur-[80px] rounded-[3rem] pointer-events-none transition-all duration-700 opacity-80" />
 
-          <div className="relative w-full mb-32">
-            {/* Bottom Card - Z-10 */}
-            <div className="absolute -bottom-[105px] origin-bottom left-0 right-0 mx-auto bg-white/70 backdrop-blur-xl border border-white/60 shadow-[0_4px_20px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.6)] rounded-2xl pt-8 pb-3 px-4 z-10 w-[85%] transform scale-[0.90] transition-all duration-500 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-slate-100 shadow-sm">
-                {/* Pas d'icone locale pour Perplexity : repli monogramme (voir note en haut du fichier) */}
-                <span role="img" aria-label="Perplexity" className="w-4 h-4 rounded-full bg-ink/5 text-ink-2 text-[9px] font-bold flex items-center justify-center">P</span>
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-ink-2">Perplexity a scann&eacute; la page d&apos;accueil</p>
-                <p className="text-[10px] text-ink-3 font-medium">Il y a 4 heures &bull; Succ&egrave;s</p>
-              </div>
-            </div>
-
-            {/* Middle Card - Z-20 */}
-            <div className="absolute -bottom-[55px] origin-bottom left-0 right-0 mx-auto bg-white/85 backdrop-blur-2xl border border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)] rounded-2xl pt-8 pb-3 px-4 z-20 w-[92%] transform scale-[0.95] transition-all duration-500 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-slate-100 shadow-sm">
-                <img src="/icons/claude.svg" alt="Claude" className="w-4 h-4 drop-shadow-sm" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-ink">Claude a acc&eacute;d&eacute; au /pricing</p>
-                <p className="text-[10px] text-ink-2 font-medium">Il y a 2 minutes &bull; R&eacute;solu</p>
-              </div>
-            </div>
-
-            {/* Main Top Card (ScanForm) - Z-30 */}
+          {/*
+            Aucune carte de resultat en exemple ici : afficher « Claude a accede
+            au /pricing, il y a 2 minutes » reviendrait a montrer des evenements
+            de scan inventes comme s'ils etaient reels, et a promettre du temps
+            reel alors que les scans sont quotidiens. Voir docs/08-constitution.md,
+            principes I et III, et docs/11-audit-landing-page.md.
+          */}
+          <div className="relative w-full">
+            {/* Main Card (ScanForm) - Z-30 */}
             <div className="relative bg-white/95 backdrop-blur-3xl border border-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)] rounded-[1.5rem] p-6 z-30 w-full transition-all duration-500">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-cobalt/5 text-cobalt flex items-center justify-center border border-cobalt/10 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center border border-brand/15 shadow-sm">
+                    <Image
+                      src="/logo-decelio.png"
+                      alt=""
+                      width={502}
+                      height={565}
+                      className="h-5 w-auto"
+                    />
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-bold text-ink">Diagnostic AEO</p>
