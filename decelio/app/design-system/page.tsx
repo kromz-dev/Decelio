@@ -23,7 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { Verdict, VERDICTS, type VerdictValue } from "@/components/ui/verdict";
 import { Wordmark } from "@/components/home/SiteChrome";
 import { RingsWatermark } from "@/components/home/MarketingBits";
-import { describePlatform } from "@/components/scan/platformLabel";
+import { PlatformLine } from "@/components/scan/PlatformLine";
 
 export const metadata: Metadata = {
   title: "Système de design | Decelio",
@@ -100,12 +100,12 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 function Marque() {
-  const examplePlatform = describePlatform({
-    cms: "wordpress",
-    seoPlugin: "yoast",
-    firewall: "cloudflare",
+  const examplePlatform = {
+    cms: "wordpress" as const,
+    seoPlugin: "yoast" as const,
+    firewall: "cloudflare" as const,
     signals: ["meta generator=WordPress", "en-tête X-Yoast-SEO", "règle Cloudflare Bot Fight Mode"],
-  });
+  };
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -128,10 +128,7 @@ function Marque() {
       <div>
         <Label>Plateforme détectée (fiche d&apos;un site, résultat du scan public)</Label>
         <div className="max-w-md rounded-lg border border-line bg-surface p-4">
-          <p className="type-caption text-ink-2">
-            <span className="font-medium text-ink">Plateforme détectée&nbsp;: </span>
-            {examplePlatform} (d&apos;après les indices de la page)
-          </p>
+          <PlatformLine platform={examplePlatform} />
         </div>
       </div>
     </div>
