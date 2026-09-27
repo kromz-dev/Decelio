@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { PublicPage } from "@/components/home/PublicPage";
 import { LastUpdated, LegalHero, LegalSection, LegalToc, ToFill, type TocEntry } from "@/components/home/LegalBits";
+import { TERMS_UPDATED_LABEL, TERMS_VERSION } from "@/lib/legal/terms";
 
 export const metadata: Metadata = {
   title: "CGV | Decelio",
@@ -40,7 +41,8 @@ export default async function CgvPage() {
         <div className="px-4 pb-24 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-[70ch]">
             <LastUpdated>
-              <ToFill>date</ToFill>
+              {TERMS_UPDATED_LABEL}{" "}
+              <span className="text-xs text-ink-2">(référence {TERMS_VERSION})</span>
             </LastUpdated>
 
             <LegalToc entries={TOC} />
