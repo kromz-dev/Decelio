@@ -104,6 +104,11 @@ export default async function CgvPage() {
                 Le paiement est mensuel, prélevé par carte bancaire via Stripe, notre prestataire de paiement.
                 L&apos;abonnement est sans engagement de durée.
               </p>
+              <p>
+                En cas de retard de paiement, des pénalités au taux d&apos;intérêt légal majoré de 10 points sont
+                appliquées, ainsi qu&apos;une indemnité forfaitaire de 40 € pour frais de recouvrement, conformément
+                à l&apos;article L441-10 du Code de commerce (vente entre professionnels).
+              </p>
             </LegalSection>
 
             <LegalSection id="resiliation" title="Résiliation">

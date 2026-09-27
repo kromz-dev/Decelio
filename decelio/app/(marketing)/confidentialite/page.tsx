@@ -54,10 +54,13 @@ export default async function ConfidentialitePage() {
                   Facturation : gérée par Stripe. Decelio ne voit jamais le numéro de carte bancaire du client.
                 </li>
                 <li>
-                  <ToFill>à confirmer après la correction PostHog</ToFill> Mesure d&apos;audience : PostHog (hébergé
-                  dans l&apos;Union européenne), sans cookie, sans enregistrement de session, avec un identifiant
-                  interne et jamais l&apos;e-mail. Les données transitent par notre propre domaine : votre adresse IP
-                  n&apos;est pas transmise à PostHog.
+                  Mesure d&apos;audience : PostHog (hébergé dans l&apos;Union européenne), sans cookie, sans
+                  enregistrement de session, avec un identifiant interne et jamais l&apos;e-mail.{" "}
+                  <ToFill>
+                    à confirmer après la correction PostHog (branche fix/posthog-proxy-domaine, pas encore
+                    fusionnée) : les données transitent par notre propre domaine, votre adresse IP n&apos;est pas
+                    transmise à PostHog
+                  </ToFill>
                 </li>
                 <li>
                   Journaux techniques et limitation de débit : adresse IP, conservés pour une durée courte.
