@@ -20,6 +20,41 @@ import styles from "./home.module.css";
  * le lecteur ne peut pas voir ce que le palier d'entree n'a pas. Ici, ce qui
  * manque est ecrit, pas omis.
  */
+/**
+ * Les quatre bascules de la section « Aujourd'hui / Avec Decelio ».
+ *
+ * Chaque ligne decrit une situation que vit une agence, et en face, ce que le
+ * produit fait reellement -- verification d'acces, jamais mesure de citation.
+ * La version precedente promettait « la visibilite reelle sur ChatGPT » et des
+ * « alertes immediates » : ni l'une ni l'autre n'existe.
+ */
+const SWITCHES = [
+  {
+    before:
+      "Un plugin de sécurité se met à jour dans la nuit et bloque GPTBot. Le site répond normalement à vos yeux : rien ne signale le blocage.",
+    after:
+      "Vous recevez un e-mail au scan suivant, avec la règle en cause et le correctif à appliquer.",
+  },
+  {
+    before:
+      "Vérifier qu'un robot IA passe demande de changer l'User-Agent à la main, site par site. Personne ne le fait quarante fois par semaine.",
+    after:
+      "Chaque site du portefeuille est vérifié une fois par jour, sans extension à installer ni accès à demander.",
+  },
+  {
+    before:
+      "Cocher « Block AI Bots » chez Cloudflare bloque aussi les robots qui citent, pas seulement ceux qui entraînent.",
+    after:
+      "Les deux familles sont distinguées : un site peut refuser l'entraînement tout en restant citable.",
+  },
+  {
+    before:
+      "Votre rapport de maintenance ne dit rien de l'IA. Il n'y a donc rien de plus à facturer.",
+    after:
+      "Un rapport mensuel à votre marque, à glisser dans celui que vous envoyez déjà.",
+  },
+] as const;
+
 const PLAN_FEATURES = [
   "Sites clients surveillés",
   "Vérification quotidienne des robots IA",
@@ -114,116 +149,51 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
       <main id="contenu">
 
         {/* Problem/Solution Comparison Table */}
-        <section id="solutions" className="relative pt-32 pb-24 overflow-hidden border-b border-line" style={{ background: "linear-gradient(to bottom, var(--paper) 0%, var(--surface) 250px)" }}>
+        <section
+          id="solutions"
+          className="relative pt-32 pb-24 overflow-hidden border-b border-line"
+          style={{ background: "linear-gradient(to bottom, var(--paper) 0%, var(--surface) 250px)" }}
+        >
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-16">
-              <span className="text-ink-2 font-bold tracking-widest uppercase text-sm mb-4 block">Le Probl&egrave;me</span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight mb-6">
-                Marre de croiser les doigts pour que l&apos;IA vous lise ?
+                Marre de croiser les doigts pour que l&apos;IA vous lise&nbsp;?
               </h2>
-              <p className="text-xl text-ink-2 max-w-3xl mx-auto">
-                Arr&ecirc;tez d&apos;optimiser le SEO de vos clients &agrave; l&apos;aveugle. D&eacute;couvrez imm&eacute;diatement si un pare-feu bloque les LLMs &mdash; et reprenez le contr&ocirc;le de l&apos;AEO.
+              <p className="text-xl text-ink-2 max-w-2xl mx-auto leading-relaxed">
+                Un plugin qui se met &agrave; jour, une r&egrave;gle de pare-feu qui change, et les robots des
+                IA ne peuvent plus lire le site d&apos;un client. Personne ne re&ccedil;oit d&apos;alerte&nbsp;:
+                pour un outil de supervision classique, rien n&apos;est tomb&eacute; en panne.
               </p>
             </div>
 
-            <div className="bg-paper rounded-[2rem] p-8 sm:p-12 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-line">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
-                
-                {/* Sans Decelio */}
-                <div>
-                  <h3 className="text-center font-bold text-ink text-xl mb-10 flex items-center justify-center gap-2">
-                    Sans <span className="font-extrabold tracking-tight">Decelio</span>
-                  </h3>
-                  <ul className="space-y-6">
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-stop text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]">Passer des heures &agrave; optimiser un SEO qui devient inutile si les IA ne peuvent pas lire le site</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-stop text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]">Risquer de bloquer <strong className="font-semibold">Googlebot</strong> en cochant aveugl&eacute;ment &quot;Block AI Bots&quot; sur Cloudflare</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-stop text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]">Aucune id&eacute;e de la visibilit&eacute; r&eacute;elle de vos clients sur ChatGPT ou Perplexity</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-stop text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]">Perdre des clients qui ne comprennent pas pourquoi leur trafic de d&eacute;couverte chute</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-stop text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]">D&eacute;couvrir les blocages de pare-feu (WAF) trop tard, une fois le mal d&eacute;j&agrave; fait</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-stop text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]">Z&eacute;ro visibilit&eacute; sur ce que les LLMs arrivent <em>vraiment</em> &agrave; lire (&agrave; cause du rendu JS)</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Avec Decelio */}
-                <div>
-                  <h3 className="text-center font-bold text-ink text-xl mb-10 flex items-center justify-center gap-2">
-                    Avec <span className="font-extrabold tracking-tight">Decelio</span>
-                  </h3>
-                  <ul className="space-y-6">
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">L&apos;assurance de l&apos;accessibilit&eacute; AEO</strong> &mdash; Prouvez que chaque site client est lisible par les moteurs de r&eacute;ponse.</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Ciblez les bons robots</strong> &mdash; V&eacute;rifiez l&apos;acc&egrave;s de GPTBot et ClaudeBot sans bloquer les crawlers vitaux.</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Suivi multi-robots</strong> &mdash; V&eacute;rifiez chaque jour, avec la cause identifi&eacute;e, si GPTBot, ClaudeBot et les autres robots IA sont bloqu&eacute;s sur les sites de vos clients.</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Mon&eacute;tisez votre expertise</strong> &mdash; Utilisez nos rapports en marque blanche pour justifier votre facturation mensuelle.</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Alertes imm&eacute;diates</strong> &mdash; Soyez pr&eacute;venu d&egrave;s qu&apos;une mise &agrave; jour casse l&apos;acc&egrave;s, avant que le client ne le remarque.</span>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="w-5 h-5 rounded-full bg-ok text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </div>
-                      <span className="text-ink-2 leading-tight text-[15px]"><strong className="text-ink font-semibold">Analyse du DOM pur</strong> &mdash; Sachez quel texte est pr&eacute;sent dans le HTML servi, sans d&eacute;pendre du JavaScript.</span>
-                    </li>
-                  </ul>
-                </div>
-                
+            {/*
+              Quatre paires alignees plutot que deux colonnes de six puces. Une
+              liste de douze affirmations ne se compare pas : on lit les six
+              premieres, puis les six suivantes, sans jamais mettre les deux en
+              regard. Ici chaque ligne oppose une situation reelle a ce que le
+              produit fait -- et rien d'autre, car promettre plus serait faux.
+            */}
+            <div className="bg-paper rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-line overflow-hidden">
+              <div className="hidden md:grid grid-cols-2 border-b border-line">
+                <p className="px-8 py-4 text-sm font-semibold text-ink-2">Aujourd&apos;hui</p>
+                <p className="px-8 py-4 text-sm font-semibold text-ink border-l border-line">Avec Decelio</p>
               </div>
+
+              {SWITCHES.map((row, i) => (
+                <div
+                  key={row.before}
+                  className={`grid grid-cols-1 md:grid-cols-2 ${i > 0 ? "border-t border-line" : ""}`}
+                >
+                  <p className="px-8 py-6 text-[15px] leading-relaxed text-ink-2">{row.before}</p>
+                  <p className="px-8 pb-6 md:py-6 text-[15px] leading-relaxed text-ink md:border-l border-line">
+                    {row.after}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
-        {/* 4. Features as Benefits (High-Converting Bento Grid) */}
+
         <section id="produits" className="relative py-24 bg-paper">
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-16">
