@@ -6,7 +6,7 @@ import authConfig from "./auth.config"
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password"
 import { loginSchema } from "@/lib/auth-validation"
 import { callerKey, rateLimit } from "@/lib/rate-limit"
-import { captureServerEvent } from "@/lib/posthog-server"
+import { captureServerEvent, captureServerException } from "@/lib/posthog-server"
 import { TERMS_VERSION } from "@/lib/legal/terms"
 import {
   LOGIN_IP_LIMIT,
@@ -72,10 +72,29 @@ export async function handleUserCreated({ user }: { user: { id?: string } }) {
   if (!user.id) return;
   // Acceptation des CGV (T069) : elle repose sur la mention « En continuant
   // avec Google, vous acceptez les CGV » affichée à côté du bouton Google.
-  await db.user.update({
-    where: { id: user.id },
-    data: { termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
-  });
+  //
+  // `@auth/core` appelle cet événement sans try/catch (voir
+  // node_modules/@auth/core/src/lib/actions/callback/handle-login.ts) : une
+  // exception non rattrapée ici casserait toute la connexion. Or l'adaptateur
+  // Prisma a déjà créé la ligne `User` avant que l'événement ne parte, donc
+  // une nouvelle tentative de connexion Google ne redéclenche jamais
+  // `createUser` — le compte resterait sans acceptation, définitivement, sans
+  // rien pour le signaler. On préfère une connexion qui marche plus une
+  // erreur bruyante plutôt qu'une connexion cassée ET aucune acceptation
+  // enregistrée.
+  //
+  // Requête de rattrapage pour retrouver les comptes concernés : un compte
+  // Google sans acceptation se reconnaît à `termsAcceptedAt IS NULL` combiné
+  // à `passwordHash IS NULL` (un compte créé par mot de passe a forcément
+  // les deux renseignés).
+  try {
+    await db.user.update({
+      where: { id: user.id },
+      data: { termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
+    });
+  } catch (error) {
+    await captureServerException(error, user.id, { source: "handleUserCreated" });
+  }
   await captureServerEvent(user.id, "signup_completed", { method: "google" });
 }
 
