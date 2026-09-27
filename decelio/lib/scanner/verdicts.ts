@@ -3,8 +3,8 @@ import type { ScanReport } from "./core";
 import type { VerdictValue } from "@/components/ui/verdict";
 
 /**
- * Un assistant par bot de citation (pas d'entraînement) : c'est ce qui
- * détermine si l'assistant peut citer le site dans une réponse.
+ * Un assistant par bot (pas d'entraînement) : c'est le robot qui lit
+ * les pages quand l'assistant cherche une réponse.
  *
  * Logique partagée entre `ScanForm` (scan depuis la page d'accueil) et la
  * page de résultat partageable `/analyse/[domain]` : mêmes verdicts, pour
@@ -157,7 +157,7 @@ export function robotsSummary(report: ScanReport): ResultSummary {
     (a) => robots.policies.find((p) => p.bot === a.bot)?.verdict === "disallowed"
   );
   if (disallowed.length === 0) {
-    return { value: "lu", cause: "robots.txt autorise ChatGPT, Claude et Perplexity à citer ce site." };
+    return { value: "lu", cause: "robots.txt autorise ChatGPT, Claude et Perplexity à lire ce site." };
   }
   return {
     value: "refuse",
@@ -172,18 +172,22 @@ export function accessSummary(report: ScanReport): ResultSummary {
     case "ok":
       return { value: "lu", cause: `Le site répond normalement (HTTP ${access.httpStatus}).` };
     case "challenged":
+      // Blocage général : même logique qu'en verdictForBot. Voir ligne ~63.
+      // Rien ne prouve que ce blocage vise spécifiquement les robots IA.
       return {
-        value: "refuse",
+        value: "inconnu",
         cause: `Un pare-feu ou un challenge de sécurité répond à la place du contenu${
           access.signals.length ? ` (${access.signals.join(", ")})` : ""
-        }.`,
-        fix: "Autoriser les robots IA vérifiés dans les règles du pare-feu (Cloudflare, Wordfence, hébergeur).",
+        }. À vérifier.`,
+        fix: "Vérifier manuellement si ce pare-feu cible spécifiquement les robots IA.",
       };
     case "blocked":
+      // Blocage général : même logique qu'en verdictForBot. Voir ligne ~63.
+      // Rien ne prouve que ce refus vise spécifiquement les robots IA.
       return {
-        value: "refuse",
-        cause: `Le site refuse la requête (HTTP ${access.httpStatus}).`,
-        fix: "Vérifier les règles de sécurité qui bloquent ce code réponse.",
+        value: "inconnu",
+        cause: `Le site refuse toutes les requêtes (HTTP ${access.httpStatus}). À vérifier.`,
+        fix: "Vérifier manuellement, dans les journaux du serveur, si ce refus cible spécifiquement les robots IA.",
       };
     case "http_error":
       return { value: "inconnu", cause: `Le site répond avec une erreur HTTP ${access.httpStatus}.` };

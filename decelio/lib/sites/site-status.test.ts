@@ -7,4 +7,8 @@ describe("verdictForSiteStatus", () => {
     expect(verdictForSiteStatus("ERREUR")).toBe("inconnu");
     expect(verdictForSiteStatus("BLOQUÉ")).not.toBe(verdictForSiteStatus("ERREUR"));
   });
+
+  it("retourne 'inconnu' pour un statut à vérifier", () => {
+    expect(verdictForSiteStatus("À VÉRIFIER")).toBe("inconnu");
+  });
 });

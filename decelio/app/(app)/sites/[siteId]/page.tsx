@@ -10,6 +10,7 @@ import { consecutiveDaysDown } from "@/lib/sites/consecutive-days";
 import { assistantSnapshots } from "@/lib/sites/latest-bots";
 import { buildScanHistory } from "@/lib/sites/scan-history";
 import { resolveDomainName } from "@/lib/sites/domain-name";
+import { verdictForSiteStatus } from "@/lib/sites/site-status";
 
 export const metadata = {
   title: "Détail du domaine | Decelio",
@@ -71,7 +72,10 @@ export default async function SiteDetailPage(props: { params: Promise<{ siteId: 
               {domainName}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <Verdict value={latest?.simpleStatus === "BLOQUÉ" ? "refuse" : latest?.simpleStatus === "OK" ? "lu" : "inconnu"} detail={latest ? String(latest.httpStatus) : "—"} />
+              <Verdict
+                value={latest?.simpleStatus ? verdictForSiteStatus(latest.simpleStatus) : "inconnu"}
+                detail={latest?.simpleStatus === "À VÉRIFIER" ? "à vérifier" : latest?.httpStatus ? String(latest.httpStatus) : "non mesuré"}
+              />
               <span className="text-sm text-ink-2">Site surveillé, client : {clientName}</span>
             </div>
           </div>
@@ -96,7 +100,7 @@ export default async function SiteDetailPage(props: { params: Promise<{ siteId: 
                 <CardContent>
                   <div className="type-caption text-ink-2">{bot.agent}</div>
                   <div className={`mt-1 text-[28px] leading-8 font-semibold tnum ${bot.httpStatus !== null && bot.httpStatus >= 400 ? "text-stop" : "text-ink"}`}>
-                    {bot.httpStatus ?? "—"}
+                    {bot.httpStatus ?? "non mesuré"}
                   </div>
                   <p className="mt-1 text-sm text-ink-2">{bot.cause}</p>
                 </CardContent>
@@ -157,7 +161,7 @@ export default async function SiteDetailPage(props: { params: Promise<{ siteId: 
               {bots.map((bot) => (
                 <li key={bot.agent}>
                   <span className="font-medium">{bot.agent}</span>
-                  <span className="tnum text-ink-2"> · HTTP {bot.httpStatus ?? "—"}</span>
+                  <span className="tnum text-ink-2"> · HTTP {bot.httpStatus ?? "non mesuré"}</span>
                   <p className="text-ink-2">{bot.cause}</p>
                 </li>
               ))}
@@ -212,7 +216,7 @@ export default async function SiteDetailPage(props: { params: Promise<{ siteId: 
                     <tr key={bot.agent} className="h-11 hover:bg-paper">
                       <td className="px-3 py-2 font-medium text-ink">{domainName}</td>
                       <td className="px-3 py-2 text-ink-2">{bot.agent}</td>
-                      <td className="px-3 py-2 text-right text-ink-2 tnum">{bot.httpStatus ?? "—"}</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">{bot.httpStatus ?? "non mesuré"}</td>
                       <td className="px-3 py-2 text-right text-ink-2">{bot.cause}</td>
                       <td className="px-3 py-2 text-right text-ink-2 tnum">
                         {latest ? latest.createdAt.toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }) : "—"}
