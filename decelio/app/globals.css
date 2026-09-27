@@ -316,6 +316,11 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Sans cette ligne, les entrees en cascade restent invisibles pendant tout
+       leur delai : opacity part de 0, et raccourcir la duree ne raccourcit pas
+       l'attente. Le hero pouvait rester vide pres de deux secondes pour qui
+       demande moins d'animation. */
+    animation-delay: 0ms !important;
   }
 }
 
