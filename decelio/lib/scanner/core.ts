@@ -1,4 +1,4 @@
-import { crawlUrl } from "./crawler";
+import { crawlUrl, CrawlResult } from "./crawler";
 import {
   AccessCheck,
   ScannerStatus,
@@ -28,6 +28,17 @@ export interface UnverifiedProbe {
   httpStatus: number;
   /** Le site ne répond pas pareil qu'à la requête honnête. */
   differsFromBaseline: boolean;
+  /**
+   * Vrai si la sonde a reçu un 429 qu'on n'a pas pu confirmer par une
+   * deuxième tentative espacée (budget de temps insuffisant). Un 429 isolé,
+   * reçu pendant la rafale de requêtes vers le même hôte, n'est pas la
+   * preuve d'un blocage — un hébergeur mutualisé qui limite le débit peut
+   * répondre 429 à Decelio sans jamais viser le vrai robot (voir
+   * `runHostSpaced` et `probeUnverified`). Quand ce champ est vrai, les
+   * consommateurs (`summarizeForBot`, `verdictForBot`) ne doivent jamais en
+   * tirer un verdict BLOQUÉ tranché.
+   */
+  rateLimitUnconfirmed: boolean;
 }
 
 export interface AccessReport extends AccessCheck {
@@ -72,7 +83,95 @@ export interface ScanOptions {
   renderer?: Renderer;
 }
 
+// ---------------------------------------------------------------------------
+// Espacement des requêtes vers le même hôte
+// ---------------------------------------------------------------------------
+
+/**
+ * `runScan` envoyait jusque-là la requête robots.txt et jusqu'à 3 sondes en
+ * même temps, vers le même hôte que la requête honnête. Un hébergeur
+ * mutualisé qui limite le débit peut renvoyer 429 à Decelio (pas au vrai
+ * robot) dans cette rafale, et provoquer un faux « BLOQUÉ ». On borne donc
+ * la concurrence vers un même hôte et on espace les lots d'une petite pause.
+ */
+const HOST_REQUEST_CONCURRENCY = 2;
+/** Pause documentée entre deux lots de requêtes vers le même hôte. */
+export const HOST_REQUEST_SPACING_MS = 300;
+/**
+ * Budget interne, sous le budget externe de 20 s de la route (ENF-004,
+ * `app/api/scan/route.ts`) : marge pour la sérialisation JSON et le trajet
+ * retour. Sert uniquement à décider si une pause d'espacement ou une
+ * nouvelle tentative sur 429 tiennent encore dans le temps imparti — jamais
+ * à interrompre le scan lui-même (la route s'en charge déjà).
+ */
+const SCAN_SOFT_BUDGET_MS = 15_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Exécute `tasks` avec une concurrence bornée (`HOST_REQUEST_CONCURRENCY`)
+ * et une pause (`HOST_REQUEST_SPACING_MS`) entre deux lots, tant que le
+ * budget (`deadline`) le permet. Préserve l'ordre des résultats.
+ */
+async function runHostSpaced<T>(tasks: Array<() => Promise<T>>, deadline: number): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  for (let i = 0; i < tasks.length; i += HOST_REQUEST_CONCURRENCY) {
+    const batch = tasks.slice(i, i + HOST_REQUEST_CONCURRENCY);
+    const batchResults = await Promise.all(batch.map((task) => task()));
+    batchResults.forEach((value, j) => {
+      results[i + j] = value;
+    });
+    const hasMoreBatches = i + HOST_REQUEST_CONCURRENCY < tasks.length;
+    if (hasMoreBatches && Date.now() + HOST_REQUEST_SPACING_MS < deadline) {
+      await sleep(HOST_REQUEST_SPACING_MS);
+    }
+  }
+  return results;
+}
+
+/**
+ * Sonde en User-Agent usurpé, avec une nouvelle tentative espacée en cas de
+ * 429 : un 429 isolé pendant la rafale de requêtes vers le même hôte n'est
+ * pas la preuve d'un blocage (règle 3). Si le budget ne permet plus de
+ * réessayer, le 429 reste `rateLimitUnconfirmed`, pour que les consommateurs
+ * n'en tirent jamais un verdict tranché. Si la deuxième tentative renvoie de
+ * nouveau 429, le signal est traité comme confirmé (comportement documenté :
+ * pas de troisième essai, pour rester dans le budget).
+ */
+async function probeUnverified(url: string, bot: BotAgent, baseline: AccessCheck, deadline: number): Promise<UnverifiedProbe> {
+  const userAgent = BOTS[bot].userAgent!;
+  let raw: CrawlResult = await crawlUrl(url, { userAgent });
+  let rateLimitUnconfirmed = false;
+
+  if (raw.status === 429) {
+    if (Date.now() + HOST_REQUEST_SPACING_MS < deadline) {
+      await sleep(HOST_REQUEST_SPACING_MS);
+      raw = await crawlUrl(url, { userAgent });
+    } else {
+      rateLimitUnconfirmed = true;
+    }
+  }
+
+  const probe = classifyAccess(raw);
+  return {
+    claimedBot: bot,
+    label: `unverified requester claiming to be ${bot}`,
+    risk: probe.risk,
+    httpStatus: probe.httpStatus,
+    differsFromBaseline: probe.risk !== baseline.risk || probe.httpStatus !== baseline.httpStatus,
+    rateLimitUnconfirmed,
+  };
+}
+
+type HostTaskResult =
+  | { kind: "robots"; value: RobotsReport }
+  | { kind: "probe"; value: UnverifiedProbe };
+
 export async function runScan(url: string, options: ScanOptions = {}): Promise<ScanReport> {
+  const scanStart = Date.now();
+  const deadline = scanStart + SCAN_SOFT_BUDGET_MS;
   const userAgent = decelioUserAgent();
   const reportBots = options.reportBots ?? ALL_BOTS;
   const renderer = options.renderer ?? getDefaultRenderer();
@@ -83,24 +182,28 @@ export async function runScan(url: string, options: ScanOptions = {}): Promise<S
   // robots.txt s'applique à l'origine qui sert réellement le contenu.
   const contentUrl = page.status !== 0 ? page.finalUrl : url;
 
-  // 2. robots.txt, rendu et sondes en parallèle.
+  // 2. robots.txt et sondes : même hôte, donc espacés (voir `runHostSpaced`).
+  // Le rendu JS n'y est pas mêlé : le moteur par défaut n'effectue aucune
+  // requête réseau (`noopRenderer`) et une implémentation réelle gère son
+  // propre budget (voir `renderer.ts`).
   const probeBots = (options.probeBots ?? []).filter((bot) => BOTS[bot].userAgent !== null);
-  const [robots, renderedHtml, unverifiedProbes] = await Promise.all([
-    fetchRobotsReport(contentUrl, reportBots, userAgent),
-    access.risk === "ok" ? renderer.render(page.finalUrl).catch(() => null) : Promise.resolve(null),
-    Promise.all(
-      probeBots.map(async (bot): Promise<UnverifiedProbe> => {
-        const probe = classifyAccess(await crawlUrl(url, { userAgent: BOTS[bot].userAgent! }));
-        return {
-          claimedBot: bot,
-          label: `unverified requester claiming to be ${bot}`,
-          risk: probe.risk,
-          httpStatus: probe.httpStatus,
-          differsFromBaseline: probe.risk !== access.risk || probe.httpStatus !== access.httpStatus,
-        };
-      }),
+  const hostTasks: Array<() => Promise<HostTaskResult>> = [
+    async () => ({ kind: "robots", value: await fetchRobotsReport(contentUrl, reportBots, userAgent) }),
+    ...probeBots.map(
+      (bot) =>
+        async (): Promise<HostTaskResult> => ({ kind: "probe", value: await probeUnverified(url, bot, access, deadline) }),
     ),
+  ];
+
+  const [renderedHtml, hostResults] = await Promise.all([
+    access.risk === "ok" ? renderer.render(page.finalUrl).catch(() => null) : Promise.resolve(null),
+    runHostSpaced(hostTasks, deadline),
   ]);
+
+  const robots = hostResults.find((r): r is Extract<HostTaskResult, { kind: "robots" }> => r.kind === "robots")!.value;
+  const unverifiedProbes = hostResults
+    .filter((r): r is Extract<HostTaskResult, { kind: "probe" }> => r.kind === "probe")
+    .map((r) => r.value);
 
   const directives = parseIndexingDirectives(page);
   const js = access.risk === "ok"
@@ -198,6 +301,12 @@ export function summarizeForBot(report: ScanReport, bot: BotAgent): ScanCoreResu
     // injoignable ou challengé : par précaution, on refuse.
     simpleStatus = "BLOQUÉ";
     reasons.push("robots.txt unreachable (full disallow)");
+  } else if (probe && probe.differsFromBaseline && probe.rateLimitUnconfirmed) {
+    // 429 isolé, reçu pendant la rafale de requêtes vers le même hôte, sans
+    // confirmation possible par une nouvelle tentative (budget insuffisant) :
+    // ce n'est pas la preuve d'un blocage (fix/scanner-sans-auto-429).
+    simpleStatus = "À VÉRIFIER";
+    reasons.push(`unverified probe rate-limited (status:${probe.httpStatus}), not confirmed by retry`);
   } else if (probe && probe.differsFromBaseline && (probe.risk === "blocked" || probe.risk === "challenged")) {
     // La requête honnête passe, mais la sonde qui se présente comme ce robot
     // est bloquée (règle 3) : un indice à forte valeur, jamais une preuve
@@ -209,6 +318,12 @@ export function summarizeForBot(report: ScanReport, bot: BotAgent): ScanCoreResu
   if (simpleStatus === "OK" && (jsDependency.verdict === "js_dependent" || jsDependency.verdict === "likely_js_dependent")) {
     simpleStatus = "COQUILLE VIDE";
     reasons.push(`${jsDependency.verdict}: ${jsDependency.rawWordCount} words in raw HTML`);
+  } else if (simpleStatus === "OK" && jsDependency.verdict === "low_text") {
+    // Texte court sans aucun indice de rendu côté client : ni preuve de
+    // dépendance JS, ni certitude que le peu de texte est délibéré. « À
+    // vérifier », jamais « COQUILLE VIDE » (constitution, principe I).
+    simpleStatus = "À VÉRIFIER";
+    reasons.push(`low_text: ${jsDependency.rawWordCount} words in raw HTML, no JS-rendering signal`);
   }
   if (indexing.perBot.find((i) => i.bot === bot)?.noindex) reasons.push("noindex");
 

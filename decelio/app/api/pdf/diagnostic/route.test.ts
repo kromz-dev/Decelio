@@ -13,10 +13,10 @@ vi.mock("@/lib/rate-limit", () => ({
     `${prefix}:${req.headers.get("x-forwarded-for") ?? "inconnu"}`,
 }));
 
-function requete(corps: string, ip = "203.0.113.1"): Request {
+function requete(corps: string, ip = "203.0.113.1", enTetes: Record<string, string> = {}): Request {
   return new Request("https://decelio.fr/api/pdf/diagnostic", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-forwarded-for": ip },
+    headers: { "content-type": "application/json", "x-forwarded-for": ip, ...enTetes },
     body: corps,
   });
 }
@@ -40,6 +40,11 @@ async function poster(corps: string, ip?: string) {
   return POST(requete(corps, ip));
 }
 
+async function posterAvecEnTetes(corps: string, enTetes: Record<string, string>) {
+  const { POST } = await import("./route");
+  return POST(requete(corps, undefined, enTetes));
+}
+
 describe("POST /api/pdf/diagnostic", () => {
   it("rend un PDF sur un corps valide", async () => {
     const res = await poster(CORPS_VALIDE);
@@ -61,6 +66,34 @@ describe("POST /api/pdf/diagnostic", () => {
   it("répond 400 sur un corps vide", async () => {
     const res = await poster("");
     expect(res.status).toBe(400);
+  });
+
+  // Régression : `req.json()` lisait tout le corps en mémoire avant toute
+  // borne. `Content-Length` est déclaratif : un refus précoce sur cet
+  // en-tête évite d'ouvrir la lecture pour un corps déjà annoncé énorme.
+  it("répond 413 quand Content-Length dépasse la limite, sans lire le corps ni générer le PDF", async () => {
+    const res = await posterAvecEnTetes(CORPS_VALIDE, { "content-length": String(300 * 1024) });
+    expect(res.status).toBe(413);
+    expect(genererPdf).not.toHaveBeenCalled();
+  });
+
+  // Un `Content-Length` absent ou faux ne doit pas permettre de contourner
+  // la borne : c'est la lecture en flux, pas l'en-tête, qui protège
+  // réellement contre un corps énorme.
+  it("répond 413 sur un corps trop grand même sans Content-Length déclaré", async () => {
+    const enorme = JSON.stringify({
+      report: { finalUrl: "https://exemple.fr/" },
+      results: [{ agent: "GPTBot", simpleStatus: "OK", reasons: ["x".repeat(300 * 1024)] }],
+    });
+    const res = await poster(enorme);
+    expect(res.status).toBe(413);
+    expect(genererPdf).not.toHaveBeenCalled();
+  });
+
+  it("reste en 200 pour un corps valide bien sous la limite, Content-Length absent (cas nominal)", async () => {
+    const res = await poster(CORPS_VALIDE);
+    expect(res.status).toBe(200);
+    expect(genererPdf).toHaveBeenCalledOnce();
   });
 
   it("répond 400 quand report ou results manquent", async () => {

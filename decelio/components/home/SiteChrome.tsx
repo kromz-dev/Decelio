@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { bricolage } from "./fonts";
 
 /**
  * En-tete et pied de page communs a toutes les pages publiques (accueil,
@@ -27,7 +28,9 @@ export function Wordmark({ light, size = "md" }: { light?: boolean; size?: "md" 
   const text = size === "lg" ? "text-[28px]" : "text-[24px]";
   const logo = size === "lg" ? "h-[27px]" : "h-[23px]";
   return (
-    <span className="inline-flex items-baseline">
+    // La variable de police est posee ici : le nom reste en Bricolage meme hors
+    // du cadre des pages publiques (coque de l'application).
+    <span className={`${bricolage.variable} inline-flex items-baseline`}>
       <span className="sr-only">Decelio</span>
       <Image
         src={light ? "/logo-decelio-blanc.png" : "/logo-decelio.png"}
@@ -138,11 +141,18 @@ export function SiteFooter({ isLoggedIn }: { isLoggedIn?: boolean }) {
           </nav>
         </div>
 
-        <div className="flex flex-col items-start justify-between gap-6 border-t border-paper/20 pt-8 text-sm text-paper/70 md:flex-row">
-          <p>&copy; {new Date().getFullYear()} Decelio. Tous droits r&eacute;serv&eacute;s.</p>
-          <p className="max-w-xl md:text-right">
-            <strong className="font-semibold text-paper">Ce que mesure l&apos;outil :</strong> Decelio v&eacute;rifie l&apos;acc&egrave;s technique des robots aux sites. Un acc&egrave;s ouvert ne suffit pas &agrave; ce qu&apos;une IA cite votre marque.
-          </p>
+        <div className="flex flex-col gap-6 border-t border-paper/20 pt-8 text-sm text-paper/70">
+          <div className="flex flex-col items-start justify-between gap-6 md:flex-row">
+            <p>&copy; {new Date().getFullYear()} Decelio. Tous droits r&eacute;serv&eacute;s.</p>
+            <p className="max-w-xl md:text-right">
+              <strong className="font-semibold text-paper">Ce que mesure l&apos;outil :</strong> Decelio v&eacute;rifie l&apos;acc&egrave;s technique des robots aux sites. Un acc&egrave;s ouvert ne suffit pas &agrave; ce qu&apos;une IA cite votre marque.
+            </p>
+          </div>
+          <nav aria-label="Mentions légales" className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link href="/mentions-legales" className={footerLink}>Mentions l&eacute;gales</Link>
+            <Link href="/cgv" className={footerLink}>CGV</Link>
+            <Link href="/confidentialite" className={footerLink}>Confidentialit&eacute;</Link>
+          </nav>
         </div>
       </div>
     </footer>
