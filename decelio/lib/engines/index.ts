@@ -24,7 +24,7 @@ export const ENGINES: Record<string, EngineConnector> = {
  * GEMINI : ancré. Il interroge réellement Google Search au moment de l'appel et
  * rend les URLs consultées. C'est le seul instrument de mesure dont on dispose.
  *
- * GROQ : NON ANCRÉ. `llama-3.3-70b-versatile` n'a aucun accès web. Son message
+ * GROQ : NON ANCRÉ. `openai/gpt-oss-120b` (voir DEFAULT_GROQ_MODEL) n'a aucun accès web. Son message
  * système lui demande de répondre « comme s'il » avait une base RAG temps réel
  * et de citer des URLs « réelles (ou très probables) » : les citations qu'il
  * produit sont reconstruites de mémoire. Les stocker et les présenter au client
