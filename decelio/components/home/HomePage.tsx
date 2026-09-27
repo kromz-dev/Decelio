@@ -415,7 +415,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 >
                   {plan.featured && (
                     <div className="absolute top-0 inset-x-0 -translate-y-1/2 flex justify-center">
-                      <span className="bg-ok text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                      <span className="bg-ink text-paper text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
                         Pour 10 &agrave; 30 sites
                       </span>
                     </div>
@@ -494,6 +494,8 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               <li>Facturation mensuelle, sans engagement</li>
               <li aria-hidden="true" className="text-ink-3">&middot;</li>
               <li>Paiement par carte, via Stripe</li>
+              <li aria-hidden="true" className="text-ink-3">&middot;</li>
+              <li>Rien &agrave; installer chez vos clients</li>
               <li aria-hidden="true" className="text-ink-3">&middot;</li>
               <li>Au-del&agrave; du quota, Decelio indique le palier suivant</li>
             </ul>

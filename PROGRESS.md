@@ -1,7 +1,7 @@
 # Decelio — état du projet et reprise
 
 Source de vérité pour reprendre le travail, avec un humain ou un agent.
-**Dernière mise à jour :** 26 septembre 2026 (soir : ménage des dossiers de travail).
+**Dernière mise à jour :** 27 septembre 2026.
 
 **Stack :** Next.js 16 · React 19 · TypeScript strict · Prisma 5 · PostgreSQL · Tailwind 4 · NextAuth v5 · Stripe · Inngest · Resend · PostHog
 **Contrainte absolue :** budget 0 €, autofinancé. Uniquement des offres gratuites qui autorisent un usage commercial (voir `docs/09-prd-mvp.md` §14, ENF-016).
@@ -113,6 +113,28 @@ Le poste portait dix dossiers de travail en parallèle, hérités des sessions d
 **Conservé** : `Cited` (seul dossier vivant), `Cited-backups` (trois patches et deux sauvegardes) et `exemplesaasdesign` (références visuelles).
 
 **Reste à faire à la main** : dix répertoires vides ou périmés subsistent sous `Cited/.claude/worktrees/`, que Git n'a pas pu effacer (« Permission denied » sous Windows). Sept sont vides ; trois (`agent-a89329667ee6ca825`, `agent-acb318020bf7fca7a`, `agent-ae08ade55a8e93651`) sont des copies antérieures au 25/09, reconnaissables aux trois anciennes migrations Prisma qu'elles contiennent encore. Aucune n'a de dépôt Git propre, donc aucune ne peut porter de commit unique. À supprimer avec `Remove-Item -Recurse -Force` depuis PowerShell.
+
+### 27/09 : `main` remise au vert, renommage Decelio termine, landing refondue
+
+**La CI etait rouge sur `main` depuis le 26/09 a 14 h 51**, alors que ce document annoncait le contraire. Deux jobs echouaient, et le second cachait un vrai defaut produit.
+
+`lint` : vingt-trois apostrophes droites dans du texte JSX (`react/no-unescaped-entities`). Sans consequence a l'ecran, corrigees.
+
+`prisma` : la detection de derive avait raison. `schema.prisma` declarait sept colonnes `updatedAt` et une contrainte d'unicite sur `MonitoredSite(userId, url)` qu'aucune migration ne creait. **Une base construite depuis les migrations ne les avait pas** : Prisma Client ecrivant `updatedAt` a chaque creation, toute creation de compte ou de site aurait echoue en production. Les 392 tests ne l'attrapaient pas, ils simulent la base. Migration `20260926230000_add_updated_at_and_site_unique` generee depuis l'etat reel, appliquee et verifiee sur la branche Neon `local-dev`. **La base de production n'a pas ete migree** : a faire avant tout deploiement.
+
+**Renommage termine.** Depot GitHub renomme `kromz-dev/Decelio`, dossier de l'application passe de `cited/` a `decelio/` (603 fichiers), identifiants techniques internes alignes. `llms.txt` decrivait encore le positionnement abandonne au pivot — mesure de part de voix sur ChatGPT et Perplexity — et a ete reecrit, avec une section explicite sur ce que le produit ne fait pas. Les jetons `--color-cited` sont volontairement conserves : ils designent l'etat « cite par une IA », pas la marque.
+
+**Environnement local bascule sur la bonne base.** `.env.local` pointait sur la branche Neon `main`, c'est-a-dire la production. La branche `local-dev`, creee la veille pour cet usage, n'avait jamais servi. Les tests locaux ecrivaient donc dans la vraie base.
+
+**Audit de la page d'accueil** (`docs/11-audit-landing-page.md`) : dix correctifs, dont sept ecarts a la constitution. Corriges — `llms.txt`, « temps reel » contre quotidien a quatre endroits, trois surpromesses de mesure, deux faux badges de popularite, et deux fausses notifications de scan (« Claude a accede au /pricing, il y a 2 minutes ») presentees comme reelles dans le heros.
+
+**Identite et refonte.** Logo integre, jeton `--brand` (#1d4ca4), icones du site creees — il n'y en avait aucune. Heros refondu en courbes de niveau reprenant le trace du logo, huit assistants IA servis localement. Grille tarifaire rendue comparable : les trois paliers exposaient chacun des lignes differentes, on ne pouvait pas voir ce que le palier d'entree n'avait pas. Donnees structurees JSON-LD ajoutees, il n'y en avait aucune.
+
+**Defaut d'accessibilite** : `prefers-reduced-motion` raccourcissait les animations sans remettre `animation-delay` a zero. Les entrees partant d'une opacite nulle, le heros restait vide pres de deux secondes pour qui demande moins d'animation.
+
+**Domaine achete** : `decelio.fr` et `decelio.eu`. Cela debloque Resend, qui n'avait aucun domaine d'envoi verifie — bloquant pour tous les e-mails produits. Verification a faire a la main (T068).
+
+**Travail a deux agents** : `docs/12-partage-du-travail.md` fixe le partage entre l'agent design et l'agent ingenierie — proprietaire par fichier, worktrees plutot que copies de dossier, et interdiction pour les deux d'ecrire dans `PROGRESS.md`, `tasks/mvp-tasks.md` et la constitution.
 
 ---
 
