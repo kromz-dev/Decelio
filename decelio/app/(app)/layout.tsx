@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { LayoutDashboard, Globe, Settings, LogOut, Bell, FileText } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Wordmark } from "@/components/home/SiteChrome";
+import { getTrialEndsAt } from "@/lib/billing/trial";
+import { TrialBanner } from "@/components/TrialBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Le script anti-flash (application de `.dark` avant le premier rendu) vit
@@ -17,8 +19,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/login");
   }
 
+  // Essai gratuit (ADR-002) : `null` hors essai, alors le bandeau ne s'affiche pas.
+  const trialEndsAt = await getTrialEndsAt(session.user?.id);
+
   return (
-    <div className="min-h-screen bg-paper text-ink">
+    <div className="flex min-h-screen flex-col bg-paper text-ink" data-trial-ends-at={trialEndsAt ? trialEndsAt.toISOString() : undefined}>
+      <TrialBanner trialEndsAt={trialEndsAt} />
       <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4 md:hidden">
         <Link href="/dashboard" aria-label="Decelio, portefeuille">
           <Wordmark />
@@ -39,7 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </details>
         </div>
       </div>
-      <div className="flex min-h-[calc(100vh-65px)] md:min-h-screen">
+      <div className="flex flex-1">
         <aside className="hidden w-64 border-r border-line bg-surface p-5 md:flex md:flex-col">
           <Link href="/dashboard" aria-label="Decelio, portefeuille" className="mb-10">
             <Wordmark />

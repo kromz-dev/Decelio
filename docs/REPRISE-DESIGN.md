@@ -1,6 +1,6 @@
 # Reprise du travail Design (27 septembre 2026)
 
-État du périmètre Design (interface, pages publiques, design system) à la fin de la session du 27/09, et marche à suivre pour reprendre. Le reste du projet est dans `docs/REPRISE.md`.
+État du périmètre Design (interface, pages publiques, design system) et marche à suivre pour reprendre. Le reste du projet est dans `docs/REPRISE.md`.
 
 ## 1. Ce qui est sur `main`
 
@@ -17,40 +17,58 @@
 | #122 | Nettoyage : `CoverageGrid`, `AuditForm`, `MarketingHeader`, `pricing.module.css`, 75 classes CSS mortes |
 | #123 | « TVA non applicable (art. 293 B du CGI) » au lieu de « HT » |
 | #124 | Harmonisation 2/3 : `/login`, `/register`, `/forgot-password`, `/reset-password` (`components/home/AuthShell.tsx`) |
+| #126 | Pages légales : `/mentions-legales`, `/cgv`, `/confidentialite`, liens dans le pied de page. Les `[À REMPLIR]` restants sont listés en §4 |
+| #133 | Harmonisation 3/3 : coque de l'application, vitrine `/design-system` à jour, `PlatformLine` réel |
+| #140 | Corrections de l'audit anti-slop 001 |
+| #141 | Preuve réelle datée sur l'accueil, IP du visiteur non transmise à PostHog |
+| #145 | Corrections signalées par l'Ingénierie : erreur console des réglages, « Étape 1 sur 3 », débogage de la connexion |
+| #150 | Page « Qui est derrière Decelio » (T067) |
+| #151 | Essai gratuit de 14 jours annoncé sur l'accueil, `/pricing` et les CGV ; bandeau « Essai : X jours restants » dans l'espace client (`components/TrialBanner.tsx`), calculé en heure de Paris |
+| #155 | Case « J'accepte les conditions générales de vente » à l'inscription, qui envoie `acceptTerms: true`. Débloque #152 |
+| #156 | CGV : la carte est demandée à la souscription et non à la création du compte. La formulation de #151 était inexacte |
+| #157 | ADR-002 passé en « appliqué » : son statut demandait encore d'afficher « pas de période d'essai » |
 
 ## 2. En cours, non fusionné
 
-| Branche | PR | État | Pour reprendre |
-|---|---|---|---|
-| `design/pages-legales` | #126 | Ouverte. `/mentions-legales`, `/cgv`, `/confidentialite`, liens dans le pied de page. Contrôles verts en local d'après l'agent. **Pas encore relue.** | Relire la PR (liste des `[À REMPLIR]` dans sa description), vérifier la CI, fusionner. Puis remplir les `[À REMPLIR]` avec le fondateur. |
-| `design/harmonisation-app` | aucune | 4 commits poussés : coque de l'application harmonisée, vitrine `/design-system` à jour, `PlatformLine` réel. Agent arrêté avant l'ouverture de la PR. **Contrôles non confirmés.** | `git fetch && git switch design/harmonisation-app && git merge origin/main`, lancer les 4 contrôles, prendre des captures, ouvrir la PR. |
+**Rien côté Design.** Tout ce qui était en cours est fusionné.
 
-La branche `design/harmonisation` est fusionnée : elle peut être supprimée.
+À surveiller, hors périmètre Design :
+
+| Branche | PR | État |
+|---|---|---|
+| `feat/acceptation-cgv` | #152 | Ouverte, Ingénierie. **Débloquée** : la case existe désormais dans l'interface depuis #155. Avant de fusionner, l'Ingénierie doit poser la bonne valeur de `TERMS_VERSION` : #151 et #156 ont tous deux changé le texte des CGV, une seule valeur postérieure à ces deux fusions les couvre. |
+
+Un worktree `decelio-design-sombre` existe sur la branche `design/mode-sombre-app`. Elle n'a aucun commit au-dessus de `main` et n'est pas poussée : soit une session démarre dessus, soit c'est un worktree abandonné à retirer (`git worktree remove`).
 
 ## 3. À faire, dans l'ordre
 
-1. Fusionner #126 (pages légales) puis finir `design/harmonisation-app` (harmonisation 3/3).
-2. **Après la fusion de `feat/essai-gratuit-14-jours` (Ingénierie)** : mettre à jour `/pricing` et l'accueil (« Pas de période d'essai » devient faux), la clause d'essai des CGV, et créer le bandeau « Essai : X jours restants » dans l'application (prop `trialEndsAt`, à confirmer avec l'Ingénierie). **Jamais avant.**
-3. **Après la fusion de `fix/posthog-proxy-domaine`** : retirer le `[À REMPLIR]` de la mesure d'audience dans `/confidentialite`, avec la formulation confirmée par l'Ingénierie.
-4. Brancher `PlatformLine` sur la fiche site quand l'Ingénierie aura passé la prop depuis `sites/[siteId]/page.tsx`.
-5. Ne rien créer pour les alertes Slack / Teams tant que l'Ingénierie ne les a pas construites.
+1. **Après la fusion de #152** : afficher la version des CGV en tête de `/cgv`. L'Ingénierie expose `TERMS_UPDATED_LABEL` depuis `lib/legal/terms.ts`, à côté de `TERMS_VERSION`, pour que les deux ne puissent pas diverger. L'étiquette remplace le `<ToFill>date</ToFill>` de `app/(marketing)/cgv/page.tsx:43`. **Jamais avant** : le fichier n'existe pas encore sur `main`.
+2. Brancher `PlatformLine` sur la fiche site quand l'Ingénierie aura passé la donnée. Vérifié le 27/09 : `app/(app)/sites/[siteId]/page.tsx` ne charge aucune détection de plateforme, ni depuis `monitoredSite.scanLogs` ni ailleurs. Il ne s'agit donc pas seulement d'ajouter le composant, il faut d'abord que la donnée existe dans la page. Le composant est prêt et sert déjà dans `ScanResultPanel` et `/design-system`.
+3. Ne rien créer pour les alertes Slack / Teams tant que l'Ingénierie ne les a pas construites.
+
+**Le bouton « Continuer avec Google » n'existe toujours pas dans l'interface**, ni sur `/login` ni sur `/register`, alors que le fournisseur est configuré côté serveur (`auth.config.ts`). Il n'est pas prévu pour l'instant : l'exposer demande de vérifier le flux OAuth de bout en bout, et le principe II interdit d'afficher un bouton dont on ne sait pas s'il fonctionne. Aucune faille n'en découle, `createUser` n'enregistrant l'acceptation que si quelqu'un se connecte par Google, ce que personne ne peut faire. Le jour où le bouton arrive, la mention « En continuant avec Google, vous acceptez les conditions générales de vente » doit arriver dans la même fusion : le code serveur enregistre l'acceptation sans rien afficher, donc sans la mention l'acceptation enregistrée ne vaut rien.
 
 ## 4. Décisions attendues du fondateur
 
-- Un site public connu à scanner pour une preuve réelle et datée sur l'accueil.
-- La promesse « résultat en 15 secondes » : à confirmer ou à retirer (elle apparaît plusieurs fois).
-- Exemple de rapport sur l'accueil : il montre le logo Decelio, alors que `/pricing` dit que le rapport porte le logo de l'agence.
-- Les `[À REMPLIR]` des pages légales : identité et SIREN, adresse, directeur de la publication, pays des sous-traitants, plafond de responsabilité, tribunal, remboursement, dates. Ces textes sont un modèle à faire relire par un professionnel du droit.
+- Les `[À REMPLIR]` des pages légales, treize au 27/09. Ces textes sont un modèle, à faire relire par un professionnel du droit.
+  - `mentions-legales` : date, nom ou raison sociale, SIREN/SIRET, RCS ou RNE, adresse du siège, directeur de la publication.
+  - `cgv` : date, politique de remboursement, plafond de responsabilité, ville du siège.
+  - `confidentialite` : date, identité du responsable de traitement, cadre du transfert Inngest, suppression de la fiche Stripe à la purge.
+  - `a-propos` : l'histoire du fondateur en deux ou trois phrases.
+- Exemple de rapport sur l'accueil : il montre le logo Decelio, alors que `/pricing` dit que le rapport porte le logo de l'agence. La marque de l'agence est bien réelle dans le code (`lib/reports/renderMonthlyReportPdf.tsx`, `resolveBrandName` et `resolveAccentColor`) : il ne s'agit pas d'une promesse non tenue, seulement de savoir ce que l'exemple doit montrer.
+- Clause « Paiement » des CGV : les pénalités de retard et l'indemnité de 40 € « sont appliquées », au présent, alors qu'aucun code ne les applique. C'est une clause légale obligatoire entre professionnels (article L441-10 du Code de commerce), donc sa présence est normale sans automatisation, mais le présent de l'indicatif se lit comme un fait constaté. À verser à la relecture juridique.
+
+Deux points de la liste précédente sont réglés et retirés : la promesse « résultat en 15 secondes » n'existe plus nulle part dans l'interface (vérifié le 27/09), et le statut de l'ADR-002 est corrigé par #157.
 
 ## 5. Signalé à l'Ingénierie, non corrigé côté Design
 
-- `sites/[siteId]/page.tsx` : « Coquille vide » s'affiche « Inconnu » ; utiliser `verdictForSiteStatus` et le détail « à vérifier ».
+- `lib/billing/trial.ts` : `getTrialEndsAt` lit `stripeTrialEnd` tel quel et peut donc rendre une date passée. Le champ n'est remis à `null` que par le webhook `customer.subscription.updated`, et aucune tâche de réconciliation ne rattrape un webhook perdu. Le bandeau d'essai se protège à l'affichage, mais la donnée reste fausse pour tout autre usage.
+- **Aucun endpoint webhook n'est enregistré sur le compte Stripe de test** (`GET /v1/webhook_endpoints` renvoie une liste vide au 27/09). En l'état, `customer.subscription.trial_will_end` n'atteint jamais l'application en test : l'e-mail de rappel à J-3, pourtant écrit (`lib/email/resend.ts`), n'est pas exerçable de bout en bout. À vérifier aussi en production.
+- `TERMS_VERSION` (`lib/legal/terms.ts`, branche #152) doit être porté à une valeur postérieure à **#151 et #156**, qui ont tous deux changé le texte des CGV : la clause d'essai crée désormais une obligation de prélèvement automatique, et #156 a corrigé le moment où la carte est demandée. Les deux fusions étant faites, une seule valeur les couvre. `TERMS_UPDATED_LABEL` et le `LastUpdated` en tête de `app/(marketing)/cgv/page.tsx` doivent porter la même date.
+- **Règle de coordination convenue le 27/09** : toute demande de fusion qui change le fond de `/cgv` (une clause, un prix, une durée, un engagement, le responsable du traitement, une adresse de contact) annonce la nouvelle version dans sa description, et l'Ingénierie la pose dans `lib/legal/terms.ts` dans la même fusion. Mise en forme seule : pas de nouvelle version.
+- `data-trial-ends-at` est du code mort depuis #151 : le bandeau reçoit la prop directement. Présent en double, dans `app/(app)/layout.tsx` et `app/(app)/settings/SettingsClient.tsx`.
 - `lib/scanner/verdicts.ts` : « robots.txt autorise … à **citer** ce site » ; `accessSummary` affiche « Refusé » pour un blocage général.
 - `app/(app)/reports/page.tsx` : meta description « visibilité IA ».
-- `LoginForm.tsx` : `console.log` de débogage et `router` inutilisé.
-- Inscription : « Étape 1 sur 3 » alors que tout tient sur un écran.
-- PostHog charge des scripts depuis `eu-assets.i.posthog.com` sur les pages publiques (correction en cours, `fix/posthog-proxy-domaine`).
-- Case « J'accepte les CGV » à l'inscription (colonne en base et action serveur).
 - Un test instable : échoue parfois, réussit au lancement suivant.
 
 ## 6. Règles de travail retenues

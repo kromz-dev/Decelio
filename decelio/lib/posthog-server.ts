@@ -40,7 +40,9 @@ export type FunnelEvent =
   | "site_added"
   | "checkout_started"
   | "subscription_activated"
-  | "subscription_canceled";
+  | "subscription_canceled"
+  | "trial_started"
+  | "trial_converted";
 
 /**
  * Propriétés autorisées pour chaque événement de tunnel.
@@ -51,11 +53,13 @@ export type FunnelEvent =
  * parcours d'un même utilisateur sans exposer qui il est dans les propriétés.
  */
 export interface FunnelEventProperties {
-  signup_completed: { method: "credentials" };
+  signup_completed: { method: "credentials" | "google" };
   site_added: { count: number; total_sites: number; is_first_site: boolean };
   checkout_started: { plan: string };
   subscription_activated: { plan: string };
   subscription_canceled: { plan: string; previous_plan: string };
+  trial_started: { plan: string };
+  trial_converted: { plan: string };
 }
 
 /**

@@ -540,6 +540,69 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 - [ ] **T068** [MARKETING] Vérifier le domaine `decelio.fr` chez Resend - tableau de bord Resend
   - **Dépendances** : Aucune
-  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Le domaine est acheté depuis le 26/09.
+  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Domaine créé dans Resend le 27/09 (région eu-west-1), mais DNS OVH reste à ajouter (TXT `resend._domainkey`, MX `send`, TXT `send` SPF, CNAME `rsend`).
   - **Vérification** : `list-domains` renvoie `decelio.fr` avec le statut vérifié.
+  - **Taille** : S
+
+## Phase 11 : Avant le lancement (27/09)
+
+- [ ] **T069** [QUAL] Acceptation des CGV à l'inscription (case à cocher, horodatage, version acceptée) - `decelio/app/api/auth/register/route.ts`, `decelio/prisma/schema.prisma` (`User.termsAcceptedAt`)
+  - **Dépendances** : T070 (les CGV doivent exister pour qu'on puisse en accepter une version)
+  - **EF/ENF** : constitution (honnêteté), obligation légale française
+  - **Note** : ne peut être fait qu'après la fusion des pages légales, sinon rien à accepter.
+  - **Vérification** : un compte créé sans cocher la case est refusé ; le compte créé porte `termsAcceptedAt` et la version acceptée.
+  - **Taille** : S
+
+- [x] **T070** [DESIGN] Pages légales (mentions légales, CGV, politique de confidentialité) - `decelio/app/(marketing)/mentions-legales/`, `.../cgv/`, `.../confidentialite/`
+  - **Dépendances** : Aucune (mais porte des `[À REMPLIR]` tant que le SIREN manque)
+  - **Note** : fusionnée par #126 (pages légales) et #135 (franchise TVA art. 293 B). Les trois pages existent et sont liées depuis le pied de page ; `[À REMPLIR]` en attente du SIREN.
+  - **Vérification** : les trois pages existent, liées depuis le pied de page ; aucune mention inventée (numéro SIREN, adresse) tant que non disponible.
+  - **Taille** : M
+
+- [ ] **T071** [FACT] Essai gratuit de 14 jours avec carte bancaire dès l'inscription (ADR-002) - `decelio/lib/billing/actions.ts`, webhook Stripe
+  - **Dépendances** : Aucune
+  - **Note** : en cours sur la branche `feat/essai-gratuit-14-jours`, pas fusionnée au 27/09. Décision du fondateur consignée dans `docs/decisions/ADR-002-essai-gratuit-14-jours.md` (sur une autre branche, non fusionnée non plus).
+  - **Vérification** : un Checkout de test crée un abonnement `trialing` de 14 jours ; à l'échéance sans annulation, le prélèvement se déclenche.
+  - **Taille** : M
+
+- [ ] **T072** [ING] Proxy PostHog par notre propre domaine (ADR-004) - `decelio/next.config.ts` (rewrites), `decelio/instrumentation-client.ts`
+  - **Dépendances** : Aucune
+  - **Note** : fusionnée par #134 (route `/ingest/[...path]`, IP/cookies/forwarded retirés, limite 256 Kio). Reste : vérification réseau dans un vrai navigateur que aucune requête ne part vers `*.posthog.com`.
+  - **Vérification** : les requêtes PostHog partent du domaine `decelio.fr` dans l'onglet réseau, jamais de `*.posthog.com` directement.
+  - **Taille** : S
+
+- [ ] **T073** [ING] Baseline des migrations Prisma sur Neon `main` (production) - `docs/runbooks/deploiement-render-neon.md`
+  - **Dépendances** : Aucune
+  - **Note** : les tables existent sur `main` mais aucune table `_prisma_migrations` — la base a été peuplée par `db push`. `npx prisma migrate deploy` échouera tel quel. **Protection de branche impossible en offre gratuite Neon** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render.
+  - **Vérification** : `npx prisma migrate resolve --applied <dernière migration>` exécuté sur `main`, puis `npx prisma migrate status` ne signale plus aucune migration en attente.
+  - **Taille** : S
+
+- [ ] **T074** [ING] Webhook Stripe de production - tableau de bord Stripe, variables Render
+  - **Dépendances** : T003 (Render déployé, URL de production connue)
+  - **Note** : relevé par MCP le 27/09 : aucun webhook n'existe, ni en test ni en réel. Sans lui, les changements d'abonnement (paiement, résiliation, coupon) ne mettent jamais à jour la base.
+  - **Vérification** : un événement `checkout.session.completed` envoyé depuis le tableau de bord Stripe en test met à jour l'abonnement de l'utilisateur correspondant.
+  - **Taille** : S
+
+- [ ] **T075** [FACT] Activer Stripe en mode réel après réception du SIREN - tableau de bord Stripe
+  - **Dépendances** : SIREN reçu (prérequis administratif du fondateur, aucune vente avant)
+  - **Note** : recréer à l'identique en mode réel les 3 prix, le coupon `FONDATEUR50`, le portail client et le webhook, aujourd'hui uniquement en mode test. Ajouter le pied de page des factures (mention art. 293 B du CGI, franchise de TVA — ADR-003).
+  - **Vérification** : un paiement réel de test (carte du fondateur, remboursé ensuite) aboutit à un abonnement actif.
+  - **Taille** : M
+
+- [x] **T076** [ING] Fiabilité restante du scanner - `decelio/lib/scanner/*`
+  - **Dépendances** : Aucune
+  - **Note** : fusionnées par #128-#131 (taille `/api/pdf/diagnostic` 256 Kio, IP épinglée contre rebinding DNS, page courte sans indice JS n'est plus « COQUILLE VIDE », scanner ne provoque plus lui-même de 429). Reste mineur : même biais « COQUILLE VIDE » dans l'ancienne route `/api/audit` (lib/scanner/analyzer.ts, tâche séparée T077).
+  - **Vérification** : les quatre branches ci-dessus fusionnées sur main avec leurs tests verts.
+  - **Taille** : M
+
+- [ ] **T077** [ING] Même faux « COQUILLE VIDE » dans `/api/audit` - `decelio/lib/scanner/analyzer.ts` (analyzeResponse / EMPTY_JS_REQUIRED)
+  - **Dépendances** : T076
+  - **Note** : la route `/api/audit` (ancienne, exposée en public) réutilise le moteur `lib/scanner/analyzer.ts` qui contient le même biais « COQUILLE VIDE » que le scanner. Correctif orthogonal, tâche séparée.
+  - **Vérification** : une page courte sans indice de rendu JavaScript n'est plus classée « COQUILLE VIDE » par `/api/audit`.
+  - **Taille** : S
+
+- [ ] **T078** [ING] Préparation du lancement - `decelio/auth.ts`, `.env.example`
+  - **Dépendances** : Aucune
+  - **Note** : en cours sur la branche `chore/avant-lancement` (demande #142). Contenu : `AUTH_TRUST_HOST=true` dans `.env.example`, `signup_completed` après connexion Google, suppression du texte « visibilité IA » du formulaire de prospection, suppression du client Stripe à la purge RGPD d'un compte.
+  - **Vérification** : les quatre changements sont présents dans `main` ; `tsc`, `eslint`, `vitest` au vert.
   - **Taille** : S

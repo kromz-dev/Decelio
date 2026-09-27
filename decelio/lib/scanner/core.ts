@@ -255,6 +255,9 @@ export function mapStatusToSimple(status: ScannerStatus): SimpleStatus {
   switch (status) {
     case "ACCESSIBLE":
       return "OK";
+    case "LOW_TEXT":
+      // Page courte sans indice de rendu côté client : jamais un verdict tranché.
+      return "À VÉRIFIER";
     case "BLOCKED_403":
     case "BLOCKED_CAPTCHA":
       return "BLOQUÉ";

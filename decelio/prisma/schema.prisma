@@ -31,9 +31,23 @@ model User {
   purgeAt        DateTime?
   dataExportedAt DateTime?
 
+  // Essai gratuit de 14 jours : un seul essai par compte. `trialUsedAt` est
+  // posé dès le premier abonnement (essai ou paiement immédiat) et n'est
+  // jamais effacé, même après résiliation. `stripeTrialEnd` reflète la date
+  // de fin d'essai en cours ; il est remis à `null` à la conversion (premier
+  // paiement réussi), ce qui sert aussi de marqueur anti-double-comptage pour
+  // l'événement `trial_converted`.
+  trialUsedAt    DateTime?
+  stripeTrialEnd DateTime?
+
   // Offre fondatrice : -50 % à vie pour les 10 premières agences.
   isFounderMember Boolean   @default(false)
   founderOfferAt  DateTime?
+
+  // Acceptation des CGV à l'inscription : date et version.
+  // Null pour les comptes créés avant cette fonctionnalité.
+  termsAcceptedAt DateTime?
+  termsVersion    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

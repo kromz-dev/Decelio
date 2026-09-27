@@ -17,9 +17,16 @@ export default async function SettingsPage() {
   const user = userId
     ? await db.user.findUnique({
         where: { id: userId },
-        select: { name: true, email: true },
+        select: { name: true, email: true, stripeTrialEnd: true },
       })
     : null;
+
+  // Essai gratuit de 14 jours (T-essai-gratuit-14-jours) : `null` hors
+  // essai (jamais démarré, résilié ou déjà converti — le webhook Stripe
+  // remet `stripeTrialEnd` à `null` dans les deux derniers cas). Calculée
+  // ici, dans ce fichier serveur, pour que l'équipe Design l'affiche sans
+  // avoir à interroger Stripe elle-même.
+  const trialEndsAt: Date | null = user?.stripeTrialEnd ?? null;
 
   return (
     <SettingsClient
@@ -28,6 +35,7 @@ export default async function SettingsPage() {
       whiteLabelSection={<WhiteLabelSection />}
       userName={user?.name ?? null}
       userEmail={user?.email ?? null}
+      trialEndsAt={trialEndsAt}
     />
   );
 }

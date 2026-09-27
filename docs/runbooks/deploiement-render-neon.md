@@ -13,29 +13,71 @@ keep-alive Inngest, budget d'exécutions) et `PROGRESS.md` (état des services p
 ## a. Baseline Neon (T004)
 
 Le schéma de production (projet Neon `billowing-resonance-22258158`, Postgres 17,
-`aws-eu-central-1`, base `cited`) a été appliqué par `db push` : il n'existe **aucune
-table `_prisma_migrations`**. Il faut donc "baseliner" la base — dire à Prisma Migrate
-quelles migrations sont déjà appliquées — avant le premier vrai `migrate deploy`.
+`aws-eu-central-1`, base `cited`, branche Neon `main` = production, identifiant
+`br-floral-bar-b2li0kvj`, compute `ep-morning-scene-b2pj6r6t`) a été appliqué par
+`db push` : il n'existe **aucune table `_prisma_migrations`**. Il faut donc "baseliner"
+la base — dire à Prisma Migrate quelles migrations sont déjà appliquées — avant le
+premier vrai `migrate deploy`.
 
-L'historique des migrations a été fusionné une première fois (PR #68, `main`) en une
-migration unique `20260925000000_init` — les trois anciennes migrations
-(`20260916055018_init`, `20260916181000_add_password_hash`, `20260924040100_mvp_entities`)
-n'existent plus dans `decelio/prisma/migrations/`. **Depuis, une seconde migration a été
-ajoutée par le commit `95e9dc2`** : `20260926230000_add_updated_at_and_site_unique`, qui
-ajoute la colonne `updatedAt` sur `User`, `Site`, `Page`, `PageView`, `AuditLead`, `Client`
-et `MonitoredSite`, ainsi que l'index unique `MonitoredSite(userId, url)` — ces éléments
-sont dans `schema.prisma` mais aucune des migrations précédentes ne les créait. Le
-répertoire `decelio/prisma/migrations/` contient donc aujourd'hui **deux** migrations, pas
-une seule, et le baseline ci-dessous doit couvrir les deux :
+Le dossier `decelio/prisma/migrations/` contient aujourd'hui **cinq** migrations :
 
 ```
 decelio/prisma/migrations/
 ├── 20260925000000_init/
-└── 20260926230000_add_updated_at_and_site_unique/
+├── 20260926230000_add_updated_at_and_site_unique/
+├── 20260927000000_audit_lead_brand_name_optional/
+├── 20260927120000_add_user_trial_fields/
+└── 20260927180000_add_user_terms_acceptance/
 ```
 
+La dernière, `20260927180000_add_user_terms_acceptance`, n'est pas encore fusionnée sur
+`main` : elle arrive avec la demande de fusion #152. Le constat et les commandes
+ci-dessous couvrent quand même les cinq, pour ne pas avoir à refaire ce travail au
+prochain merge.
+
+### Constat du 27/09/2026 : nous sommes dans le cas 1
+
+Un relevé direct de la base de production (via le MCP Neon) tranche définitivement :
+**cas 1** — les deux premières migrations sont déjà physiquement appliquées en base, les
+trois suivantes ne le sont pas. Voici ce qui a été vérifié, pour que quelqu'un puisse
+refaire le même constat si la base venait à changer entre-temps :
+
+- Aucune table `_prisma_migrations` en production (confirmé). 18 tables présentes,
+  **3 utilisateurs**, **0 abonné** (aucun `stripeCustomerId` ni `stripeSubscriptionId`
+  renseigné), **0 ligne** dans `AuditLead`, **0 ligne** dans `MonitoredSite`.
+- La colonne `updatedAt` existe déjà sur `AuditLead`, `BrandSettings`, `Client`,
+  `MonitoredSite`, `Page`, `PageView`, `Site` et `User`, et l'index unique
+  `MonitoredSite_userId_url_key` existe déjà. Autrement dit, tout le contenu de
+  `20260925000000_init` **et** de `20260926230000_add_updated_at_and_site_unique` est
+  déjà en base.
+- Ces colonnes-là, en revanche, n'existent **pas** en production : `User.trialUsedAt`,
+  `User.stripeTrialEnd`, `User.termsAcceptedAt`, `User.termsVersion`. Et
+  `AuditLead.brandName` y est encore `NOT NULL` (pas encore nullable).
+- Comptage de colonnes : **124 en production contre 128** sur la branche Neon
+  `local-dev` (hors `_prisma_migrations`). L'écart correspond exactement à ces quatre
+  colonnes, plus la nullabilité de `AuditLead.brandName` — rien d'autre.
+- La branche Neon `local-dev` (identifiant `br-old-mode-b21jizov`, compute
+  `ep-sweet-cherry-b282rxpt`) porte, elle, les cinq migrations enregistrées dans
+  `_prisma_migrations`.
+- Sur `local-dev` : `npx prisma migrate diff` (dossier `migrations/` vers
+  `schema.prisma`, rejoué sur une base fantôme temporaire créée puis supprimée pour
+  l'occasion ; puis rejoué dans l'autre sens, base `local-dev` vers le schéma) répond
+  `No difference detected.` dans les deux cas, et `npx prisma migrate status` répond
+  `Database schema is up to date!`. Le dossier de migrations reconstruit donc bien
+  exactement le schéma versionné — les migrations elles-mêmes ne sont pas en cause.
+
+**Si ce constat doit être refait** (nouvelle migration ajoutée, doute sur une
+modification manuelle de la base de production, ou simplement pour revérifier avant
+d'agir) : relever à nouveau, via le MCP Neon ou
+`npx prisma migrate diff --from-url "$DIRECT_URL" --to-schema-datamodel prisma/schema.prisma --exit-code`,
+l'écart exact entre la base réelle et `schema.prisma`, colonne par colonne, avant de
+baseliner quoi que ce soit. Un diff qui ne correspond pas exactement au contenu attendu
+d'une ou plusieurs migrations ne doit jamais être baseliné à l'aveugle : il faut d'abord
+l'expliquer (comparer ligne à ligne avec le SQL des migrations locales, dans
+`decelio/prisma/migrations/<nom>/migration.sql`).
+
 1. **Récupérer les deux URL de connexion** dans la console Neon (Dashboard → projet
-   `cited` → onglet **Connect** → sélectionner la base `cited`) :
+   `cited` → branche `main` → onglet **Connect** → sélectionner la base `cited`) :
    - URL **poolée** (hôte se terminant par `-pooler`) → deviendra `DATABASE_URL`.
    - URL **directe / non poolée** (même hôte, sans `-pooler`) → deviendra `DIRECT_URL`.
      C'est celle-ci qu'il faut utiliser pour toutes les commandes `prisma migrate *`
@@ -58,124 +100,97 @@ decelio/prisma/migrations/
    export DIRECT_URL="postgresql://.../cited?sslmode=require"     # sans -pooler
    ```
 
-3. **Vérifier qu'il n'y a aucune dérive** entre la base réelle (poussée par `db push`)
-   et le schéma versionné, en comparant la base (via `DIRECT_URL`) au schéma :
+3. **Baseliner les deux premières migrations, puis appliquer les suivantes pour de
+   vrai**, dans cet ordre exact, `DATABASE_URL` et `DIRECT_URL` pointés sur Neon `main` :
 
    ```bash
    cd decelio
-   npx prisma migrate diff \
-     --from-url "$DIRECT_URL" \
-     --to-schema-datamodel prisma/schema.prisma \
-     --exit-code
+   npx prisma migrate resolve --applied 20260925000000_init
+   npx prisma migrate resolve --applied 20260926230000_add_updated_at_and_site_unique
+   npx prisma migrate deploy
    ```
 
-   Le résultat de cette commande détermine **lesquelles** des deux migrations peuvent
-   être baselinées (étape 4) — ce n'est pas le même geste selon que Neon porte déjà ou
-   non les colonnes `updatedAt` et l'index unique de la seconde migration
-   (`20260926230000_add_updated_at_and_site_unique`), ajoutés après coup par le commit
-   `95e9dc2` :
+   Les deux premières commandes ne rejouent **aucun SQL** : elles se contentent
+   d'inscrire dans `_prisma_migrations` ce qui est déjà physiquement en base (constat
+   ci-dessus). La troisième, `migrate deploy`, applique réellement les migrations qui
+   restent :
 
-   - **Cas 1 — `No difference detected.`** (code de sortie 0) : la base contient déjà
-     tout ce que les deux migrations créent ensemble, `updatedAt` et l'index unique
-     compris — un `db push` ultérieur les aura vraisemblablement poussés en prod avant
-     que la migration ne soit écrite. Dans ce cas, **baseliner les deux migrations**
-     (étape 4, cas 1) : aucune des deux ne doit être rejouée par `migrate deploy`, elle
-     ne ferait qu'échouer sur des colonnes/index déjà existants
-     (`column "updatedAt" of relation "User" already exists`, ou équivalent sur l'index).
-   - **Cas 2 — le diff ne montre *que* les sept colonnes `updatedAt` et l'index unique
-     `MonitoredSite_userId_url_key` manquants** (exactement le contenu de
-     `decelio/prisma/migrations/20260926230000_add_updated_at_and_site_unique/migration.sql`,
-     rien d'autre) : la base n'a pas reçu ce `db push`-là. Dans ce cas, **ne baseliner
-     que la première migration** (étape 4, cas 2) et laisser la seconde en attente — le
-     `prisma migrate deploy` de l'étape b l'appliquera pour de vrai au premier build, ce
-     qui est le comportement voulu : la base rattrape réellement les colonnes qui lui
-     manquent.
-   - **Si le diff montre autre chose** (code de sortie non nul, contenu différent des
-     deux cas ci-dessus) : ne baseliner ni l'une ni l'autre migration. La base de
-     production contient des colonnes/tables qu'aucune des deux migrations locales ne
-     recréerait à l'identique. Dans ce cas :
-     a. Ne PAS lancer `migrate resolve` tant que le diff n'est pas expliqué.
-     b. Comparer le diff ligne à ligne avec le contenu des deux migrations locales
-        (`decelio/prisma/migrations/20260925000000_init/migration.sql` et
-        `decelio/prisma/migrations/20260926230000_add_updated_at_and_site_unique/migration.sql`)
-        pour identifier ce qui manque ou diffère.
-     c. Si le diff révèle un oubli côté schéma (colonne ajoutée manuellement en base,
-        jamais migrée), générer la migration manquante en local
-        (`npx prisma migrate dev --name <nom>` contre une base de test, jamais contre
-        la prod) puis rejouer cette étape avant de continuer.
-     d. Si le diff est cosmétique uniquement (ordre de colonnes, index générés
-        différemment par `db push`), documenter la décision ici avant de baseliner
-        quand même — ne pas baseliner en silence sur un diff non expliqué.
+   | Migration | Effet | Risque |
+   |---|---|---|
+   | `20260927000000_audit_lead_brand_name_optional` | `AuditLead.brandName` passe en nullable | Aucun : 0 ligne dans `AuditLead` en production. |
+   | `20260927120000_add_user_trial_fields` | Ajoute `User.trialUsedAt` et `User.stripeTrialEnd`, puis un `UPDATE` qui marque `trialUsedAt` pour les abonnés déjà existants | Aucun : 0 abonné en production. |
+   | `20260927180000_add_user_terms_acceptance` | Ajoute `User.termsAcceptedAt` et `User.termsVersion`, deux colonnes nullables sans valeur par défaut | Aucun : les 3 utilisateurs existants restent à `NULL` sur ces deux colonnes. |
 
-4. **Baseliner les migrations** (inscrit une migration comme "déjà appliquée" dans
-   `_prisma_migrations`, sans rejouer son SQL) — le geste dépend du cas identifié à
-   l'étape 3 :
+   La troisième n'est pas encore fusionnée sur `main` (demande de fusion #152). Tant
+   qu'elle n'y est pas, `migrate deploy` n'appliquera que les deux premières lignes de
+   ce tableau.
 
-   - **Cas 1** (Neon a déjà les colonnes `updatedAt` et l'index unique) : baseliner
-     les deux migrations, dans l'ordre :
-
-     ```bash
-     npx prisma migrate resolve --applied 20260925000000_init
-     npx prisma migrate resolve --applied 20260926230000_add_updated_at_and_site_unique
-     ```
-
-   - **Cas 2** (Neon ne les a pas encore) : baseliner **uniquement** la première.
-     Ne pas baseliner la seconde — elle doit rester en attente pour que
-     `prisma migrate deploy` l'applique réellement au premier build Render (étape b) :
-
-     ```bash
-     npx prisma migrate resolve --applied 20260925000000_init
-     ```
-
-   Se tromper de cas casse le prochain déploiement : baseliner la seconde migration
-   alors que Neon ne l'a pas reçue laisse la base sans `updatedAt` ni contrainte
-   d'unicité (Prisma Client échoue à chaque écriture qui fixe `updatedAt`, et un même
-   site peut être ajouté deux fois) ; ne pas la baseliner alors que Neon l'a déjà reçue
-   fait échouer `migrate deploy` sur des colonnes/index déjà existants, ce qui bloque
-   le build Render (§b, `buildCommand` chaîné par `&&`).
-
-5. **Vérifier** :
+4. **Vérifier** :
 
    ```bash
    npx prisma migrate status
    ```
 
-   - **Cas 1** (les deux migrations baselinées) : doit afficher
-     `Database schema is up to date!`, aucune migration en attente. Un
-     `npx prisma migrate deploy` sera alors un no-op — c'est le comportement attendu.
-   - **Cas 2** (seule la première migration baselinée) : la sortie liste
-     `20260926230000_add_updated_at_and_site_unique` comme migration non appliquée,
-     ce qui est normal et attendu ici — c'est elle que `npx prisma migrate deploy`
-     appliquera pour de vrai au premier build Render (§b). Ne pas confondre cette
-     sortie avec une dérive : c'est exactement le rattrapage recherché dans ce cas.
+   Avec seulement les deux premières migrations baselinées à l'instant, cette commande
+   **ne dira pas** `Database schema is up to date!` : elle listera comme non appliquées
+   les migrations du tableau ci-dessus (deux ou trois, selon que #152 est fusionnée au
+   moment où l'étape 3 a été jouée). C'est normal et attendu, ce n'est pas une dérive —
+   c'est le rattrapage volontaire que l'étape 3 vient d'effectuer avec `migrate deploy`.
+   Une fois l'étape 3 terminée avec succès, ce `migrate status` doit à nouveau afficher
+   `Database schema is up to date!`, cette fois avec toutes les migrations présentes
+   dans `decelio/prisma/migrations/` enregistrées comme appliquées.
 
-   Ces deux comportements ont été vérifiés sur un Postgres réel (voir la note de
-   maintenance en fin de section).
+5. Une fois la base baselinée et à jour, **désexporter les variables** du terminal
+   (fermer la session, ou `unset DATABASE_URL DIRECT_URL` /
+   `Remove-Item Env:DATABASE_URL,Env:DIRECT_URL`) pour ne pas les laisser traîner dans
+   l'historique du shell plus longtemps que nécessaire.
 
-6. Une fois la base baselinée, **désexporter les variables** du terminal (fermer la
-   session, ou `unset DATABASE_URL DIRECT_URL` / `Remove-Item Env:DATABASE_URL,Env:DIRECT_URL`)
-   pour ne pas les laisser traîner dans l'historique du shell plus longtemps que
-   nécessaire.
+> **Sans ce baseline, le premier déploiement Render échoue.** `render.yaml` chaîne
+> `npx prisma migrate deploy` dans son `buildCommand` :
+> `npm ci && npx prisma generate && npx prisma migrate deploy && npm run build`. Le plan
+> `free` de Render n'a pas de `preDeployCommand`, donc la migration tourne en fin de
+> build, avant `npm run build`. Sans baseline, `migrate deploy` **ne tente aucune
+> instruction SQL** : Prisma refuse d'emblée, avec l'erreur `Error: P3005` (« The
+> database schema is not empty ») et un code de sortie 1. Il voit une base peuplée sans
+> table `_prisma_migrations` et s'arrête là — il ne rejoue rien sur des tables déjà
+> existantes et n'échoue donc pas sur des colonnes ou index déjà présents. La
+> conséquence pratique ne change pas : `buildCommand` est une seule commande chaînée par
+> `&&`, donc tout le build échoue avec lui (voir §b, étape 5, pour le détail des
+> conséquences sur le déploiement) — mais **`P3005` doit se reconnaître au premier coup
+> d'œil dans les logs de build comme « le baseline n'a pas été fait »**, ce diagnostic
+> étant bien plus net qu'une erreur SQL.
 
-> **Note de maintenance — éviter que ce runbook ne se périme à nouveau.** Cette
-> section a déjà pris du retard une fois (le commit `95e9dc2` a ajouté la migration
-> `20260926230000_add_updated_at_and_site_unique` sans que le runbook soit mis à jour).
-> Avant d'exécuter ce runbook, ou en le relisant après un moment, vérifier rapidement
-> qu'il est toujours exact :
+> **Deux mises en garde à garder en tête pour toute la manipulation ci-dessus :**
+> - **Impossible de protéger la branche Neon `main` en offre gratuite** (la protection
+>   de branche est réservée aux offres payantes de Neon) : la seule protection réelle
+>   ici est humaine — ne jamais donner la chaîne de connexion de `main` à un outil ou un
+>   agent automatisé, seulement au fondateur lui-même dans un terminal manuel.
+> - **Ne jamais faire sortir la chaîne de connexion de `main` de Render** une fois
+>   saisie dans les variables d'environnement du service (§b) : ne pas la recopier dans
+>   un fichier commité, un outil MCP, ou une conversation avec un agent, y compris pour
+>   du débogage.
+
+> **Note de maintenance — éviter que ce runbook ne se périme à nouveau.** Cette section
+> a déjà pris du retard deux fois : une première fois quand le commit `95e9dc2` a ajouté
+> la migration `20260926230000_add_updated_at_and_site_unique` sans que le runbook soit
+> mis à jour (on est passé de 1 à 2 migrations sans le documenter), puis une seconde
+> fois avec l'ajout de `20260927000000_audit_lead_brand_name_optional`,
+> `20260927120000_add_user_trial_fields` et `20260927180000_add_user_terms_acceptance`
+> (on est passé de 2 à 5). **Au 27/09/2026, ce runbook a été vérifié pour 5 migrations**
+> — c'est le chiffre à comparer pour repérer un retard futur :
 >
 > ```bash
 > ls decelio/prisma/migrations/
 > ```
 >
-> Comparer la liste obtenue avec les noms de migrations cités dans cette section (au
-> moment d'écrire ces lignes : `20260925000000_init` et
-> `20260926230000_add_updated_at_and_site_unique`, dans cet ordre). Si `ls` révèle une
+> Comparer la liste obtenue avec les cinq noms cités plus haut. Si `ls` révèle une
 > migration supplémentaire non mentionnée ici, ou un nom différent, ce runbook est de
-> nouveau périmé : ne pas baseliner à l'aveugle, mettre à jour la liste et les commandes
-> `migrate resolve` de l'étape 4 pour couvrir exactement les migrations présentes dans
-> `decelio/prisma/migrations/` avant de continuer. La confirmation qu'un jeu de
-> migrations reconstruit bien le schéma versionné se fait sans toucher à Neon, sur un
-> Postgres jetable (local ou Docker) :
+> nouveau périmé : ne pas baseliner à l'aveugle, refaire le constat (voir l'encadré
+> « Si ce constat doit être refait » ci-dessus) puis mettre à jour la liste des
+> migrations, le tableau des effets/risques et les commandes `migrate resolve` /
+> `migrate deploy` avant de continuer. La confirmation qu'un jeu de migrations
+> reconstruit bien le schéma versionné se fait sans toucher à Neon, sur un Postgres
+> jetable (local ou Docker) :
 >
 > ```bash
 > npx prisma migrate diff \
@@ -186,8 +201,56 @@ decelio/prisma/migrations/
 > ```
 >
 > `No difference detected.` (code de sortie 0) confirme que l'ensemble des migrations
-> du dossier reconstruit exactement `schema.prisma` — c'est la vérification à refaire
-> à chaque fois qu'une migration est ajoutée ou que ce runbook est révisé.
+> du dossier reconstruit exactement `schema.prisma` — c'est la vérification à refaire à
+> chaque fois qu'une migration est ajoutée ou que ce runbook est révisé.
+
+### Répétition vérifiée le 27/09/2026
+
+Cette procédure n'a pas seulement été relue : elle a été **rejouée pour de vrai**, sans
+toucher à la production. Une branche Neon jetable a été créée depuis `local-dev`, puis
+ramenée à l'état exact de la production par trois instructions : `DROP TABLE
+"_prisma_migrations"`, un `ALTER TABLE "User"` supprimant `trialUsedAt`,
+`stripeTrialEnd`, `termsAcceptedAt` et `termsVersion`, et un `ALTER TABLE "AuditLead"
+ALTER COLUMN "brandName" SET NOT NULL`. Contrôle de fidélité : l'empreinte `md5` de tout
+le schéma (nom de table, nom de colonne, type, nullabilité, agrégés et triés) était
+**identique à celle de la production**, `a9e55d8a2353e45f7ecfc097e5f1e987`, avec 124
+colonnes et aucune table `_prisma_migrations`. La branche a été supprimée après la
+répétition. **La production n'a reçu aucune écriture** : uniquement des lectures.
+
+Voici ce qu'il faut voir à chaque étape en la rejouant, dans l'ordre. Si une sortie
+diffère de celle-ci, s'arrêter et comprendre l'écart avant de continuer — ne jamais
+supposer que c'est sans conséquence, surtout à 2 h du matin :
+
+1. `npx prisma migrate status` → « 5 migrations found in prisma/migrations », puis
+   « Following migrations have not yet been applied: » et les cinq noms. C'est l'état de
+   la production aujourd'hui. Une liste différente veut dire que le constat du §a
+   ci-dessus n'est plus à jour — s'arrêter et refaire le constat avant de continuer.
+2. `npx prisma migrate deploy` **sans baseline** → `Error: P3005`, code de sortie 1,
+   aucune instruction SQL exécutée. C'est la confirmation en conditions réelles du
+   mécanisme décrit plus haut dans cette section.
+3. `npx prisma migrate resolve --applied 20260925000000_init` →
+   « Migration 20260925000000_init marked as applied. »
+4. `npx prisma migrate resolve --applied 20260926230000_add_updated_at_and_site_unique`
+   → « Migration 20260926230000_add_updated_at_and_site_unique marked as applied. »
+5. `npx prisma migrate status` → liste **exactement trois** migrations non appliquées :
+   `20260927000000_audit_lead_brand_name_optional`, `20260927120000_add_user_trial_fields`,
+   `20260927180000_add_user_terms_acceptance`. Ce n'est pas une dérive, c'est le
+   rattrapage attendu. Si le compte n'est pas exactement trois, s'arrêter : quelque
+   chose ne correspond plus à ce runbook.
+6. `npx prisma migrate deploy` → les trois appliquées, « All migrations have been
+   successfully applied. », code de sortie 0.
+7. `npx prisma migrate status` → « Database schema is up to date! » Toute autre réponse
+   à ce stade signale un problème à ne pas ignorer, même si la nuit est avancée.
+8. `npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel
+   ./prisma/schema.prisma --exit-code` → « No difference detected. », code de sortie 0.
+
+**État des données après la répétition** — les 4 utilisateurs présents avant ont été
+conservés ; tous ont `termsAcceptedAt` à `NULL`, donc aucune acceptation n'a été
+inventée pour un compte existant ; `trialUsedAt` n'a été posé sur aucun compte, ce qui
+est correct puisqu'aucun n'a d'abonnement ; `AuditLead.brandName` est redevenu
+nullable. L'empreinte `md5` finale du schéma, `baa468e42e6591feb5ca4a089786dda6` avec
+128 colonnes, est **identique à celle de `local-dev`** : après baseline et déploiement,
+la réplique de la production est indiscernable du schéma de référence.
 
 ---
 
