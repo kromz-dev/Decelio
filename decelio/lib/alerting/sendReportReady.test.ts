@@ -39,7 +39,7 @@ describe("T048: sendMonthlyReportReadyEmail (transport Resend)", () => {
     sendMock.mockReset();
     sendMock.mockResolvedValue({ data: { id: "resend_email_123" }, error: null });
     process.env.RESEND_API_KEY = "re_test_key";
-    process.env.NEXT_PUBLIC_APP_URL = "https://decelio.app";
+    process.env.NEXT_PUBLIC_APP_URL = "https://decelio.fr";
   });
 
   afterEach(() => {
@@ -65,7 +65,7 @@ describe("T048: sendMonthlyReportReadyEmail (transport Resend)", () => {
     expect(callArgs.subject).toContain("septembre 2026");
     expect(callArgs.html).toContain("Votre rapport mensuel est disponible pour la période de <strong>septembre 2026</strong>.");
     expect(callArgs.html).toContain("Cabinet Vitrine");
-    expect(callArgs.html).toContain("https://decelio.app/reports");
+    expect(callArgs.html).toContain("https://decelio.fr/reports");
     expect(callArgs.text.toLowerCase()).toContain("votre rapport mensuel est disponible");
   });
 
@@ -94,7 +94,7 @@ describe("T048: sendReportReady (alerte et logique de limitation agence)", () =>
     vi.clearAllMocks();
     sendMock.mockResolvedValue({ data: { id: "resend_email_456" }, error: null });
     process.env.RESEND_API_KEY = "re_test_key";
-    process.env.NEXT_PUBLIC_APP_URL = "https://decelio.app";
+    process.env.NEXT_PUBLIC_APP_URL = "https://decelio.fr";
 
     // Default rateLimit: allowed = true
     vi.mocked(rateLimit).mockResolvedValue({

@@ -88,6 +88,28 @@ describe("runScan", () => {
     expect(report.robots.url).toBe("https://www.example.com/robots.txt");
     expect(fetchMock.mock.calls.map(([u]) => String(u))).toContain("https://www.example.com/robots.txt");
   });
+
+  it("fills in the platform detection from the honest page's headers and HTML", async () => {
+    stubFetch((url) =>
+      url.endsWith("/robots.txt")
+        ? new Response("", { status: 404 })
+        : new Response(html(`<meta name="generator" content="WordPress 6.5" />`, "<p>bonjour</p>"), {
+            headers: { "cf-ray": "abcd1234-CDG" },
+          }),
+    );
+    const report = await runScan("https://example.com/");
+    expect(report.platform?.cms).toBe("wordpress");
+    expect(report.platform?.firewall).toBe("cloudflare");
+  });
+
+  it("omits the platform detection when the honest page could not be reached", async () => {
+    stubFetch(() => {
+      throw new Error("network down");
+    });
+    const report = await runScan("https://example.com/");
+    expect(report.access.risk).toBe("unreachable");
+    expect(report.platform).toBeUndefined();
+  });
 });
 
 describe("runCoreScan", () => {

@@ -1,24 +1,87 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { generateDiagnosticPdfBuffer } from "@/lib/reports/renderDiagnosticPdf";
+import { callerKey, rateLimit } from "@/lib/rate-limit";
 import type { ScanReport, ScanCoreResult } from "@/lib/scanner/core";
+
+// Le rendu PDF (@react-pdf/renderer) est coûteux en CPU, et cette route est
+// publique, sans compte. Sans limite, un script peut la boucler avec un corps
+// fabriqué et saturer le processus Next.js persistant qui sert tout le site.
+// Plus permissif que /api/scan (3/min) car un visiteur télécharge légitimement
+// son diagnostic après chaque scan, mais borné.
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS = 5;
+
+// `results` porte un élément par robot analysé : 11 robots sont déclarés dans
+// `lib/scanner/agents.ts`, la marge couvre un ajout futur sans rouvrir ce
+// fichier. Sans cette borne, `results.map(...)` dans le rendu était illimité.
+const MAX_RESULTS = 20;
+const MAX_REASONS = 20;
+
+// Validation volontairement limitée aux champs que le rendu consomme, en
+// laissant passer le reste : le but est de borner l'abus, pas de dupliquer ici
+// toute la forme de `ScanReport`, qui évoluerait alors à deux endroits.
+const requestSchema = z.object({
+  report: z
+    .object({
+      finalUrl: z.string().max(2048),
+    })
+    .passthrough(),
+  results: z
+    .array(
+      z
+        .object({
+          agent: z.string().max(100),
+          simpleStatus: z.string().max(50),
+          reasons: z.array(z.string().max(500)).max(MAX_REASONS).optional(),
+        })
+        .passthrough(),
+    )
+    .max(MAX_RESULTS),
+});
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { report, results } = body as { report: ScanReport; results: ScanCoreResult[] };
-
-    if (!report || !results) {
-      return NextResponse.json({ error: "Missing report or results" }, { status: 400 });
+    const quota = await rateLimit(callerKey(req, "pdf-diagnostic"), MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        { error: "Trop de téléchargements. Réessayez dans un instant." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(1, Math.ceil((quota.resetAt.getTime() - Date.now()) / 1000))),
+          },
+        },
+      );
     }
+
+    // `req.json()` lève sur un corps vide ou malformé. Sans ce filet, l'erreur
+    // tombait dans le `catch` final et la route répondait 500 alors que la
+    // requête du client était simplement invalide.
+    const body = await req.json().catch(() => null);
+    if (body === null) {
+      return NextResponse.json({ error: "Corps de requête invalide : JSON attendu." }, { status: 400 });
+    }
+
+    const parsed = requestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Requête invalide : un rapport et une liste de résultats sont attendus." },
+        { status: 400 },
+      );
+    }
+
+    const report = parsed.data.report as unknown as ScanReport;
+    const results = parsed.data.results as unknown as ScanCoreResult[];
 
     const pdfBuffer = await generateDiagnosticPdfBuffer(report, results);
 
-    let domain = "domain";
+    let domain = "domaine";
     try {
-      const url = new URL(report.finalUrl);
-      domain = url.hostname.replace(/^www\./, "");
-    } catch (err) {
-      // fallback
+      domain = new URL(report.finalUrl).hostname.replace(/^www\./, "");
+    } catch {
+      // Nom de fichier de repli : l'URL a déjà été validée en longueur, mais
+      // elle peut ne pas être analysable. Ce n'est pas une raison d'échouer.
     }
 
     // `Buffer` n'est pas un `BodyInit` dans les types DOM : on passe le même
@@ -30,7 +93,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.error("Error generating PDF:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Erreur de génération du PDF de diagnostic :", error);
+    return NextResponse.json({ error: "Une erreur interne est survenue." }, { status: 500 });
   }
 }
