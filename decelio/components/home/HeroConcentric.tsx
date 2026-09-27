@@ -89,10 +89,28 @@ const TITLE_LINES = [
  */
 const RIPPLE = { radius: 780, from: 0.42, to: 1.08, delay: 2.6, duration: 7 };
 
-/** Instant (en s) ou l'onde atteint une bulle posee sur l'orbite `radius`. */
-function pingDelay(radius: number): string {
+/**
+ * Instant (en s) ou l'onde touche le BORD d'une bulle posee sur l'orbite
+ * `radius`, a l'angle `angleDeg`.
+ *
+ * Declencher au centre de la bulle donnait un retard visible : une pastille
+ * fait ~110 px de large, et l'onde (~74 unites/s) met pres d'une seconde a
+ * la traverser. On retranche donc le temps que met l'onde a parcourir la
+ * demi-epaisseur de la pastille dans la direction du rayon, estimee pour le
+ * schema a sa taille bureau (1340 px pour 1600 unites).
+ */
+const PX_PER_UNIT = 1340 / VIEW;
+const PILL_HALF_HEIGHT_PX = 18;
+
+function pingDelay(radius: number, angleDeg: number, label: string): string {
+  const speed = (RIPPLE.radius * (RIPPLE.to - RIPPLE.from)) / RIPPLE.duration; // unites par seconde
   const progress = (radius / RIPPLE.radius - RIPPLE.from) / (RIPPLE.to - RIPPLE.from);
-  return `${(RIPPLE.delay + progress * RIPPLE.duration).toFixed(2)}s`;
+  // Largeur de pastille : icone 24 px + marges ~28 px + ~7 px par caractere.
+  const halfWidthPx = (52 + label.length * 7) / 2;
+  const a = (angleDeg * Math.PI) / 180;
+  const radialHalfPx = Math.abs(Math.cos(a)) * halfWidthPx + Math.abs(Math.sin(a)) * PILL_HALF_HEIGHT_PX;
+  const lead = radialHalfPx / PX_PER_UNIT / speed;
+  return `${Math.max(0, RIPPLE.delay + progress * RIPPLE.duration - lead).toFixed(2)}s`;
 }
 
 /** Position en pourcentage du conteneur carre, pour un angle et un rayon donnes. */
@@ -163,7 +181,7 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
                 {/* Deux couches : l'entree en cascade et la reaction a l'onde animent chacune leur propre transform. */}
                 <span
                   className="bubble-ping flex items-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/80 py-1.5 pl-1.5 pr-3.5 shadow-float backdrop-blur-md"
-                  style={{ ["--ping-delay" as string]: pingDelay(assistant.radius) }}
+                  style={{ ["--ping-delay" as string]: pingDelay(assistant.radius, assistant.angle, assistant.name) }}
                 >
                   <Image src={assistant.icon} alt="" width={24} height={24} className="h-6 w-6 rounded-full bg-surface" />
                   <span className="text-[13px] font-medium leading-none text-ink-2">{assistant.name}</span>

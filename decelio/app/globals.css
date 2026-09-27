@@ -449,6 +449,24 @@
   animation-delay: calc(350ms + var(--i, 0) * 75ms);
 }
 
+/* Moins d'animation demande : tout ce qui part transparent ou non trace doit
+   s'afficher tel quel. Sans ces lignes, `animation: none` (tokens.module.css)
+   laissait le titre, le texte et le diagnostic du heros a opacite 0. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-cascade,
+  .word {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .ring-draw {
+    stroke-dashoffset: 0 !important;
+  }
+  .ripple {
+    display: none;
+  }
+}
+
 /* Cascade au defilement, pilotee par components/home/RevealOnScroll.tsx :
    l'etat masque n'existe que sous html.reveal-ready (pose par le script),
    donc sans JavaScript tout est visible. Declenchee une fois, jouee jusqu'au
