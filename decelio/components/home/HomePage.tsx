@@ -18,7 +18,7 @@ import styles from "./home.module.css";
 const SWITCHES = [
   {
     before:
-      "Un plugin de sécurité se met à jour dans la nuit et bloque GPTBot. Le site répond normalement à vos yeux : rien ne signale le blocage.",
+      "Wordfence se met à jour dans la nuit, et sa limitation de débit peut bloquer GPTBot. Le site répond normalement à vos yeux : rien ne signale le blocage.",
     after:
       "Vous recevez un e-mail au scan suivant, avec la règle en cause et le correctif à appliquer.",
   },
@@ -30,7 +30,7 @@ const SWITCHES = [
   },
   {
     before:
-      "Cocher « Block AI Bots » chez Cloudflare bloque aussi les robots qui citent, pas seulement ceux qui entraînent.",
+      "Le Bot Fight Mode de Cloudflare ou la case « Block AI Bots » peuvent bloquer aussi les robots de recherche, pas seulement ceux qui servent à l'entraînement.",
     after:
       "Les deux familles sont distinguées : un site peut refuser l'entraînement tout en restant citable.",
   },
@@ -311,8 +311,9 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                   </div>
                   <h3 className="font-display mb-3 text-[26px] font-bold tracking-[-0.02em] text-ink">Blocages du pare-feu</h3>
                   <p className="max-w-xl text-lg text-ink-2">
-                    Cloudflare, Wordfence ou le pare-feu de l&apos;h&eacute;bergeur bloquent parfois les robots IA sans
-                    pr&eacute;venir personne. Chaque jour, Decelio envoie &agrave; chaque site des requ&ecirc;tes qui se
+                    Le Bot Fight Mode de Cloudflare, la limitation de d&eacute;bit de Wordfence ou le pare-feu de
+                    l&apos;h&eacute;bergeur peuvent bloquer les robots IA sans pr&eacute;venir personne, souvent sans que
+                    l&apos;agence l&apos;ait voulu. Chaque jour, Decelio envoie &agrave; chaque site des requ&ecirc;tes qui se
                     pr&eacute;sentent comme GPTBot, ClaudeBot ou PerplexityBot, et note la r&eacute;ponse. C&apos;est un
                     indice solide, pas une preuve&nbsp;: les vrais robots partent d&apos;autres adresses.
                   </p>
@@ -757,7 +758,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
           <div className="flex flex-col items-start justify-between gap-6 border-t border-paper/20 pt-8 text-sm text-paper/70 md:flex-row">
             <p>&copy; {new Date().getFullYear()} Decelio. Tous droits r&eacute;serv&eacute;s.</p>
             <p className="max-w-xl md:text-right">
-              <strong className="font-semibold text-paper">Ce que mesure l&apos;outil :</strong> Decelio v&eacute;rifie l&apos;acc&egrave;s technique des robots aux sites. Cela ne garantit pas qu&apos;une IA citera votre marque.
+              <strong className="font-semibold text-paper">Ce que mesure l&apos;outil :</strong> Decelio v&eacute;rifie l&apos;acc&egrave;s technique des robots aux sites. Un acc&egrave;s ouvert ne suffit pas &agrave; ce qu&apos;une IA cite votre marque.
             </p>
           </div>
         </div>
