@@ -12,6 +12,13 @@ import type { ScanReport, ScanCoreResult } from "@/lib/scanner/core";
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS = 5;
 
+// `req.json()` lit tout le corps en mémoire avant la moindre borne : un corps
+// énorme (Content-Length mensonger ou absent) était lu en entier avant que
+// `requestSchema` ne le rejette. 256 Kio couvre largement un rapport de scan
+// réel (11 robots déclarés, quelques dizaines de signaux de plateforme) avec
+// une marge confortable.
+const MAX_BODY_BYTES = 256 * 1024;
+
 // `results` porte un élément par robot analysé : 11 robots sont déclarés dans
 // `lib/scanner/agents.ts`, la marge couvre un ajout futur sans rouvrir ce
 // fichier. Sans cette borne, `results.map(...)` dans le rendu était illimité.
@@ -68,6 +75,45 @@ const requestSchema = z.object({
     .max(MAX_RESULTS),
 });
 
+type BodyReadResult = { kind: "ok"; text: string } | { kind: "too_large" } | { kind: "read_error" };
+
+/**
+ * Lit `req.body` en flux, borné à `maxBytes`, sans jamais construire une
+ * chaîne plus grande que la limite en mémoire. Couvre le cas où
+ * `Content-Length` est absent ou faux (l'en-tête est déclaratif, jamais
+ * vérifié par le protocole) : c'est cette lecture bornée, pas l'en-tête, qui
+ * protège réellement contre un corps énorme.
+ */
+async function readBodyWithLimit(req: Request, maxBytes: number): Promise<BodyReadResult> {
+  if (!req.body) {
+    try {
+      return { kind: "ok", text: await req.text() };
+    } catch {
+      return { kind: "read_error" };
+    }
+  }
+
+  const reader = req.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let text = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return { kind: "too_large" };
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+  } catch {
+    return { kind: "read_error" };
+  }
+  return { kind: "ok", text: text + decoder.decode() };
+}
+
 export async function POST(req: Request) {
   try {
     const quota = await rateLimit(callerKey(req, "pdf-diagnostic"), MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
@@ -83,10 +129,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // `req.json()` lève sur un corps vide ou malformé. Sans ce filet, l'erreur
+    // `Content-Length` est déclaratif (jamais vérifié par le protocole) :
+    // un refus rapide sur cet en-tête évite d'ouvrir la lecture du corps pour
+    // une requête déjà annoncée trop grosse, mais ne remplace pas la lecture
+    // bornée ci-dessous (en-tête absent ou faux).
+    const declaredLength = Number(req.headers.get("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: "Corps de requête trop volumineux." }, { status: 413 });
+    }
+
+    const bodyRead = await readBodyWithLimit(req, MAX_BODY_BYTES);
+    if (bodyRead.kind === "too_large") {
+      return NextResponse.json({ error: "Corps de requête trop volumineux." }, { status: 413 });
+    }
+
+    // `JSON.parse` lève sur un corps vide ou malformé. Sans ce filet, l'erreur
     // tombait dans le `catch` final et la route répondait 500 alors que la
     // requête du client était simplement invalide.
-    const body = await req.json().catch(() => null);
+    let body: unknown = null;
+    if (bodyRead.kind === "ok") {
+      try {
+        body = JSON.parse(bodyRead.text);
+      } catch {
+        body = null;
+      }
+    }
     if (body === null) {
       return NextResponse.json({ error: "Corps de requête invalide : JSON attendu." }, { status: 400 });
     }
