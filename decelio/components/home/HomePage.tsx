@@ -115,32 +115,66 @@ const COMPARISON = [
   ["Prix de départ", "39 €", "Plus de 130 €", "Gratuit"],
 ] as const;
 
+/**
+ * Questions telles que les agences les posent aux assistants IA : chaque
+ * reponse tient en moins de 50 mots et se lit sans contexte (bloc FAQPage).
+ */
 const faqs = [
   {
     q: "Qu'est-ce que Decelio ?",
-    a: "Decelio est un outil de surveillance automatisé pour agences web. Il centralise le contrôle technique de l'accessibilité AEO pour tout votre portefeuille de sites.",
+    a: "Decelio est un service de surveillance pour agences web. Il vérifie chaque jour si les robots des assistants IA (ChatGPT, Claude, Perplexity…) peuvent lire les sites de vos clients, et vous alerte avec la cause et le correctif quand l'un d'eux est bloqué.",
+  },
+  {
+    q: "Quels robots IA sont vérifiés ?",
+    a: "GPTBot, OAI-SearchBot et ChatGPT-User pour OpenAI, ClaudeBot, Claude-SearchBot et Claude-User pour Anthropic, PerplexityBot et Perplexity-User. Les règles robots.txt visant Google-Extended et Applebot-Extended sont aussi relues.",
+  },
+  {
+    q: "Decelio mesure-t-il si ChatGPT cite mes clients ?",
+    a: "Pas aujourd'hui. Decelio vérifie que les robots des IA peuvent lire vos sites, la condition préalable pour être cité. La mesure des citations est en préparation.",
+  },
+  {
+    q: "Que se passe-t-il quand un robot est bloqué ?",
+    a: "Vous recevez un e-mail au scan suivant, avec la cause (règle robots.txt, pare-feu, page vide sans JavaScript) et le correctif à appliquer. Quand un signal ne permet pas de conclure, l'alerte l'écrit : « à vérifier ».",
+  },
+  {
+    q: "Combien coûte Decelio ?",
+    a: "De 39 € par mois pour 10 sites à 249 € par mois pour 100 sites, sans engagement. Le diagnostic d'une adresse est gratuit et ne demande pas de compte.",
   },
   {
     q: "Quelle différence avec Semrush ?",
-    a: "Semrush audite le référencement classique. Decelio vérifie uniquement l'accès technique des robots IA à vos sites.",
+    a: "Semrush audite le référencement classique. Decelio vérifie uniquement l'accès technique des robots IA à vos sites, chaque jour.",
   },
   {
     q: "Faut-il installer un plugin WordPress ?",
-    a: "Non. Decelio interroge chaque site depuis l'extérieur, comme le ferait un visiteur IA. Aucun script ni accès requis.",
-  },
-  {
-    q: "Est-ce compatible avec tous les hébergeurs ?",
-    a: "Oui. Decelio analyse la réponse HTTP publique de votre site, quel que soit l'hébergeur ou le CMS utilisé.",
-  },
-  {
-    q: "Comment sont envoyées les alertes ?",
-    a: "Dès qu'un robot IA est bloqué, vous recevez une alerte par e-mail avec la cause probable et sa solution.",
+    a: "Non. Decelio interroge chaque site depuis l'extérieur, comme le ferait un robot IA. Aucun script ni accès n'est requis.",
   },
   {
     q: "Puis-je facturer ce service à mes clients ?",
-    a: "Absolument. Nos rapports PDF en marque blanche vous permettent d'ajouter une ligne de facturation à vos contrats de maintenance.",
+    a: "Oui. À partir de la formule Agence, le rapport mensuel en PDF porte le logo de votre agence : vous pouvez ajouter une ligne « surveillance IA » à vos contrats de maintenance.",
   },
 ];
+
+/** Les deux publics de Decelio, et ce que chacun en tire. */
+const AUDIENCES = [
+  {
+    title: "Agences de maintenance WordPress",
+    body: "Vous gérez des dizaines de sites sous contrat. Soyez prévenu avant votre client quand une mise à jour ferme un site aux IA.",
+    points: [
+      "Alerte au scan suivant, avec le correctif",
+      "Rapport mensuel à votre marque",
+      "Une ligne de plus à facturer",
+    ],
+  },
+  {
+    title: "Agences SEO et GEO",
+    body: "Vous travaillez la présence de vos clients dans les moteurs de réponse. Sans accès des robots, le reste de ce travail ne sert à rien.",
+    points: [
+      "Une cause technique vérifiable, robot par robot",
+      "Robots d'entraînement et robots de recherche distingués",
+      "Un historique quotidien pour vos audits",
+    ],
+  },
+] as const;
 
 /** Rang d'un element dans une cascade de defilement (voir `.reveal`, globals.css). */
 function rank(i: number): CSSProperties {
@@ -350,7 +384,9 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 <figure className="relative w-full rounded-xl bg-surface p-4 shadow-float md:w-64 md:rotate-2">
                   <figcaption className="sr-only">Exemple de rapport mensuel</figcaption>
                   <div className="mb-4 flex items-center gap-3 border-b border-line pb-4">
-                    <div aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-paper text-xs font-bold text-ink">Logo</div>
+                    <div aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full border border-brand/15 bg-brand-soft">
+                      <Image src="/logo-decelio.png" alt="" width={502} height={565} className="h-4 w-auto" />
+                    </div>
                     <p className="text-sm font-bold text-ink">Rapport mensuel</p>
                   </div>
                   <ul className="space-y-3">
@@ -371,6 +407,44 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 </figure>
               </article>
 
+            </div>
+          </div>
+        </section>
+
+        {/* 3bis. Pour qui : les deux publics, et un appel au moment ou le lecteur est convaincu */}
+        <section id="pour-qui" aria-labelledby="pour-qui-titre" className="scroll-mt-16 bg-paper pb-28">
+          <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
+            <SectionHeading id="pour-qui-titre" title="Pensé pour deux métiers" />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {AUDIENCES.map((audience, i) => (
+                <article key={audience.title} style={rank(i)} className="reveal rounded-[1.75rem] border border-line bg-surface p-8">
+                  <h3 className="font-display mb-3 text-[26px] font-bold tracking-[-0.02em] text-ink">{audience.title}</h3>
+                  <p className="mb-6 text-lg text-ink-2">{audience.body}</p>
+                  <ul className="space-y-3">
+                    {audience.points.map((point) => (
+                      <li key={point} className="flex items-start gap-3 text-[15px] text-ink">
+                        <Check className="mt-0.5 text-brand" />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+
+            <div className="reveal mt-10 flex flex-col items-center justify-between gap-6 rounded-[1.75rem] border border-brand/20 bg-brand-soft px-8 py-8 text-center md:flex-row md:text-left">
+              <p className="font-display text-[24px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[28px]">
+                Un de vos sites est peut-&ecirc;tre d&eacute;j&agrave; bloqu&eacute;.
+                <span className="block text-lg font-normal tracking-normal text-ink-2 [font-family:var(--font-marketing)]">V&eacute;rifiez-le maintenant, sans cr&eacute;er de compte.</span>
+              </p>
+              <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+                <a href="#scan" className="rounded-full bg-ink px-7 py-3 text-center font-semibold text-paper transition-transform duration-300 hover:-translate-y-0.5">
+                  Scanner un site
+                </a>
+                <a href="#tarifs" className="rounded-full border border-ink/20 bg-surface px-7 py-3 text-center font-semibold text-ink transition-colors hover:bg-surface-2">
+                  Voir les tarifs
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -572,6 +646,27 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               <li className="flex items-center gap-2"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg> H&eacute;berg&eacute; en Europe</li>
               <li className="flex items-center gap-2"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Conforme RGPD</li>
             </ul>
+          </div>
+        </section>
+
+        {/* 7bis. Qui est derriere : sans clients, le meilleur signal de confiance est une personne identifiable */}
+        <section aria-labelledby="fondateur-titre" className="px-4 pb-16 sm:px-6 lg:px-8">
+          <div className="reveal mx-auto flex max-w-[800px] flex-col items-center gap-6 rounded-[1.75rem] border border-line bg-surface p-8 text-center sm:flex-row sm:text-left">
+            <span aria-hidden="true" className="font-display flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-ink text-2xl font-bold text-paper">K</span>
+            <div>
+              <h2 id="fondateur-titre" className="font-display mb-2 text-[22px] font-bold tracking-[-0.02em] text-ink">
+                Construit par un fondateur ind&eacute;pendant, en France
+              </h2>
+              <p className="text-[16px] leading-relaxed text-ink-2">
+                Decelio n&apos;a pas encore de clients&nbsp;: pas de faux logos ni de faux avis ici. Une question sur
+                la m&eacute;thode ou sur un r&eacute;sultat&nbsp;? &Eacute;crivez &agrave;{" "}
+                <a href="mailto:contact@decelio.fr" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">contact@decelio.fr</a>{" "}
+                ou retrouvez-moi sur GitHub&nbsp;:{" "}
+                <a href="https://github.com/kromz-dev" rel="me noopener" target="_blank" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">
+                  kromz-dev<span className="sr-only"> (s&apos;ouvre dans un nouvel onglet)</span>
+                </a>.
+              </p>
+            </div>
           </div>
         </section>
 

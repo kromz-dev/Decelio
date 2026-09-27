@@ -199,6 +199,11 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
 
           {/* CONTENU CENTRAL */}
           <div className="relative z-20 mx-auto flex max-w-4xl flex-col items-center px-4 text-center">
+            {/* Ce que c'est et pour qui, avant le titre : les mots que les agences cherchent. */}
+            <p className="animate-cascade mb-6 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-white/70 px-4 py-1.5 text-sm font-medium text-brand backdrop-blur-md" style={{ animationDelay: "200ms" }}>
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand" />
+              Surveillance des robots IA pour agences web
+            </p>
             <h1
               id="hero-titre"
               className="font-display mb-7 text-[44px] font-bold leading-[0.98] tracking-[-0.04em] text-ink sm:text-[64px] md:text-[80px]"
@@ -257,6 +262,10 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
                 </div>
                 <ScanForm />
               </div>
+              <p className="relative mt-5 text-center text-sm text-ink-2">
+                Vous g&eacute;rez tout un portefeuille de sites&nbsp;?{" "}
+                <a href="#tarifs" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">Voir les tarifs</a>
+              </p>
             </div>
           </div>
         </div>
