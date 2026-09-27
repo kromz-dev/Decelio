@@ -130,7 +130,7 @@ const faqs = [
   },
   {
     q: "Decelio mesure-t-il si ChatGPT cite mes clients ?",
-    a: "Pas aujourd'hui. Decelio vérifie que les robots des IA peuvent lire vos sites, la condition préalable pour être cité. La mesure des citations est en préparation.",
+    a: "Pas aujourd'hui. Decelio vérifie que les robots des IA peuvent lire vos sites. La mesure de la présence dans leurs réponses est en préparation.",
   },
   {
     q: "Que se passe-t-il quand un robot est bloqué ?",
@@ -408,6 +408,9 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                     chaque assistant, l&apos;historique du mois, les incidents avec leur cause et le correctif propos&eacute;.
                     Il dit si les robots peuvent lire le site, pas si une IA le cite.
                   </p>
+                  <p className="mt-4 max-w-md text-lg font-semibold text-surface">
+                    Prouvez chaque mois &agrave; votre client que les robots des assistants IA peuvent lire son site.
+                  </p>
                 </div>
                 <figure className="relative w-full rounded-xl bg-surface p-4 shadow-float md:w-64 md:rotate-2">
                   <figcaption className="sr-only">Exemple de rapport mensuel</figcaption>
@@ -559,9 +562,11 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
         <section id="tarifs" aria-labelledby="tarifs-titre" className="scroll-mt-16 bg-paper py-28">
           <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
             <SectionHeading id="tarifs-titre" title="Des tarifs conçus pour être refacturés">
-              Ajoutez une ligne &laquo;&nbsp;surveillance IA&nbsp;&raquo; &agrave; votre contrat de maintenance, entre
-              10 et 20&nbsp;&euro; par site et par mois. Sur trente sites factur&eacute;s 10&nbsp;&euro;, cela fait{" "}
-              <strong className="font-semibold text-ink">300&nbsp;&euro; par mois</strong> pour un abonnement &agrave; 99&nbsp;&euro;.
+              Ajoutez une ligne &laquo;&nbsp;surveillance IA&nbsp;&raquo; &agrave; votre contrat de maintenance, et
+              prouvez chaque mois &agrave; votre client que les robots des assistants IA peuvent lire son site.
+              Par exemple, trente sites refactur&eacute;s entre 10 et 20&nbsp;&euro; par mois font{" "}
+              <strong className="font-semibold text-ink">300 &agrave; 600&nbsp;&euro; par mois</strong> pour un
+              abonnement Agence &agrave; 99&nbsp;&euro;. Le r&eacute;sultat d&eacute;pend du tarif que vous fixez.
             </SectionHeading>
 
             <div className="mx-auto grid max-w-[1000px] grid-cols-1 items-start gap-8 md:grid-cols-3">
