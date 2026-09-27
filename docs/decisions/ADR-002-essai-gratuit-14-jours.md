@@ -2,7 +2,9 @@
 
 ## Statut
 
-Accepté par le fondateur. Code en cours sur la branche `feat/essai-gratuit-14-jours`, pas encore fusionné dans `main` au 27/09/2026. Tant qu'il ne l'est pas, le site doit continuer d'afficher « pas de période d'essai ».
+Accepté par le fondateur, et **appliqué**. Le code est sur `main` depuis la fusion de #139 le 27/09/2026, et le texte affiché au client depuis celle de #151 le même jour : l'accueil, `/pricing` et les CGV annoncent l'essai, et le bandeau « Essai : X jours restants » est dans l'espace client.
+
+La consigne « le site doit continuer d'afficher pas de période d'essai », valable tant que le code n'était pas fusionné, est donc caduque. Elle est conservée ici pour mémoire, barrée : ~~tant que le code n'est pas fusionné, le site doit continuer d'afficher « pas de période d'essai »~~.
 
 ## Date
 
@@ -24,9 +26,11 @@ L'étude concurrentielle de septembre 2026 relève que la cible (agences WordPre
 
 ## Conséquences
 
-- Il faut mettre à jour `/pricing`, l'accueil et les CGV (agent Design) **après** la fusion, jamais avant (constitution, principe II).
-- Le bandeau « Essai : X jours restants » dans l'application attend la prop de fin d'essai exposée par l'Ingénierie.
-- Le portail client Stripe (mode test) est configuré avec `trial_update_behavior: continue_trial` : changer de formule pendant l'essai ne le coupe pas.
+- `/pricing`, l'accueil et les CGV ont été mis à jour après la fusion du code, jamais avant (constitution, principe II) : #151.
+- Le bandeau « Essai : X jours restants » est en place, `components/TrialBanner.tsx`, alimenté par `getTrialEndsAt`. Son décompte et la date du premier prélèvement sont calculés en heure de Paris et non en heure du serveur, qui est en UTC.
+- Le portail client Stripe (mode test) est configuré avec `trial_update_behavior: continue_trial` : changer de formule pendant l'essai ne le coupe pas. Vérifié le 27/09 sur le compte de test, l'annulation y est bien ouverte, en fin de période.
+- Reste à faire, côté Ingénierie : **aucun endpoint webhook n'est enregistré sur le compte Stripe de test** au 27/09 (`GET /v1/webhook_endpoints` renvoie une liste vide). En l'état, `customer.subscription.trial_will_end` n'atteint jamais l'application en test, donc l'e-mail de rappel à J-3, pourtant écrit, n'est pas exerçable de bout en bout. À vérifier aussi en production.
+- Reste à faire, côté Ingénierie : `getTrialEndsAt` rend `stripeTrialEnd` tel quel et peut donc rendre une date passée si le webhook `customer.subscription.updated` se perd, aucune tâche ne réconciliant ce champ. Le bandeau s'en protège à l'affichage, la donnée reste fausse pour tout autre usage.
 
 ## Alternatives écartées
 
