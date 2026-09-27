@@ -45,6 +45,16 @@ export async function sendAuditReportEmail(
       html,
     });
 
+    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
+    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
+    // etait rapporte comme reussi — et pour une alerte, une ligne
+    // `AlertEvent` etait ecrite affirmant que le client avait ete
+    // prevenu alors qu'aucun e-mail n'etait parti.
+    if (response.error) {
+      console.error("Echec d'envoi (sendAuditReportEmail) :", response.error);
+      return { success: false, error: response.error };
+    }
+
     return { success: true, id: response.data?.id };
   } catch (error) {
     console.error("Failed to send email:", error);
@@ -73,6 +83,16 @@ export async function sendPasswordResetEmail(to: string, token: string) {
       subject: "Réinitialisation de votre mot de passe Decelio",
       html,
     });
+
+    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
+    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
+    // etait rapporte comme reussi — et pour une alerte, une ligne
+    // `AlertEvent` etait ecrite affirmant que le client avait ete
+    // prevenu alors qu'aucun e-mail n'etait parti.
+    if (response.error) {
+      console.error("Echec d'envoi (sendPasswordResetEmail) :", response.error);
+      return { success: false, error: response.error };
+    }
 
     return { success: true, id: response.data?.id };
   } catch (error) {
@@ -109,6 +129,16 @@ export async function sendDiscoveryEmail(to: string, name?: string | null) {
       subject: "5 questions pour régler Decelio sur votre parc",
       html,
     });
+
+    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
+    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
+    // etait rapporte comme reussi — et pour une alerte, une ligne
+    // `AlertEvent` etait ecrite affirmant que le client avait ete
+    // prevenu alors qu'aucun e-mail n'etait parti.
+    if (response.error) {
+      console.error("Echec d'envoi (sendDiscoveryEmail) :", response.error);
+      return { success: false, error: response.error };
+    }
 
     return { success: true, id: response.data?.id };
   } catch (error) {
