@@ -154,6 +154,33 @@ const faqs = [
   },
 ];
 
+/**
+ * Robots d'entrainement et robots de recherche, par editeur. Noms verifies
+ * dans la documentation publique d'OpenAI et d'Anthropic, et identiques a
+ * ceux que le scanner interroge (lib/scanner/agents.ts).
+ */
+const BOT_FAMILIES = [
+  { vendor: "OpenAI (ChatGPT)", training: "GPTBot", search: "OAI-SearchBot" },
+  { vendor: "Anthropic (Claude)", training: "ClaudeBot", search: "Claude-SearchBot" },
+] as const;
+
+/** Exemple de robots.txt : refuser l'entrainement, rester lisible pour la recherche. */
+const ROBOTS_EXAMPLE = [
+  "# Refuser l'entraînement",
+  "User-agent: GPTBot",
+  "Disallow: /",
+  "",
+  "User-agent: ClaudeBot",
+  "Disallow: /",
+  "",
+  "# Rester lisible pour la recherche",
+  "User-agent: OAI-SearchBot",
+  "Allow: /",
+  "",
+  "User-agent: Claude-SearchBot",
+  "Allow: /",
+].join("\n");
+
 /** Les deux publics de Decelio, et ce que chacun en tire. */
 const AUDIENCES = [
   {
@@ -408,6 +435,59 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 </figure>
               </article>
 
+            </div>
+          </div>
+        </section>
+
+        {/* 3a. Pedagogie : entrainement et recherche sont deux robots, donc deux decisions */}
+        <section id="robots" aria-labelledby="robots-titre" className="scroll-mt-16 bg-paper pb-28">
+          <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
+            <SectionHeading id="robots-titre" title="Refuser l’entraînement, rester lisible pour la recherche">
+              Chaque assistant envoie plusieurs robots. Un robot d&apos;exploration est le programme qui lit les
+              pages d&apos;un site pour le compte d&apos;une IA. L&apos;un sert &agrave; entra&icirc;ner les
+              mod&egrave;les, l&apos;autre &agrave; r&eacute;pondre aux questions en direct&nbsp;: ce sont deux
+              d&eacute;cisions distinctes.
+            </SectionHeading>
+
+            <div className="reveal overflow-hidden rounded-[1.75rem] border border-line bg-surface">
+              <div className="grid grid-cols-1 border-b border-line md:grid-cols-3">
+                <p className="hidden px-8 py-4 text-sm font-semibold text-ink-2 md:block">Assistant</p>
+                <p className="px-8 py-4 text-sm font-semibold text-ink-2 md:border-l md:border-line">
+                  Robot d&apos;entra&icirc;nement
+                  <span className="block font-normal">Lit les pages pour entra&icirc;ner les futurs mod&egrave;les</span>
+                </p>
+                <p className="bg-brand-soft/60 px-8 py-4 text-sm font-semibold text-brand md:border-l md:border-line">
+                  Robot de recherche
+                  <span className="block font-normal text-ink-2">Lit les pages pour r&eacute;pondre et citer ses sources</span>
+                </p>
+              </div>
+              {BOT_FAMILIES.map((family, i) => (
+                <div key={family.vendor} className={`grid grid-cols-1 md:grid-cols-3 ${i > 0 ? "border-t border-line" : ""}`}>
+                  <p className="px-8 pb-2 pt-5 font-semibold text-ink md:py-5">{family.vendor}</p>
+                  <p className="px-8 py-2 font-mono text-sm text-ink-2 md:border-l md:border-line md:py-5">{family.training}</p>
+                  <p className="bg-brand-soft/40 px-8 pb-5 pt-2 font-mono text-sm font-medium text-ink md:border-l md:border-line md:py-5">{family.search}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div style={rank(0)} className="reveal rounded-[1.75rem] border border-line bg-surface p-8">
+                <h3 className="font-display mb-3 text-[22px] font-bold tracking-[-0.02em] text-ink">Ce que cela permet</h3>
+                <p className="text-[16px] leading-relaxed text-ink-2">
+                  Le fichier robots.txt dit &agrave; chaque robot ce qu&apos;il a le droit de lire. Une agence peut
+                  y refuser GPTBot et ClaudeBot, donc l&apos;entra&icirc;nement, tout en laissant passer
+                  OAI-SearchBot et Claude-SearchBot&nbsp;: le site reste lisible quand un assistant cherche une
+                  r&eacute;ponse.
+                </p>
+              </div>
+              <figure style={rank(1)} className="reveal rounded-[1.75rem] border border-line bg-surface p-8">
+                <figcaption className="type-caption mb-3 text-ink-2">Exemple de robots.txt</figcaption>
+                <pre className="overflow-x-auto rounded-[10px] bg-paper px-4 py-3 font-mono text-[13px] leading-relaxed text-ink">{ROBOTS_EXAMPLE}</pre>
+                <p className="mt-3 text-sm text-ink-2">
+                  Decelio v&eacute;rifie chaque jour que ces r&egrave;gles, et le pare-feu, laissent bien passer les
+                  robots que vous avez choisis.
+                </p>
+              </figure>
             </div>
           </div>
         </section>
