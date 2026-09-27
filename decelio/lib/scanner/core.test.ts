@@ -65,6 +65,19 @@ describe("runScan", () => {
     expect(report.indexing.perBot.find((i) => i.bot === "ClaudeBot")?.noindex).toBe(true);
   });
 
+  it("does not mark a short static page (no JS-rendering signal) as COQUILLE VIDE — regression example.com", async () => {
+    const shortStaticPage = html(
+      "<h1>Example Domain</h1><p>This domain is for use in illustrative examples in documents. " +
+        "You may use this domain in literature without prior coordination or asking for permission.</p>",
+    );
+    stubFetch((url) => (url.endsWith("/robots.txt") ? new Response("", { status: 404 }) : new Response(shortStaticPage)));
+    const { report, results } = await runCoreScan("https://example.com/", ["GPTBot"]);
+
+    expect(report.jsDependency).toMatchObject({ verdict: "low_text", hasAppRoot: false });
+    expect(results[0].simpleStatus).not.toBe("COQUILLE VIDE");
+    expect(results[0].simpleStatus).toBe("À VÉRIFIER");
+  });
+
   it("compares raw and rendered text when a renderer is provided", async () => {
     stubFetch((url) =>
       url.endsWith("/robots.txt") ? new Response("", { status: 404 }) : new Response(html('<div id="root"></div>')),
@@ -230,6 +243,13 @@ describe("runCoreScan", () => {
   });
 
   it("handles the 50-word boundary", async () => {
+    // 49 mots sans aucun indice de rendu côté client (pas de racine
+    // d'application, pas de bundle d'hydratation, pas de <noscript>) n'est
+    // pas une preuve de dépendance JS : « À VÉRIFIER », jamais « COQUILLE
+    // VIDE » (correctif fix/coquille-vide-page-courte — avant ce correctif,
+    // ce test attendait "COQUILLE VIDE" pour toute page sous 50 mots, ce qui
+    // est le faux positif reproduit sur https://example.com : 19 mots,
+    // aucun JavaScript, classé « dépendante du JavaScript » à tort).
     const words49 = "mot ".repeat(49).trim();
     const words50 = "mot ".repeat(50).trim();
     stubFetch((url) => {
@@ -238,10 +258,19 @@ describe("runCoreScan", () => {
     });
 
     const short = await runCoreScan("https://w49.example.com", ["GPTBot"]);
-    expect(short.results[0].simpleStatus, "49 mots doit marquer la page comme COQUILLE VIDE").toBe("COQUILLE VIDE");
+    expect(short.results[0].simpleStatus, "49 mots sans indice JS doit être À VÉRIFIER, pas COQUILLE VIDE").toBe("À VÉRIFIER");
 
     const enough = await runCoreScan("https://w50.example.com", ["GPTBot"]);
     expect(enough.results[0].simpleStatus, "50 mots doit suffire pour être OK").toBe("OK");
+  });
+
+  it("still marks a thin SPA shell under 50 words as COQUILLE VIDE (JS-rendering signal present)", async () => {
+    stubFetch((url) => {
+      if (url.endsWith("/robots.txt")) return new Response("", { status: 404 });
+      return new Response(html('<div id="root"></div>'));
+    });
+    const { results } = await runCoreScan("https://spa.example.com", ["GPTBot"]);
+    expect(results[0].simpleStatus).toBe("COQUILLE VIDE");
   });
 });
 

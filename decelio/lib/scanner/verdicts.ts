@@ -108,6 +108,17 @@ export function verdictForBot(report: ScanReport, bot: BotAgent): ResultSummary 
     };
   }
 
+  // Texte court, mais aucun indice de rendu côté client (pas de racine
+  // d'application, pas de bundle d'hydratation, pas de <noscript>) : ce
+  // n'est pas une preuve de dépendance au JavaScript, juste une page peu
+  // textuelle. « À vérifier », jamais un verdict tranché.
+  if (jsDependency.verdict === "low_text") {
+    return {
+      value: "inconnu",
+      cause: `Le HTML brut est court (${jsDependency.rawWordCount} mots), mais rien n'indique qu'il dépend du JavaScript. À vérifier.`,
+    };
+  }
+
   return { value: "lu", cause: "Le robot peut lire le contenu normalement." };
 }
 
@@ -209,6 +220,11 @@ export function jsSummary(report: ScanReport): ResultSummary {
         value: "vide",
         cause: `Le HTML brut est très court (${jsDependency.rawWordCount} mots), sans confirmation par un rendu.`,
         fix: "Vérifier avec un rendu JavaScript, ou passer en rendu côté serveur.",
+      };
+    case "low_text":
+      return {
+        value: "inconnu",
+        cause: `Le HTML brut est court (${jsDependency.rawWordCount} mots), sans indice de rendu côté client. À vérifier.`,
       };
     case "unknown":
       return { value: "inconnu", cause: "Impossible de mesurer le contenu de la page." };
