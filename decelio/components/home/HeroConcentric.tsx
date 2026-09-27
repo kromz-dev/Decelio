@@ -12,8 +12,9 @@ import { ScanForm } from './ScanForm';
  * qui les separe du contenu que le produit mesure.
  *
  * Le trace ondule reprend le logo, fait de lignes concentriques irregulieres.
- * D'ou l'etiquetage : une courbe de niveau porte son nom sur la ligne, comme sur
- * une carte topographique.
+ * Au chargement, les anneaux se tracent du centre vers l'exterieur, puis une
+ * onde lente s'echappe du centre : c'est le seul mouvement non demande de la
+ * page (voir globals.css, section 6).
  *
  * Aucun etat n'est affiche -- ni « lu », ni « bloque ». Tant qu'aucun scan n'a
  * eu lieu, ce serait un resultat invente (docs/08-constitution.md, principe I).
@@ -23,7 +24,7 @@ import { ScanForm } from './ScanForm';
  * OpenAI ou Google, ce qui est indefendable sous un badge « Conforme RGPD ».
  */
 
-/** Repere du schema : carre de 1200, centre en (600, 600). */
+/** Repere du schema : carre de 1600, centre en (800, 800). */
 const VIEW = 1600;
 const C = VIEW / 2;
 
@@ -45,7 +46,7 @@ function contourPath(radius: number, amp: number, lobes: number, phase: number):
 }
 
 /**
- * Cinq anneaux concentriques, du plus interieur au plus exterieur. Ils reprennent
+ * Six anneaux concentriques, du plus interieur au plus exterieur. Ils reprennent
  * le trace irregulier du logo : chaque anneau a son propre nombre de lobes et sa
  * propre phase, donc aucun ne se superpose exactement a un autre.
  */
@@ -62,9 +63,6 @@ const RINGS = [
  * Huit assistants, repartis de part et d'autre de la colonne de texte et
  * etages sur des anneaux differents. Les deux anneaux interieurs restent nus :
  * le centre appartient au contenu.
- *
- * Les angles sont choisis pour qu'aucune pastille ne passe derriere le titre,
- * le paragraphe ou la carte de scan, et qu'aucune ne sorte du cadre en hauteur.
  */
 const ASSISTANTS = [
   { name: "Mistral", icon: "/icons/mistral.svg", radius: 540, angle: 192 },
@@ -77,6 +75,37 @@ const ASSISTANTS = [
   { name: "Copilot", icon: "/icons/github-copilot.svg", radius: 780, angle: 150 },
 ];
 
+/**
+ * Navigation unique, partagee par l'en-tete et le pied de page : une meme
+ * section porte le meme nom partout (docs/11-audit-landing-page.md, Reprise §2).
+ */
+export const NAV_LINKS = [
+  { href: "#probleme", label: "Le problème" },
+  { href: "#controles", label: "Les contrôles" },
+  { href: "#methode", label: "Comment ça marche" },
+  { href: "#tarifs", label: "Tarifs" },
+  { href: "#faq", label: "Questions" },
+] as const;
+
+/** Titre decoupe en mots pour l'entree en cascade. Deux lignes, coupees au sens. */
+const TITLE_LINES = [
+  ["Vos", "sites", "clients,"],
+  ["lisibles", "par", "toutes", "les", "IA"],
+] as const;
+
+/**
+ * L'onde du radar (classe `.ripple`, globals.css) : un anneau de rayon
+ * `radius`, mis a l'echelle de `from` a `to` a vitesse constante, pendant
+ * `duration` secondes, apres `delay`. A garder synchronise avec le CSS.
+ */
+const RIPPLE = { radius: 780, from: 0.42, to: 1.08, delay: 2.6, duration: 7 };
+
+/** Instant (en s) ou l'onde atteint une bulle posee sur l'orbite `radius`. */
+function pingDelay(radius: number): string {
+  const progress = (radius / RIPPLE.radius - RIPPLE.from) / (RIPPLE.to - RIPPLE.from);
+  return `${(RIPPLE.delay + progress * RIPPLE.duration).toFixed(2)}s`;
+}
+
 /** Position en pourcentage du conteneur carre, pour un angle et un rayon donnes. */
 function polarPercent(radius: number, angleDeg: number) {
   const a = (angleDeg * Math.PI) / 180;
@@ -87,195 +116,174 @@ function polarPercent(radius: number, angleDeg: number) {
 }
 
 export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean }) {
+  let wordIndex = 0;
+
   return (
-    <section className="relative min-h-[100dvh] w-full bg-paper overflow-hidden flex flex-col pt-4">
-      {/* HEADER BAR */}
-      <header className="relative z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between mb-8 animate-cascade delay-100">
-        <div className="flex items-center gap-2.5">
-           <Image
-             src="/logo-decelio.png"
-             alt=""
-             width={502}
-             height={565}
-             priority
-             className="h-8 w-auto"
-           />
-           <span className="font-bold text-xl tracking-tight text-ink">Decelio</span>
-        </div>
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-ink-2">
-          <a href="#solutions" className="hover:text-ink transition-colors">Solutions</a>
-          <a href="#produits" className="hover:text-ink transition-colors">Produits</a>
-          <a href="#tarifs" className="hover:text-ink transition-colors">Tarifs</a>
-        </div>
-        <div className="flex items-center gap-4">
-           <div className="flex items-center gap-2">
-             {isLoggedIn ? (
-               <Link href="/dashboard" className="bg-ink text-paper text-sm font-medium px-5 py-2.5 rounded-full hover:bg-ink/90 transition-colors shadow-panel">Dashboard</Link>
-             ) : (
-               <>
-                 <Link href="/login" className="text-sm font-medium text-ink-2 hover:text-ink px-2 hidden sm:block transition-colors">Connexion</Link>
-                 <Link href="/register" className="bg-ink text-paper text-sm font-medium px-5 py-2.5 rounded-full shadow-float hover:-translate-y-0.5 transition-all duration-300">S&apos;inscrire</Link>
-               </>
-             )}
-           </div>
+    <>
+      {/* En-tete colle en haut : il reste a portee pendant toute la lecture. */}
+      <header className="sticky top-0 z-50 w-full border-b border-line/70 bg-paper/75 backdrop-blur-xl backdrop-saturate-150">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+          <Link href="/" aria-label="Decelio, accueil" className="flex items-center gap-2.5">
+            <Image src="/logo-decelio.png" alt="" width={502} height={565} priority className="h-8 w-auto" />
+            <span className="font-display text-[22px] font-bold tracking-[-0.03em] text-ink">Decelio</span>
+          </Link>
+
+          <nav aria-label="Navigation principale" className="hidden items-center gap-7 text-sm font-medium text-ink-2 lg:flex">
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href} className="nav-link pb-0.5 hover:text-ink">
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            {isLoggedIn ? (
+              <Link href="/dashboard" className="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-ink/90">
+                Tableau de bord
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="hidden px-3 text-sm font-medium text-ink-2 transition-colors hover:text-ink sm:block">
+                  Connexion
+                </Link>
+                <Link href="/register" className="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper shadow-float transition-all duration-300 hover:-translate-y-0.5">
+                  Cr&eacute;er un compte
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* CENTRAL WRAPPER TO KEEP CIRCLES AND TEXT ALIGNED ON ZOOM */}
-      <div className="relative flex-1 flex flex-col items-center justify-center w-full mb-12">
+      <section
+        aria-labelledby="hero-titre"
+        className="relative flex min-h-[calc(100dvh-4rem)] w-full flex-col overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(60% 55% at 50% 42%, var(--brand-soft) 0%, color-mix(in oklab, var(--brand-soft) 35%, var(--paper)) 45%, var(--paper) 75%)",
+        }}
+      >
+        <div className="relative flex w-full flex-1 flex-col items-center justify-center pb-16 pt-14">
 
-        {/* SCHEMA : les trois controles, traces en courbes de niveau */}
-        <div
-          role="img"
-          aria-label="Illustration : les robots de ChatGPT, Claude, Perplexity, Gemini, Mistral, Grok, Copilot et DuckDuckGo gravitent autour du contenu d’un site."
-          className="pointer-events-none absolute left-1/2 top-1/2 z-0 aspect-square w-[min(1340px,148vmin)] -translate-x-1/2 -translate-y-1/2"
-        >
-          <svg
-            viewBox={`0 0 ${VIEW} ${VIEW}`}
-            className="absolute inset-0 h-full w-full overflow-visible"
-            aria-hidden="true"
-            focusable="false"
+          {/* SCHEMA : les trois controles, traces en courbes de niveau */}
+          <div
+            role="img"
+            aria-label="Illustration : les robots de ChatGPT, Claude, Perplexity, Gemini, Mistral, Grok, Copilot et DuckDuckGo gravitent autour du contenu d’un site."
+            className="pointer-events-none absolute left-1/2 top-1/2 z-0 aspect-square w-[min(1340px,148vmin)] -translate-x-1/2 -translate-y-1/2"
           >
-            {RINGS.map((ring, i) => (
+            <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true" focusable="false">
+              {RINGS.map((ring, i) => (
+                <path
+                  key={ring.radius}
+                  d={contourPath(ring.radius, ring.amp, ring.lobes, ring.phase)}
+                  pathLength={1}
+                  fill="none"
+                  stroke="var(--brand)"
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                  strokeOpacity={0.42 - i * 0.05}
+                  className="ring-draw"
+                  style={{ animationDelay: `${i * 160}ms` }}
+                />
+              ))}
+              {/* L'onde : repart du centre, lentement, a la maniere du controle quotidien. */}
               <path
-                key={ring.radius}
-                d={contourPath(ring.radius, ring.amp, ring.lobes, ring.phase)}
+                d={contourPath(RIPPLE.radius, 11, 7, 0.8)}
                 fill="none"
                 stroke="var(--brand)"
-                strokeWidth={1.5}
-                strokeOpacity={0.3 - i * 0.035}
-                className="animate-cascade"
-                style={{ animationDelay: `${300 + i * 140}ms` }}
+                strokeWidth={2}
+                className="ripple"
               />
+            </svg>
+
+            {/* Les assistants restent dehors : ils demandent a entrer, ils n'y sont pas. */}
+            {ASSISTANTS.map((assistant, i) => (
+              <span
+                key={assistant.name}
+                aria-hidden="true"
+                className="animate-cascade absolute hidden -translate-x-1/2 -translate-y-1/2 lg:block"
+                style={{ ...polarPercent(assistant.radius, assistant.angle), animationDelay: `${1300 + i * 110}ms` }}
+              >
+                {/* Deux couches : l'entree en cascade et la reaction a l'onde animent chacune leur propre transform. */}
+                <span
+                  className="bubble-ping flex items-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/80 py-1.5 pl-1.5 pr-3.5 shadow-float backdrop-blur-md"
+                  style={{ ["--ping-delay" as string]: pingDelay(assistant.radius) }}
+                >
+                  <Image src={assistant.icon} alt="" width={24} height={24} className="h-6 w-6 rounded-full bg-surface" />
+                  <span className="text-[13px] font-medium leading-none text-ink-2">{assistant.name}</span>
+                </span>
+              </span>
             ))}
-          </svg>
+          </div>
 
-
-          {/* Les assistants restent dehors : ils demandent a entrer, ils n'y sont pas. */}
-          {ASSISTANTS.map((assistant, i) => (
-            <span
-              key={assistant.name}
-              aria-hidden="true"
-              className="animate-cascade absolute hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-line bg-surface/90 py-1.5 pl-1.5 pr-3.5 shadow-glass backdrop-blur-md lg:flex"
-              style={{ ...polarPercent(assistant.radius, assistant.angle), animationDelay: `${900 + i * 110}ms` }}
+          {/* CONTENU CENTRAL */}
+          <div className="relative z-20 mx-auto flex max-w-4xl flex-col items-center px-4 text-center">
+            <h1
+              id="hero-titre"
+              className="font-display mb-7 text-[44px] font-bold leading-[0.98] tracking-[-0.04em] text-ink sm:text-[64px] md:text-[80px]"
             >
-              <Image
-                src={assistant.icon}
-                alt=""
-                width={24}
-                height={24}
-                className="h-6 w-6 rounded-full bg-surface"
-              />
-              <span className="text-[13px] font-medium leading-none text-ink-2">{assistant.name}</span>
-            </span>
-          ))}
-        </div>
+              {TITLE_LINES.map((line, l) => (
+                <span key={l} className="block">
+                  {line.map((word) => {
+                    const i = wordIndex++;
+                    return (
+                      <span key={word} className="word" style={{ ["--i" as string]: i }}>
+                        {word}
+                        {" "}
+                      </span>
+                    );
+                  })}
+                </span>
+              ))}
+            </h1>
 
-        {/* CENTRAL CONTENT */}
-        <div className="relative z-20 flex flex-col items-center text-center max-w-4xl px-4 mx-auto">
-
-        {/* Headline - Pro Max Typography using the Design System utility */}
-        <h1 className="animate-cascade delay-500 type-display !text-5xl sm:!text-6xl md:!text-7xl text-ink mb-6 leading-[1.05]">
-          {/* Titre d'un seul tenant : le degrade sur « toutes les IA » eclaircissait
-              la fin du titre, ce qui affaiblissait le contraste au moment ou la
-              phrase porte son sens. */}
-          Vos sites web, <br className="hidden sm:block" />
-          visibles par toutes les IA
-        </h1>
-
-        {/* Phrase d'extraction AEO : formulation destinee a etre reprise telle
-            quelle par les moteurs de reponse (ChatGPT, Claude, Perplexity...).
-            Visible dans le corps du document, jamais masquee. */}
-        {/* Un seul paragraphe : le second disait la meme chose en plus faible, et
-            le schema porte desormais l'explication des trois controles. La largeur
-            reste en deca de l'anneau interieur pour que le texte n'empiete pas
-            sur le trace. */}
-        <blockquote className="animate-cascade delay-600 text-lg sm:text-xl text-ink-2 mb-10 max-w-2xl mx-auto leading-relaxed border-l-2 border-line-strong pl-4 text-left sm:text-center sm:border-l-0 sm:pl-0">
-          Decelio est un service de surveillance pour agences web qui v&eacute;rifie chaque jour si les robots des IA comme ChatGPT, Claude et Perplexity peuvent acc&eacute;der aux sites de vos clients, et vous alerte avec la cause exacte d&egrave;s qu&apos;un acc&egrave;s se bloque.
-        </blockquote>
-
-        {/* CTA Buttons */}
-        <div className="animate-cascade delay-900 flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 w-full sm:w-auto">
-          {isLoggedIn ? (
-            <Link
-              href="/dashboard"
-              className="bg-ink hover:bg-ink/90 text-paper font-semibold py-2.5 px-6 rounded-full shadow-float hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto"
+            {/* Phrase d'extraction AEO : formulation destinee a etre reprise telle
+                quelle par les moteurs de reponse. Visible, jamais masquee. */}
+            <blockquote
+              className="animate-cascade mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-ink-2 sm:text-xl"
+              style={{ animationDelay: "900ms" }}
             >
-              Aller au tableau de bord
-            </Link>
-          ) : (
-            <Link
-              href="/register"
-              className="bg-ink hover:bg-ink/90 text-paper font-semibold py-2.5 px-6 rounded-full shadow-float hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto"
+              Decelio est un service de surveillance pour agences web qui v&eacute;rifie chaque jour si les robots des IA comme ChatGPT, Claude et Perplexity peuvent acc&eacute;der aux sites de vos clients, et vous alerte avec la cause exacte d&egrave;s qu&apos;un acc&egrave;s se bloque.
+            </blockquote>
+
+            {/* Sous 1024 px, les pastilles en orbite n'ont plus la place : les memes
+                assistants reviennent ici, en une rangee compacte. */}
+            <ul
+              aria-label="Assistants IA dont Decelio vérifie l’accès"
+              className="animate-cascade mb-10 flex max-w-sm flex-wrap items-center justify-center gap-2 lg:hidden"
+              style={{ animationDelay: "1000ms" }}
             >
-              D&eacute;marrer gratuitement
-            </Link>
-          )}
-        </div>
+              {ASSISTANTS.map((assistant) => (
+                <li key={assistant.name} className="flex items-center gap-1.5 rounded-full border border-line bg-surface/90 py-1 pl-1 pr-2.5">
+                  <Image src={assistant.icon} alt="" width={18} height={18} className="h-[18px] w-[18px]" />
+                  <span className="text-[11px] font-medium leading-none text-ink-2">{assistant.name}</span>
+                </li>
+              ))}
+            </ul>
 
-        {/*
-          Sous 1024 px, les pastilles en orbite n'ont plus la place de tenir
-          autour du texte : les memes assistants reviennent ici, en une rangee
-          compacte. Meme information, autre disposition -- et non l'information
-          escamotee.
-        */}
-        <ul
-          aria-label="Assistants IA dont Decelio vérifie l’accès"
-          className="animate-cascade delay-900 mb-10 flex max-w-xs flex-wrap items-center justify-center gap-2 lg:hidden"
-        >
-          {ASSISTANTS.map((assistant) => (
-            <li
-              key={assistant.name}
-              className="flex items-center gap-1.5 rounded-full border border-line bg-surface/90 py-1 pl-1 pr-2.5"
-            >
-              <Image src={assistant.icon} alt="" width={18} height={18} className="h-[18px] w-[18px]" />
-              <span className="text-[11px] font-medium leading-none text-ink-2">{assistant.name}</span>
-            </li>
-          ))}
-        </ul>
-
-        {/* Glowing floating cards simulation - Vertical Stack Refraction */}
-        <div id="scan" className="relative w-full max-w-lg mx-auto animate-cascade delay-[1100ms] group perspective-[1000px] mb-20">
-          {/* Ambient Glow */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-cobalt/20 via-cobalt-soft/10 to-transparent blur-[80px] rounded-[3rem] pointer-events-none transition-all duration-700 opacity-80" />
-
-          {/*
-            Aucune carte de resultat en exemple ici : afficher « Claude a accede
-            au /pricing, il y a 2 minutes » reviendrait a montrer des evenements
-            de scan inventes comme s'ils etaient reels, et a promettre du temps
-            reel alors que les scans sont quotidiens. Voir docs/08-constitution.md,
-            principes I et III, et docs/11-audit-landing-page.md.
-          */}
-          <div className="relative w-full">
-            {/* Main Card (ScanForm) - Z-30 */}
-            <div className="relative bg-white/95 backdrop-blur-3xl border border-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)] rounded-[1.5rem] p-6 z-30 w-full transition-all duration-500">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center border border-brand/15 shadow-sm">
-                    <Image
-                      src="/logo-decelio.png"
-                      alt=""
-                      width={502}
-                      height={565}
-                      className="h-5 w-auto"
-                    />
+            {/* L'action principale de l'ecran : le diagnostic, directement. */}
+            <div id="scan" className="animate-cascade relative mx-auto w-full max-w-xl scroll-mt-28" style={{ animationDelay: "1100ms" }}>
+              <div aria-hidden="true" className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-brand/15 blur-3xl" />
+              <div className="relative rounded-[1.75rem] border border-white bg-white/90 p-6 text-left shadow-[0_24px_60px_-24px_rgb(29_76_164/0.45),inset_0_1px_0_rgb(255_255_255)] backdrop-blur-2xl">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-brand/15 bg-brand-soft">
+                    <Image src="/logo-decelio.png" alt="" width={502} height={565} className="h-5 w-auto" />
                   </div>
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-ink">Diagnostic AEO</p>
-                    <p className="text-xs text-ink-2 font-medium">Testez si votre site est bloqu&eacute;</p>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Diagnostic gratuit</p>
+                    <p className="text-xs font-medium text-ink-2">Collez l&apos;adresse d&apos;un site pour savoir s&apos;il est bloqu&eacute;</p>
                   </div>
                 </div>
+                <ScanForm />
               </div>
-              <ScanForm />
+              <p className="relative mt-5 text-center text-sm text-ink-2">
+                Vous g&eacute;rez tout un portefeuille de sites&nbsp;?{" "}
+                <a href="#tarifs" className="font-semibold text-ink underline underline-offset-4 hover:text-brand">Voir les tarifs</a>
+              </p>
             </div>
           </div>
         </div>
-
-      </div>
-      {/* END CENTRAL CONTENT */}
-      </div>
-      {/* END CENTRAL WRAPPER */}
-
-    </section>
+      </section>
+    </>
   );
 }

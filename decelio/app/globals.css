@@ -209,6 +209,8 @@
   --font-sans: var(--font-marketing), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading: var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
+  /* Titres d'affichage marketing (Bricolage Grotesque), repli sur le sans */
+  --font-display: var(--font-bricolage), var(--font-marketing), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* Rayons par niveau : puce 4, contrôle 6, carte 10, panneau 14 */
@@ -346,3 +348,130 @@
 .delay-\[1500ms\] { animation-delay: 1500ms; }
 
 .rounded-full { border-radius: 9999px !important; }
+
+/* ---------- 6. Mouvement de la page d'accueil : l'onde ----------
+   Une seule idée, reprise du logo : tout part du centre, comme une onde.
+   1. Au chargement, les anneaux du héros se tracent l'un après l'autre, puis
+      les mots du titre arrivent en cascade.
+   2. Une onde lente s'échappe du centre, rappel du contrôle quotidien.
+   3. Au défilement, les éléments marqués `.reveal` montent en cascade selon
+      leur rang (`--i`). Animation liée au défilement (CSS pur, aucun JS) :
+      sans prise en charge du navigateur, le contenu est simplement visible.
+   Tout est coupé par `prefers-reduced-motion` (règle globale plus haut). */
+
+@keyframes ring-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+.ring-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ring-draw 2.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+/* L'onde (radar). Vitesse constante (linear) : le rayon atteint a chaque
+   instant est donc calculable, et HeroConcentric.tsx en deduit l'instant ou
+   l'onde touche chaque bulle d'assistant (voir RIPPLE et .bubble-ping).
+   Garder ces valeurs synchronisees avec la constante RIPPLE. */
+@keyframes ripple {
+  0%   { transform: scale(0.42); opacity: 0; }
+  6%   { opacity: 0.6; }
+  80%  { opacity: 0.4; }
+  100% { transform: scale(1.08); opacity: 0; }
+}
+
+.ripple {
+  transform-box: view-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: ripple 7s linear 2.6s infinite;
+}
+
+/* La bulle touchee par l'onde : elle rebondit (petit ressort : monte,
+   redescend sous sa taille, se pose), son bord et son fond passent au bleu
+   de la marque, et un anneau s'echappe autour d'elle. Meme periode que
+   l'onde ; chaque bulle est decalee par --ping-delay, calcule selon son rayon. */
+@keyframes bubble-ping {
+  0% {
+    transform: scale(1);
+    border-color: rgb(255 255 255 / 0.8);
+    background-color: rgb(255 255 255 / 0.8);
+    box-shadow: 0 0 0 0 rgb(29 76 164 / 0.4), var(--float-shadow);
+  }
+  3% {
+    transform: scale(1.1);
+    border-color: rgb(29 76 164 / 0.55);
+    background-color: var(--brand-soft);
+    box-shadow: 0 0 0 5px rgb(29 76 164 / 0.22), 0 10px 30px -8px rgb(29 76 164 / 0.5);
+  }
+  7%  { transform: scale(0.97); }
+  10% { transform: scale(1.02); box-shadow: 0 0 0 14px rgb(29 76 164 / 0), 0 10px 30px -8px rgb(29 76 164 / 0.25); }
+  16% {
+    transform: scale(1);
+    border-color: rgb(255 255 255 / 0.8);
+    background-color: rgb(255 255 255 / 0.8);
+    box-shadow: 0 0 0 0 rgb(29 76 164 / 0), var(--float-shadow);
+  }
+  100% {
+    transform: scale(1);
+    border-color: rgb(255 255 255 / 0.8);
+    background-color: rgb(255 255 255 / 0.8);
+    box-shadow: 0 0 0 0 rgb(29 76 164 / 0), var(--float-shadow);
+  }
+}
+
+.bubble-ping {
+  animation: bubble-ping 7s cubic-bezier(0.33, 1, 0.68, 1) infinite; /* easing par segment : les instants des keyframes restent synchrones */
+  animation-delay: var(--ping-delay, 0s);
+}
+
+/* Le nom de l'assistant passe au bleu en meme temps (--ping-delay est herite). */
+@keyframes bubble-label {
+  0%, 16%, 100% { color: var(--ink-2); }
+  3%, 10%       { color: var(--brand); }
+}
+
+.bubble-ping > span {
+  animation: bubble-label 7s ease-out infinite;
+  animation-delay: var(--ping-delay, 0s);
+}
+
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(0.45em); filter: blur(10px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+.word {
+  display: inline-block;
+  opacity: 0;
+  animation: word-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-delay: calc(350ms + var(--i, 0) * 75ms);
+}
+
+/* Cascade au defilement, pilotee par components/home/RevealOnScroll.tsx :
+   l'etat masque n'existe que sous html.reveal-ready (pose par le script),
+   donc sans JavaScript tout est visible. Declenchee une fois, jouee jusqu'au
+   bout : aucun bloc ne reste a mi-course. */
+.reveal-ready .reveal {
+  opacity: 0;
+  transform: translateY(34px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+.reveal-ready .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Un soulignement qui se trace au survol, pour les liens de navigation. */
+.nav-link {
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 1px;
+  transition: background-size 0.35s var(--brand-ease), color 0.2s;
+}
+.nav-link:hover,
+.nav-link:focus-visible {
+  background-size: 100% 1px;
+}
