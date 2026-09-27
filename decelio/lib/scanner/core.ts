@@ -118,7 +118,15 @@ export async function runScan(url: string, options: ScanOptions = {}): Promise<S
 // Résumé par robot (pastille UI, statut du site surveillé, alertes)
 // ---------------------------------------------------------------------------
 
-export type SimpleStatus = "OK" | "BLOQUÉ" | "COQUILLE VIDE" | "ERREUR";
+/**
+ * « À VÉRIFIER » : le site refuse la requête honnête elle-même (bloqué ou
+ * challengé), sans aucune preuve que ce robot précis soit visé — ni règle
+ * robots.txt qui le nomme, ni sonde qui diffère de la référence. Voir
+ * `summarizeForBot`. Ne déclenche jamais d'alerte de régression (constitution,
+ * principe I : en cas de doute, on écrit « à vérifier », jamais un verdict
+ * tranché).
+ */
+export type SimpleStatus = "OK" | "À VÉRIFIER" | "BLOQUÉ" | "COQUILLE VIDE" | "ERREUR";
 
 export interface ScanCoreResult {
   agent: BotAgent;
@@ -149,24 +157,49 @@ export function summarizeForBot(report: ScanReport, bot: BotAgent): ScanCoreResu
   const reasons: string[] = [];
   const { access, robots, jsDependency, indexing } = report;
   const policy = robots.policies.find((p) => p.bot === bot);
+  const probe = access.unverifiedProbes.find((p) => p.claimedBot === bot);
 
   let simpleStatus: SimpleStatus = "OK";
-  if (access.risk === "unreachable" || access.risk === "http_error") {
+
+  // robots.txt réellement lu (fetchStatus "ok") qui nomme ce robot est une
+  // preuve indépendante de la requête honnête : elle prime sur tout le reste
+  // (règle 2). Un simple défaut de lecture de robots.txt (unreachable /
+  // challenged) donne aussi verdict:"disallowed" par précaution côté
+  // `buildRobotsReport`, mais ce n'est pas un ciblage nommé — traité plus bas.
+  const robotsNamesThisBot = robots.fetchStatus === "ok" && policy?.verdict === "disallowed";
+  const robotsUnreadablePrecaution = robots.fetchStatus !== "ok" && policy?.verdict === "disallowed";
+
+  if (robotsNamesThisBot) {
+    simpleStatus = "BLOQUÉ";
+    reasons.push(`robots.txt disallows ${policy!.token}`);
+  } else if (access.risk === "unreachable" || access.risk === "http_error") {
+    // Priorité à ERREUR : si la requête honnête elle-même n'a pas de réponse,
+    // c'est ce qu'il faut signaler, pas une précaution sur robots.txt.
     simpleStatus = "ERREUR";
     reasons.push(access.risk === "unreachable" ? `unreachable: ${access.error ?? "no response"}` : `http ${access.httpStatus}`);
-  } else {
-    if (policy?.verdict === "disallowed") {
-      simpleStatus = "BLOQUÉ";
-      reasons.push(robots.fetchStatus === "unreachable" ? "robots.txt unreachable (full disallow)" : `robots.txt disallows ${policy.token}`);
-    }
-    if (access.risk === "challenged" || access.risk === "blocked") {
-      simpleStatus = "BLOQUÉ";
-      reasons.push(`access ${access.risk} (${access.signals.join(", ")})`);
-    }
-    if (simpleStatus === "OK" && (jsDependency.verdict === "js_dependent" || jsDependency.verdict === "likely_js_dependent")) {
-      simpleStatus = "COQUILLE VIDE";
-      reasons.push(`${jsDependency.verdict}: ${jsDependency.rawWordCount} words in raw HTML`);
-    }
+  } else if (access.risk === "challenged" || access.risk === "blocked") {
+    // Blocage général (règle 1) : la requête honnête elle-même est refusée ou
+    // challengée. Rien ne prouve que ce robot précis soit visé (un robots.txt
+    // illisible à cause du même blocage n'est pas un ciblage nommé), donc pas
+    // de BLOQUÉ — un statut « à vérifier », jamais un verdict tranché.
+    simpleStatus = "À VÉRIFIER";
+    reasons.push(`general block (status:${access.httpStatus}) — no bot-specific evidence`);
+  } else if (robotsUnreadablePrecaution) {
+    // La page se charge normalement, mais robots.txt lui-même est
+    // injoignable ou challengé : par précaution, on refuse.
+    simpleStatus = "BLOQUÉ";
+    reasons.push("robots.txt unreachable (full disallow)");
+  } else if (probe && probe.differsFromBaseline && (probe.risk === "blocked" || probe.risk === "challenged")) {
+    // La requête honnête passe, mais la sonde qui se présente comme ce robot
+    // est bloquée (règle 3) : un indice à forte valeur, jamais une preuve
+    // (le site peut vérifier ce robot par IP), d'où le libellé « indice ».
+    simpleStatus = "BLOQUÉ";
+    reasons.push(`unverified probe blocked (status:${probe.httpStatus}) while honest request ok`);
+  }
+
+  if (simpleStatus === "OK" && (jsDependency.verdict === "js_dependent" || jsDependency.verdict === "likely_js_dependent")) {
+    simpleStatus = "COQUILLE VIDE";
+    reasons.push(`${jsDependency.verdict}: ${jsDependency.rawWordCount} words in raw HTML`);
   }
   if (indexing.perBot.find((i) => i.bot === bot)?.noindex) reasons.push("noindex");
 
