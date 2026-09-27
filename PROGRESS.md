@@ -3,6 +3,55 @@
 Source de vérité pour reprendre le travail, avec un humain ou un agent.
 **Dernière mise à jour :** 27 septembre 2026.
 
+---
+
+## 27/09 — état et reprise
+
+**Répartition du travail inversée à partir d'aujourd'hui** : l'agent Design est maintenant une session locale, et l'agent Ingénierie une session dans le cloud qui délègue à des sous-agents (un worktree par sous-agent). Le contrat de `docs/12-partage-du-travail.md` (propriété par fichier, branches non empilées) ne change pas.
+
+### Fait aujourd'hui (fusionné dans `main`)
+
+- **Scanner et diagnostic** : détection de la plateforme du site (`lib/scanner/platform.ts`, exposée dans `report.platform`, #95) ; correctifs propres à la plateforme détectée dans le PDF (#114) ; `robots.txt` en 401/403/429 rendu comme « à vérifier » plutôt qu'un verdict tranché, détection d'Akamai (#103) ; blocage général sans preuve visant un robot précis rendu comme « À VÉRIFIER », une sonde bloquée alors que la requête honnête passe reste un indice, pas une preuve (#107) ; sondes et alertes étendues aux robots de recherche (OAI-SearchBot, Claude-SearchBot, PerplexityBot, #111).
+- **Fiabilité des alertes** : une alerte n'est plus envoyée qu'après confirmation par un second scan à 10 minutes (`REGRESSION_CONFIRMATION_DELAY`, #110) ; le scan quotidien ne couvre plus que les comptes payants et à jour, plafonné au quota du plan (`lib/sites/active-sites.ts`, #104).
+- **Sécurité** : API durcie et purge RGPD des comptes résiliés (`inngest/functions/purge-cancelled-accounts.ts`, #96) ; IP client prise à droite de `x-forwarded-for` avec `TRUSTED_PROXY_HOPS` réglable, runbook `docs/runbooks/verifier-ip-client-render.md` (#98) ; limite de débit sur la connexion (10/IP, 5/e-mail, par tranche de 15 min), temps de réponse égalisé, tous les préfixes protégés (#115) ; `captureLead` ne relaie plus d'e-mail arbitraire, `sendAuditReportEmail` supprimée, `escapeHtml` appliqué dans les e-mails, `AuditLead.brandName` rendu facultatif (#116) ; en-têtes de sécurité HTTP et CSP sur toutes les routes (#120).
+- **Mesure produit** : événements serveur du tunnel de conversion envoyés à PostHog (`signup_completed`, `site_added`, `checkout_started`, `subscription_activated`, `subscription_canceled`, #118).
+- **Qualité outillage** : migration vers Vitest 5 (#99) ; Dependabot n'ouvre plus de PR sur les montées majeures bloquées (ESLint 10, TypeScript 7, Prisma 7, #100).
+- **Design** : section produits de la page d'accueil (#97), harmonisation des pages publiques (#119), et d'autres changements visuels — voir `git log` côté Design pour le détail exact, non revérifié ici.
+
+### État de `main`
+
+Les quatre portes de qualité (`tsc`, `eslint`, `vitest`, `build`) sont vertes. `npx vitest run` (relancé pour cette mise à jour) donne **608 tests verts sur 80 fichiers**.
+
+### En cours, pas encore fusionné
+
+- `fix/coquille-vide-page-courte`, `fix/scanner-sans-auto-429`, `fix/ssrf-rebinding-dns`, `fix/pdf-diagnostic-taille-corps` — fiabilité restante du scanner (T076).
+- `feat/essai-gratuit-14-jours` — essai gratuit de 14 jours avec carte (ADR-002, T071).
+- `chore/avant-lancement` — inscription Google dans le tunnel, `AUTH_TRUST_HOST`, page « visibilité IA », suppression du client Stripe à la purge d'un compte.
+- `fix/posthog-proxy-domaine` — PostHog par notre propre domaine, pour ne jamais envoyer l'IP du visiteur à un tiers depuis une page publique (ADR-004, T072).
+- `design/pages-legales` — mentions légales, CGV, politique de confidentialité (T070).
+
+Aucune de ces branches n'est prise en compte dans les cases cochées de `tasks/mvp-tasks.md` : la règle d'or reste de ne cocher que ce que `main` prouve.
+
+### Ce qui bloque le lancement
+
+- **SIREN en attente.** Micro-entreprise en franchise de TVA (ADR-003) : **aucune vente avant** de l'avoir reçu.
+- **Resend sans domaine vérifié.** `decelio.fr` est acheté depuis le 26/09, mais `list-domains` (relevé par MCP le 27/09) ne renvoie toujours aucun domaine. Sans vérification, aucun e-mail produit ne peut partir (alertes, rapports, essai, réinitialisation de mot de passe) — T068.
+- **Neon `main` (production) sans historique de migrations.** Les tables existent (poussées par `db push`), mais aucune table `_prisma_migrations` : `npx prisma migrate deploy` échouera tel quel, il faut baseliner d'abord (T073). La branche n'est pas non plus protégée.
+- **Render jamais déployé.** Service créé mais `rootDir` vaut encore `cited` au lieu de `decelio`, les variables d'environnement ne sont pas saisies, le déploiement automatique est coupé (T003/T004).
+- **Aucun webhook Stripe** (T074), et Stripe reste en mode test — l'activation en réel (T075) suit le SIREN.
+
+### Ordre des étapes jusqu'au lancement
+
+Le détail par service est dans `docs/runbooks/checklist-mise-en-production.md` (sur la branche `chore/docs-decisions-lancement`, pas encore fusionnée — le fondateur la recopiera). Dans l'ordre :
+
+1. Fusionner les branches en cours listées ci-dessus (fiabilité du scanner, essai gratuit, proxy PostHog, pages légales) — chacune sa propre revue.
+2. Baseliner Neon `main`, protéger la branche, saisir les variables d'environnement Render et pointer `rootDir` sur `decelio`.
+3. Créer le webhook Stripe de production, vérifier le domaine Resend.
+4. Premier déploiement complet en mode test Stripe, avec les vérifications manuelles listées dans la checklist (en-têtes de sécurité, IP client, tunnel PostHog, scan réel, réception d'un e-mail).
+5. Dès le SIREN reçu : compléter les pages légales, activer Stripe en réel, recréer les objets Stripe (prix, coupon, portail, webhook) en mode réel, puis ouvrir la prospection écrite.
+
+---
+
 **Stack :** Next.js 16 · React 19 · TypeScript strict · Prisma 5 · PostgreSQL · Tailwind 4 · NextAuth v5 · Stripe · Inngest · Resend · PostHog
 **Contrainte absolue :** budget 0 €, autofinancé. Uniquement des offres gratuites qui autorisent un usage commercial (voir `docs/09-prd-mvp.md` §14, ENF-016).
 
@@ -20,7 +69,7 @@ Source de vérité pour reprendre le travail, avec un humain ou un agent.
 
 Chaque tâche part de `main` sur sa propre branche `feat/t0XX-<sujet>` (ou `fix/`, `docs/`, `chore/`), une PR par tâche, fusion par l'humain une fois la CI verte.
 
-**Un seul dossier de travail depuis le 26/09 au soir** : `saas/Cited`. Les checkouts parallèles par agent (`Cited-claude`, `Cited-grok`, `Cited-agent`, etc.) ont été supprimés, leur contenu étant intégralement présent dans `Cited` (voir « 26/09 au soir » ci-dessous). Chaque tâche reste une branche et une PR vers `main`, jamais de PR empilées.
+**Un seul dossier de travail depuis le 26/09 au soir**, renommé `Decelio` le 27/09 (le dossier de l'application est passé de `cited/` à `decelio/`, voir T062 ci-dessous). Les checkouts parallèles par agent (`Cited-claude`, `Cited-grok`, `Cited-agent`, etc.) ont été supprimés, leur contenu étant intégralement présent dans le dépôt principal (voir « 26/09 au soir » ci-dessous). Chaque tâche reste une branche et une PR vers `main`, jamais de PR empilées.
 
 ### 25/09 : `main` remis au vert, historique de migrations reconstruit
 
@@ -53,7 +102,7 @@ Chaque tâche part de `main` sur sa propre branche `feat/t0XX-<sujet>` (ou `fix/
 
 **Service Render créé par MCP.** `srv-darer6btqb8s73f7d670`, région Francfort, plan gratuit, URL `https://cited-6ihy.onrender.com`. **Deux champs refusés par l'API malgré l'envoi**, à corriger à la main dans le tableau de bord avant tout déploiement : Root Directory (vide au lieu de `cited`) et Health Check Path (vide au lieu de `/api/health`). Les variables d'environnement n'ont pas pu être posées par MCP non plus (erreur de type côté connecteur) — à saisir entièrement à la main.
 
-**Resend confirmé sans domaine d'envoi** (`list-domains` → aucun résultat). Bloquant pour tous les e-mails produits (alertes, rapports, découverte, offre fondatrice) : sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, inutilisable pour démarcher de vraies agences. Achat d'un nom de domaine nécessaire — première dépense réelle du projet (budget 0 € sur les services, pas sur le domaine). Recherche de disponibilité et de prix lancée puis interrompue avant son terme (budget de session) ; à refaire.
+**Resend confirmé sans domaine d'envoi** (`list-domains` → aucun résultat). Bloquant pour tous les e-mails produits (alertes, rapports, découverte, offre fondatrice) : sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, inutilisable pour démarcher de vraies agences. Achat d'un nom de domaine nécessaire — première dépense réelle du projet (budget 0 € sur les services, pas sur le domaine). Recherche de disponibilité et de prix lancée puis interrompue avant son terme (budget de session) ; à refaire. **Fait le 26/09** (voir plus bas) : `decelio.fr` et `decelio.eu` achetés. **Toujours pas vérifié dans Resend au 27/09** (relevé par MCP : `list-domains` ne renvoie toujours aucun résultat) — voir T068.
 
 **Test local effectué, interrompu avant la connexion.** Branche Neon jetable `local-dev` (`br-old-mode-b21jizov`), séparée de la production, créée et **baselinée** (`prisma migrate resolve --applied 20260925000000_init`) — confirme en conditions réelles que la procédure du runbook fonctionne. Serveur `next dev` démarré, page d'accueil affichée avec du contenu réel, `/api/health` répond `{"status":"ok"}`. Interrompu juste avant de tester `/register`, qui aurait immédiatement buté sur le défaut Credentials ci-dessus. `decelio/.env` et `decelio/.env.local` créés dans ce worktree uniquement (ignorés par git, jamais poussés) — à recréer dans tout autre worktree ou machine, et à saisir séparément dans Render, qui ne les lit pas.
 

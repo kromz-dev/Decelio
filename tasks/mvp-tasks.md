@@ -540,6 +540,57 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 - [ ] **T068** [MARKETING] Vérifier le domaine `decelio.fr` chez Resend - tableau de bord Resend
   - **Dépendances** : Aucune
-  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Le domaine est acheté depuis le 26/09.
+  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Le domaine est acheté depuis le 26/09. Relevé par MCP le 27/09 : `list-domains` ne renvoie toujours aucun résultat.
   - **Vérification** : `list-domains` renvoie `decelio.fr` avec le statut vérifié.
   - **Taille** : S
+
+## Phase 11 : Avant le lancement (27/09)
+
+- [ ] **T069** [QUAL] Acceptation des CGV à l'inscription (case à cocher, horodatage, version acceptée) - `decelio/app/api/auth/register/route.ts`, `decelio/prisma/schema.prisma` (`User.termsAcceptedAt`)
+  - **Dépendances** : T070 (les CGV doivent exister pour qu'on puisse en accepter une version)
+  - **EF/ENF** : constitution (honnêteté), obligation légale française
+  - **Note** : ne peut être fait qu'après la fusion des pages légales, sinon rien à accepter.
+  - **Vérification** : un compte créé sans cocher la case est refusé ; le compte créé porte `termsAcceptedAt` et la version acceptée.
+  - **Taille** : S
+
+- [ ] **T070** [DESIGN] Pages légales (mentions légales, CGV, politique de confidentialité) - `decelio/app/(marketing)/mentions-legales/`, `.../cgv/`, `.../confidentialite/`
+  - **Dépendances** : Aucune (mais porte des `[À REMPLIR]` tant que le SIREN manque)
+  - **Note** : en cours sur la branche `design/pages-legales`, pas fusionnée au 27/09. Relecture juridique conseillée avant mise en ligne réelle.
+  - **Vérification** : les trois pages existent, liées depuis le pied de page ; aucune mention inventée (numéro SIREN, adresse) tant que non disponible.
+  - **Taille** : M
+
+- [ ] **T071** [FACT] Essai gratuit de 14 jours avec carte bancaire dès l'inscription (ADR-002) - `decelio/lib/billing/actions.ts`, webhook Stripe
+  - **Dépendances** : Aucune
+  - **Note** : en cours sur la branche `feat/essai-gratuit-14-jours`, pas fusionnée au 27/09. Décision du fondateur consignée dans `docs/decisions/ADR-002-essai-gratuit-14-jours.md` (sur une autre branche, non fusionnée non plus).
+  - **Vérification** : un Checkout de test crée un abonnement `trialing` de 14 jours ; à l'échéance sans annulation, le prélèvement se déclenche.
+  - **Taille** : M
+
+- [ ] **T072** [ING] Proxy PostHog par notre propre domaine (ADR-004) - `decelio/next.config.ts` (rewrites), `decelio/instrumentation-client.ts`
+  - **Dépendances** : Aucune
+  - **Note** : en cours sur la branche `fix/posthog-proxy-domaine`, pas fusionnée au 27/09. Sans ce correctif, l'IP du visiteur est envoyée à PostHog directement depuis le navigateur, ce que la constitution interdit pour un appel à un tiers depuis une page publique.
+  - **Vérification** : les requêtes PostHog partent du domaine `decelio.fr` dans l'onglet réseau, jamais de `*.posthog.com` directement.
+  - **Taille** : S
+
+- [ ] **T073** [ING] Baseline des migrations Prisma sur Neon `main` (production) - `docs/runbooks/deploiement-render-neon.md`
+  - **Dépendances** : Aucune
+  - **Note** : relevé par MCP le 27/09 : les tables existent sur `main` mais aucune table `_prisma_migrations` — la base a été peuplée par `db push`. `npx prisma migrate deploy` échouera tel quel. La branche Neon `main` n'est pas non plus protégée contre une suppression accidentelle.
+  - **Vérification** : `npx prisma migrate resolve --applied <dernière migration>` exécuté sur `main`, puis `npx prisma migrate status` ne signale plus aucune migration en attente ; la branche est protégée dans la console Neon.
+  - **Taille** : S
+
+- [ ] **T074** [ING] Webhook Stripe de production - tableau de bord Stripe, variables Render
+  - **Dépendances** : T003 (Render déployé, URL de production connue)
+  - **Note** : relevé par MCP le 27/09 : aucun webhook n'existe, ni en test ni en réel. Sans lui, les changements d'abonnement (paiement, résiliation, coupon) ne mettent jamais à jour la base.
+  - **Vérification** : un événement `checkout.session.completed` envoyé depuis le tableau de bord Stripe en test met à jour l'abonnement de l'utilisateur correspondant.
+  - **Taille** : S
+
+- [ ] **T075** [FACT] Activer Stripe en mode réel après réception du SIREN - tableau de bord Stripe
+  - **Dépendances** : SIREN reçu (prérequis administratif du fondateur, aucune vente avant)
+  - **Note** : recréer à l'identique en mode réel les 3 prix, le coupon `FONDATEUR50`, le portail client et le webhook, aujourd'hui uniquement en mode test. Ajouter le pied de page des factures (mention art. 293 B du CGI, franchise de TVA — ADR-003).
+  - **Vérification** : un paiement réel de test (carte du fondateur, remboursé ensuite) aboutit à un abonnement actif.
+  - **Taille** : M
+
+- [ ] **T076** [ING] Fiabilité restante du scanner - `decelio/lib/scanner/*`
+  - **Dépendances** : Aucune
+  - **Note** : les corrections principales sont fusionnées (#103, #107, #110, #111). Restent, chacune sur sa propre branche non fusionnée au 27/09 : faux verdict « COQUILLE VIDE » sur une page courte mais légitime (`fix/coquille-vide-page-courte`), le scanner qui déclenche lui-même le 429 qu'il rapporte (`fix/scanner-sans-auto-429`), le contournement par rebinding DNS de la garde SSRF (`fix/ssrf-rebinding-dns`), et la taille du corps de `/api/pdf/diagnostic` (`fix/pdf-diagnostic-taille-corps`).
+  - **Vérification** : les quatre branches ci-dessus fusionnées, chacune avec ses propres tests verts.
+  - **Taille** : M
