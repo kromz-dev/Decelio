@@ -7,6 +7,7 @@ import { verifyPassword, getDummyPasswordHash } from "@/lib/password"
 import { loginSchema } from "@/lib/auth-validation"
 import { callerKey, rateLimit } from "@/lib/rate-limit"
 import { captureServerEvent } from "@/lib/posthog-server"
+import { TERMS_VERSION } from "@/lib/legal/terms"
 import {
   LOGIN_IP_LIMIT,
   LOGIN_IP_WINDOW_MS,
@@ -69,6 +70,12 @@ export async function authorizeCredentials(credentials: unknown, request?: Reque
  */
 export async function handleUserCreated({ user }: { user: { id?: string } }) {
   if (!user.id) return;
+  // Acceptation des CGV (T069) : elle repose sur la mention « En continuant
+  // avec Google, vous acceptez les CGV » affichée à côté du bouton Google.
+  await db.user.update({
+    where: { id: user.id },
+    data: { termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
+  });
   await captureServerEvent(user.id, "signup_completed", { method: "google" });
 }
 

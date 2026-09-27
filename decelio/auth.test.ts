@@ -4,6 +4,7 @@ import authConfig from "./auth.config";
 import { db } from "@/lib/db";
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password";
 import { captureServerEvent } from "@/lib/posthog-server";
+import { TERMS_VERSION } from "@/lib/legal/terms";
 
 const DUMMY_HASH = "scrypt:dummysalt:dummykey";
 
@@ -11,6 +12,7 @@ vi.mock("@/lib/db", () => ({
   db: {
     user: {
       findUnique: vi.fn(),
+      update: vi.fn(async () => ({})),
     },
   },
 }));
@@ -210,10 +212,20 @@ describe("NextAuth Credentials Provider & Configuration", () => {
       });
     });
 
+    it("enregistre l'acceptation des CGV (date et version) pour un nouveau compte Google", async () => {
+      await handleUserCreated({ user: { id: "user_google_1" } });
+
+      expect(db.user.update).toHaveBeenCalledWith({
+        where: { id: "user_google_1" },
+        data: { termsAcceptedAt: expect.any(Date), termsVersion: TERMS_VERSION },
+      });
+    });
+
     it("n'émet rien si le message ne porte aucun identifiant", async () => {
       await handleUserCreated({ user: {} });
 
       expect(captureServerEvent).not.toHaveBeenCalled();
+      expect(db.user.update).not.toHaveBeenCalled();
     });
   });
 });
