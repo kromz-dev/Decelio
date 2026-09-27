@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { escapeHtml } from "./escapeHtml";
+import { renderEmailLayout, renderButton } from "./layout";
 
 function getResend(): Resend {
   const apiKey = process.env.RESEND_API_KEY;
@@ -12,16 +13,28 @@ function getResend(): Resend {
 export async function sendPasswordResetEmail(to: string, token: string) {
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+  const html = renderEmailLayout({
+    preheader: "Choisissez un nouveau mot de passe pour votre compte Decelio.",
+    bodyHtml: `
       <p>Bonjour,</p>
       <p>Vous avez demandé la réinitialisation du mot de passe de votre compte Decelio.</p>
-      <p><a href="${resetUrl}">Choisir un nouveau mot de passe</a></p>
+      ${renderButton(resetUrl, "Choisir un nouveau mot de passe")}
       <p>Ce lien est valable 1 heure. Ignorez cet e-mail si vous n'êtes pas à l'origine de la demande.</p>
-      <br />
       <p>L'équipe Decelio</p>
-    </div>
-  `;
+    `,
+  });
+
+  const text = [
+    "Bonjour,",
+    "",
+    "Vous avez demandé la réinitialisation du mot de passe de votre compte Decelio.",
+    "",
+    `Choisir un nouveau mot de passe : ${resetUrl}`,
+    "",
+    "Ce lien est valable 1 heure. Ignorez cet e-mail si vous n'êtes pas à l'origine de la demande.",
+    "",
+    "L'équipe Decelio",
+  ].join("\n");
 
   try {
     const response = await getResend().emails.send({
@@ -29,6 +42,7 @@ export async function sendPasswordResetEmail(to: string, token: string) {
       to,
       subject: "Réinitialisation de votre mot de passe Decelio",
       html,
+      text,
     });
 
     // Le SDK Resend ne leve PAS sur un rejet : il resout avec
@@ -53,21 +67,21 @@ export async function sendPasswordResetEmail(to: string, token: string) {
 export async function sendDiscoveryEmail(to: string, name?: string | null) {
   const greeting = name ? `Bonjour ${escapeHtml(name)},` : "Bonjour,";
 
-  const html = `
-    <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
+  const html = renderEmailLayout({
+    preheader: "5 questions courtes pour régler Decelio sur votre parc.",
+    bodyHtml: `
       <p>${greeting}</p>
       <p>Pour régler Decelio au plus près de votre usage, j'aurais besoin de 5 réponses courtes. Vous pouvez simplement répondre à cet e-mail.</p>
-      <ol>
-        <li>Combien de sites avez-vous sous contrat récurrent, et chez quels hébergeurs ?</li>
-        <li>Que contient votre rapport mensuel aujourd'hui ? Combien de temps vous prend-il ?</li>
-        <li>Un client vous a-t-il déjà parlé de ChatGPT ou de Perplexity ? Qu'avez-vous répondu ?</li>
-        <li>Avez-vous déjà découvert un blocage (Cloudflare, plugin, hébergeur) <em>après</em> le client ?</li>
-        <li>Que devrait contenir le rapport pour que vous l'envoyiez tel quel à vos clients ?</li>
+      <ol style="padding-left: 20px; margin: 16px 0;">
+        <li style="margin-bottom: 8px;">Combien de sites avez-vous sous contrat récurrent, et chez quels hébergeurs ?</li>
+        <li style="margin-bottom: 8px;">Que contient votre rapport mensuel aujourd'hui ? Combien de temps vous prend-il ?</li>
+        <li style="margin-bottom: 8px;">Un client vous a-t-il déjà parlé de ChatGPT ou de Perplexity ? Qu'avez-vous répondu ?</li>
+        <li style="margin-bottom: 8px;">Avez-vous déjà découvert un blocage (Cloudflare, plugin, hébergeur) <em>après</em> le client ?</li>
+        <li style="margin-bottom: 8px;">Que devrait contenir le rapport pour que vous l'envoyiez tel quel à vos clients ?</li>
       </ol>
-      <br />
       <p>À bientôt,<br/>L'équipe Decelio</p>
-    </div>
-  `;
+    `,
+  });
 
   try {
     const response = await getResend().emails.send({
@@ -149,8 +163,8 @@ export async function sendMonthlyReportReadyEmail({
   const isMultiple = count > 1;
 
   const subject = isMultiple
-    ? `Vos rapports mensuels sont disponibles — ${periodLabel}`
-    : `Votre rapport mensuel est disponible — ${periodLabel}`;
+    ? `Vos rapports mensuels sont disponibles : ${periodLabel}`
+    : `Votre rapport mensuel est disponible : ${periodLabel}`;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://decelio.fr";
   const targetUrl = reportUrl || `${appUrl}/reports`;
@@ -164,8 +178,11 @@ export async function sendMonthlyReportReadyEmail({
           .join("")}</ul>`
       : "";
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a; line-height: 1.5;">
+  const html = renderEmailLayout({
+    preheader: isMultiple
+      ? `Vos rapports mensuels sont disponibles pour ${periodLabel}.`
+      : `Votre rapport mensuel est disponible pour ${periodLabel}.`,
+    bodyHtml: `
       <p>${greeting}</p>
       <p>${
         isMultiple
@@ -174,12 +191,11 @@ export async function sendMonthlyReportReadyEmail({
       }</p>
       ${clientListHtml}
       <p>Vous pouvez consulter et télécharger vos rapports PDF en marque blanche directement depuis votre espace :</p>
-      <p style="margin: 24px 0;"><a href="${escapeHtml(targetUrl)}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 500;">Accéder aux rapports</a></p>
-      <p style="font-size: 13px; color: #64748b;">Ces rapports sont prêts à être partagés avec vos clients sous votre propre identité visuelle.</p>
-      <br />
+      ${renderButton(targetUrl, "Accéder aux rapports")}
+      <p style="font-size: 13px; color: #5a6478;">Ces rapports sont prêts à être partagés avec vos clients sous votre propre identité visuelle.</p>
       <p>À bientôt,<br/>L'équipe Decelio</p>
-    </div>
-  `;
+    `,
+  });
 
   const text = [
     greeting,
@@ -263,19 +279,17 @@ export async function sendTrialEndingEmail({
     currency: currency.toUpperCase(),
   }).format(amountCents / 100);
 
-  const safePortalUrl = escapeHtml(portalUrl);
-
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a; line-height: 1.5;">
+  const html = renderEmailLayout({
+    preheader: `Votre essai gratuit Decelio se termine le ${dateLabel}.`,
+    bodyHtml: `
       <p>${greeting}</p>
       <p>Votre essai gratuit Decelio se termine le <strong>${dateLabel}</strong>.</p>
       <p>Si vous ne résiliez pas avant cette date, ${amountLabel} seront prélevés automatiquement pour poursuivre votre abonnement.</p>
-      <p style="margin: 24px 0;"><a href="${safePortalUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 500;">Gérer mon abonnement</a></p>
-      <p style="font-size: 13px; color: #64748b;">Vous pouvez résilier à tout moment depuis ce lien, avant le prélèvement.</p>
-      <br />
+      ${renderButton(portalUrl, "Gérer mon abonnement")}
+      <p style="font-size: 13px; color: #5a6478;">Vous pouvez résilier à tout moment depuis ce lien, avant le prélèvement.</p>
       <p>À bientôt,<br/>L'équipe Decelio</p>
-    </div>
-  `;
+    `,
+  });
 
   const text = [
     greeting,

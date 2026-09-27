@@ -28,7 +28,7 @@ describe("renderAlertEmail", () => {
       domains: [{ domain: "exemple.fr", cause, fix: suggestFix(cause) }],
     });
 
-    expect(email.subject).toBe("Decelio — un domaine n'est plus lisible");
+    expect(email.subject).toBe("Decelio : un domaine n'est plus lisible");
     expect(email.text).toContain("n'est plus lisible");
     expect(email.text).toContain("exemple.fr");
     expect(email.text).toContain(cause);
@@ -42,7 +42,7 @@ describe("renderAlertEmail", () => {
       domains: [{ domain: "exemple.fr", cause: "le site répond de nouveau", fix: "Rien à changer." }],
     });
 
-    expect(email.subject).toBe("Decelio — un domaine est de nouveau lisible");
+    expect(email.subject).toBe("Decelio : un domaine est de nouveau lisible");
     expect(email.text).toContain("est de nouveau lisible");
     expect(email.text).toContain("exemple.fr");
     expect(email.text).toContain("le site répond de nouveau");
@@ -58,7 +58,7 @@ describe("renderAlertEmail", () => {
       ],
     });
 
-    expect(email.subject).toBe("Decelio — 2 domaines ne sont plus lisibles");
+    expect(email.subject).toBe("Decelio : 2 domaines ne sont plus lisibles");
     expect(email.text).toContain("a.fr");
     expect(email.text).toContain("b.fr");
   });
@@ -91,6 +91,71 @@ describe("renderAlertEmail", () => {
 
     expect(email.text).toContain("Cause : BLOQUÉ");
     expect(email.text).not.toContain("robot de recherche");
+  });
+
+  it("affiche le verdict Refusé (forme et mot) pour un statut BLOQUÉ", () => {
+    const email = renderAlertEmail({
+      kind: "REGRESSION",
+      domains: [{ domain: "exemple.fr", cause: "BLOQUÉ", fix: suggestFix("BLOQUÉ"), status: "BLOQUÉ" }],
+    });
+
+    expect(email.html).toContain("■");
+    expect(email.html).toContain("Refusé");
+  });
+
+  it("affiche le verdict Vide (forme et mot) pour un statut COQUILLE VIDE", () => {
+    const email = renderAlertEmail({
+      kind: "REGRESSION",
+      domains: [
+        { domain: "exemple.fr", cause: "COQUILLE VIDE", fix: suggestFix("coquille"), status: "COQUILLE VIDE" },
+      ],
+    });
+
+    expect(email.html).toContain("▲");
+    expect(email.html).toContain("Vide");
+  });
+
+  it("affiche le verdict Lu (forme et mot) pour un statut OK en résolution", () => {
+    const email = renderAlertEmail({
+      kind: "RESOLUTION",
+      domains: [{ domain: "exemple.fr", cause: "le site répond de nouveau", fix: "Rien à changer.", status: "OK" }],
+    });
+
+    expect(email.html).toContain("●");
+    expect(email.html).toContain("● Lu");
+  });
+
+  it("affiche le verdict inconnu avec le mot « à vérifier » pour un statut À VÉRIFIER", () => {
+    const email = renderAlertEmail({
+      kind: "REGRESSION",
+      domains: [
+        { domain: "exemple.fr", cause: "signal ambigu", fix: suggestFix("signal ambigu"), status: "À VÉRIFIER" },
+      ],
+    });
+
+    expect(email.html).toContain("○");
+    expect(email.html).toContain("à vérifier");
+  });
+
+  it("n'utilise aucun tiret cadratin dans l'e-mail", () => {
+    const email = renderAlertEmail({
+      kind: "REGRESSION",
+      domains: [{ domain: "exemple.fr", cause: "BLOQUÉ", fix: suggestFix("BLOQUÉ"), status: "BLOQUÉ" }],
+    });
+
+    expect(email.subject).not.toContain("—");
+    expect(email.html).not.toContain("—");
+    expect(email.text).not.toContain("—");
+  });
+
+  it("garde l'identité Decelio (logo et pied de page) : les alertes ne sont jamais en marque blanche", () => {
+    const email = renderAlertEmail({
+      kind: "REGRESSION",
+      domains: [{ domain: "exemple.fr", cause: "BLOQUÉ", fix: suggestFix("BLOQUÉ"), status: "BLOQUÉ" }],
+    });
+
+    expect(email.html).toContain("logo-decelio.png");
+    expect(email.html).toContain("mailto:contact@decelio.fr");
   });
 });
 

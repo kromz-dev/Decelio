@@ -2,6 +2,9 @@ import { Resend } from "resend";
 import { db } from "@/lib/db";
 import { logFailure } from "../log";
 import type { BotAgent } from "@/lib/scanner/agents";
+import { escapeHtml } from "../email/escapeHtml";
+import { renderEmailLayout, renderVerdict, type EmailVerdictValue } from "../email/layout";
+import { verdictForSiteStatus } from "../sites/site-status";
 
 export type AlertKind = "REGRESSION" | "RESOLUTION";
 
@@ -14,10 +17,17 @@ export interface AlertSiteChange {
    * Robot de recherche décisif pour ce changement (celui d'entre les
    * `DEFAULT_PROBE_BOTS` qui a déterminé le nouveau statut), quand
    * l'appelant le connaît. Sert à nommer l'assistant dans le texte
-   * d'alerte — jamais un robot d'entraînement (GPTBot, ClaudeBot) : ceux-là
+   * d'alerte : jamais un robot d'entraînement (GPTBot, ClaudeBot) : ceux-là
    * restent informatifs et ne déclenchent pas d'alerte.
    */
   bot?: BotAgent;
+  /**
+   * Statut brut du moteur (OK, BLOQUÉ, COQUILLE VIDE, ERREUR, À VÉRIFIER…),
+   * quand l'appelant le connaît. Sert uniquement à choisir le verdict
+   * (forme + mot) affiché dans l'e-mail via `verdictForSiteStatus` ; sans
+   * statut connu, un verdict par défaut est choisi selon `kind`.
+   */
+  status?: string;
 }
 
 const FROM = "Decelio <bonjour@decelio.fr>";
@@ -61,11 +71,24 @@ export function suggestFix(cause: string): string {
   return "Ouvrez la fiche du domaine, corrigez la cause indiquée, puis relancez un scan.";
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+/**
+ * Choisit le verdict (forme + mot) à afficher pour un domaine : à partir du
+ * statut brut du moteur quand l'appelant le fournit (`verdictForSiteStatus`),
+ * sinon un défaut raisonnable selon le sens de l'alerte.
+ */
+function verdictFor(item: AlertSiteChange, kind: AlertKind): { value: EmailVerdictValue; label?: string } {
+  if (item.status) {
+    const value = verdictForSiteStatus(item.status);
+    const upper = item.status.trim().toUpperCase();
+    if (value === "inconnu" && (upper === "À VÉRIFIER" || upper === "A VERIFIER")) {
+      return { value, label: "à vérifier" };
+    }
+    if (value === "inconnu" && (upper === "ERREUR" || upper === "ERROR")) {
+      return { value, label: "erreur" };
+    }
+    return { value };
+  }
+  return { value: kind === "REGRESSION" ? "refuse" : "lu" };
 }
 
 export function renderAlertEmail(input: {
@@ -76,11 +99,11 @@ export function renderAlertEmail(input: {
   const regression = input.kind === "REGRESSION";
   const subject = regression
     ? count === 1
-      ? "Decelio — un domaine n'est plus lisible"
-      : `Decelio — ${count} domaines ne sont plus lisibles`
+      ? "Decelio : un domaine n'est plus lisible"
+      : `Decelio : ${count} domaines ne sont plus lisibles`
     : count === 1
-      ? "Decelio — un domaine est de nouveau lisible"
-      : `Decelio — ${count} domaines sont de nouveau lisibles`;
+      ? "Decelio : un domaine est de nouveau lisible"
+      : `Decelio : ${count} domaines sont de nouveau lisibles`;
 
   const intro = regression
     ? count === 1
@@ -97,16 +120,20 @@ export function renderAlertEmail(input: {
     (item) => `${item.domain}\nCause : ${causeFor(item)}\nCorrectif : ${item.fix}`,
   );
   const text = `${intro}\n\n${lines.join("\n\n")}\n`;
-  const html = `<div style="font-family: sans-serif; max-width: 600px;">
-    <p>${escapeHtml(intro)}</p>
-    ${input.domains
-      .map(
-        (item) => `<h2 style="font-size: 16px;">${escapeHtml(item.domain)}</h2>
+  const html = renderEmailLayout({
+    preheader: intro,
+    bodyHtml: `
+      <p>${escapeHtml(intro)}</p>
+      ${input.domains
+        .map((item) => {
+          const verdict = verdictFor(item, input.kind);
+          return `<h2 style="font-size: 16px; margin: 20px 0 4px 0;">${escapeHtml(item.domain)} : ${renderVerdict(verdict.value, verdict.label)}</h2>
       <p><strong>Cause :</strong> ${escapeHtml(causeFor(item))}</p>
-      <p><strong>Correctif :</strong> ${escapeHtml(item.fix)}</p>`,
-      )
-      .join("")}
-  </div>`;
+      <p><strong>Correctif :</strong> ${escapeHtml(item.fix)}</p>`;
+        })
+        .join("")}
+    `,
+  });
 
   return { subject, text, html };
 }
@@ -220,6 +247,6 @@ export async function sendRegressionAlert(
     select: { id: true },
   });
   return sendUserDigest(to, "REGRESSION", [
-    { siteId: site?.id, domain, cause, fix: suggestFix(cause), bot },
+    { siteId: site?.id, domain, cause, fix: suggestFix(cause), bot, status: newStatus },
   ]);
 }
