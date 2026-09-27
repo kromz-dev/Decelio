@@ -388,18 +388,19 @@
   animation: ripple 7s linear 2.6s infinite;
 }
 
-/* La bulle touchee par l'onde : un sursaut, le bord qui passe au bleu de la
-   marque, et un anneau qui s'echappe. Meme periode que l'onde ; chaque bulle
-   est decalee par --ping-delay, calcule selon son rayon. */
+/* La bulle touchee par l'onde : un halo bleu qui s'allume doucement puis
+   s'eteint, et un leger soulevement. Pas de changement de taille ni de fond :
+   la bulle « capte » le signal, elle ne saute pas. Meme periode que l'onde ;
+   chaque bulle est decalee par --ping-delay, calcule selon son rayon. */
 @keyframes bubble-ping {
-  0%   { transform: scale(1); border-color: rgb(255 255 255 / 0.8); box-shadow: 0 0 0 0 rgb(29 76 164 / 0.45), var(--float-shadow); }
-  3%   { transform: scale(1.14); border-color: var(--brand); background-color: var(--brand-soft); }
-  11%  { transform: scale(1); border-color: rgb(255 255 255 / 0.8); background-color: rgb(255 255 255 / 0.8); box-shadow: 0 0 0 16px rgb(29 76 164 / 0), var(--float-shadow); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgb(29 76 164 / 0), var(--float-shadow); }
+  0%   { transform: translateY(0); border-color: rgb(255 255 255 / 0.8); box-shadow: var(--float-shadow); }
+  5%   { transform: translateY(-2px); border-color: rgb(29 76 164 / 0.35); box-shadow: 0 0 0 1px rgb(29 76 164 / 0.25), 0 8px 28px -6px rgb(29 76 164 / 0.45); }
+  22%  { transform: translateY(0); border-color: rgb(255 255 255 / 0.8); box-shadow: var(--float-shadow); }
+  100% { transform: translateY(0); border-color: rgb(255 255 255 / 0.8); box-shadow: var(--float-shadow); }
 }
 
 .bubble-ping {
-  animation: bubble-ping 7s linear infinite;
+  animation: bubble-ping 7s ease-in-out infinite; /* easing par segment : les instants des keyframes restent synchrones */
   animation-delay: var(--ping-delay, 0s);
 }
 
