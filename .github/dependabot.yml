@@ -38,7 +38,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
-  - package-ecosystem: docker
+  # docker-compose (et non docker) : /decelio ne contient pas de Dockerfile,
+  # seulement docker-compose.yml pour la base PostgreSQL locale. L'écosystème
+  # « docker » échouait chaque semaine (« No Dockerfiles nor Kubernetes YAML »).
+  - package-ecosystem: docker-compose
     directory: /decelio
     schedule:
       interval: weekly
