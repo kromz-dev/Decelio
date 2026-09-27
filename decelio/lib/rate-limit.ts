@@ -65,7 +65,18 @@ export async function rateLimit(
  * relais intermédiaire non fiable, donc de nouveau falsifiable.
  */
 export function callerKey(req: Request, prefix: string): string {
-  const forwarded = req.headers.get("x-forwarded-for");
+  return callerKeyFromHeaders(req.headers, prefix);
+}
+
+/**
+ * Même règle que `callerKey`, à partir d'un objet `Headers` brut plutôt que
+ * d'une `Request`. Les server actions n'ont pas de `Request` : elles lisent
+ * les en-têtes via `headers()` de `next/headers`, qui rend un
+ * `ReadonlyHeaders` (sous-type de `Headers`). `callerKey` délègue désormais
+ * à cette fonction, sans changement de comportement.
+ */
+export function callerKeyFromHeaders(headers: Headers, prefix: string): string {
+  const forwarded = headers.get("x-forwarded-for");
   const ips = forwarded
     ?.split(",")
     .map((part) => part.trim())
