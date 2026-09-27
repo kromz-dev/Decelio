@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { scanSiteJob } from "./scan-site";
+import { causeForBot, scanSiteJob } from "./scan-site";
 import { db } from "@/lib/db";
 import { runCoreScan } from "@/lib/scanner/core";
 import { sendRegressionAlert } from "@/lib/alerting/sendAlert";
@@ -56,6 +56,20 @@ const reportBots = [
   { agent: "ClaudeBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows ClaudeBot"], httpStatus: 200, durationMs: 10, wordCount: 80 },
   { agent: "PerplexityBot", simpleStatus: "COQUILLE VIDE", reasons: ["js_dependent: 12 words in raw HTML"], httpStatus: 200, durationMs: 10, wordCount: 12 },
 ] as const;
+
+describe("causeForBot", () => {
+  it("translates a general block (à vérifier) reason into French", () => {
+    expect(causeForBot("GPTBot", ["general block (status:403) — no bot-specific evidence"])).toBe(
+      "GPTBot : le site bloque tout (HTTP 403), sans rien qui vise spécifiquement ce robot : à vérifier",
+    );
+  });
+
+  it("translates an unverified-probe (indice) reason into French", () => {
+    expect(causeForBot("GPTBot", ["unverified probe blocked (status:403) while honest request ok"])).toBe(
+      "GPTBot : une requête non vérifiée se présentant comme ce robot a été bloquée (HTTP 403) alors que notre visite passe : un indice, pas une preuve",
+    );
+  });
+});
 
 describe("scanSiteJob", () => {
   beforeEach(() => {
@@ -417,6 +431,36 @@ describe("scanSiteJob", () => {
 
     expect(db.monitoredSite.update).toHaveBeenCalledTimes(1);
     expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it("enregistre À VÉRIFIER sans jamais envoyer d'alerte de régression (blocage général sans preuve)", async () => {
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(runCoreScan).mockResolvedValue({
+      report: {},
+      results: [
+        {
+          agent: "GPTBot",
+          simpleStatus: "À VÉRIFIER",
+          reasons: ["general block (status:403) — no bot-specific evidence"],
+          httpStatus: 403,
+          durationMs: 10,
+          wordCount: 0,
+        },
+      ],
+    } as unknown as CoreScanOutput);
+
+    await invokeHandler(scanSiteJob, { event: { data: { siteId: "site-1" } }, step: stepThatRuns() });
+
+    expect(db.monitoredSite.update).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: { status: "À VÉRIFIER" },
+    });
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
   });
 
   it("enregistre ERREUR pour un site injoignable et BLOQUÉ pour un robots.txt", async () => {
