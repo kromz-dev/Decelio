@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { PLAN_LIMITS, maxSitesFor } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
+import { captureServerEvent } from "@/lib/posthog-server";
 import { assertSafeUrl } from "@/lib/scanner/crawler";
 import { revalidatePath } from "next/cache";
 
@@ -56,6 +57,12 @@ export async function addMonitoredSite(data: { name: string; url: string }) {
       };
     }
 
+    // Capturé depuis l'intérieur de la transaction pour l'événement de
+    // tunnel émis après coup : le décompte fait ici est celui qui a
+    // effectivement autorisé l'ajout, pas une nouvelle lecture après coup
+    // qui pourrait avoir changé entre-temps.
+    let sitesBeforeAdd = 0;
+
     // Le décompte et l'insertion sont dans la même transaction : deux ajouts
     // simultanés ne peuvent pas tous les deux passer sous la limite.
     // Postgres est en READ COMMITTED : deux ajouts simultanés peuvent lire
@@ -83,6 +90,7 @@ export async function addMonitoredSite(data: { name: string; url: string }) {
       if (count >= maxSites) {
         return { error: quotaReachedMessage(user.plan, maxSites) };
       }
+      sitesBeforeAdd = count;
 
       const site = await tx.monitoredSite.create({
         data: {
@@ -101,6 +109,11 @@ export async function addMonitoredSite(data: { name: string; url: string }) {
     }
 
     revalidatePath("/dashboard");
+    await captureServerEvent(userId, "site_added", {
+      count: 1,
+      total_sites: sitesBeforeAdd + 1,
+      is_first_site: sitesBeforeAdd === 0,
+    });
     return result;
   } catch (error) {
     return { error: "Internal server error" };
@@ -200,6 +213,11 @@ export async function addMonitoredSitesBulk(raw: string) {
       return { data: { created: [], skipped } };
     }
 
+    // Capturé depuis l'intérieur de la transaction, pour la même raison que
+    // dans `addMonitoredSite` : c'est le décompte qui a réellement autorisé
+    // l'ajout, pas une relecture après coup.
+    let sitesBeforeAdd = 0;
+
     const result = await db.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
@@ -219,6 +237,7 @@ export async function addMonitoredSitesBulk(raw: string) {
         where: { userId },
         select: { url: true },
       });
+      sitesBeforeAdd = existing.length;
       const owned = new Set(existing.map((site) => site.url));
       const heldBack: { line: string; reason: string }[] = [];
       const fresh = candidates.filter((candidate) => {
@@ -255,6 +274,11 @@ export async function addMonitoredSitesBulk(raw: string) {
 
     if (result.data.created.length > 0) {
       revalidatePath("/dashboard");
+      await captureServerEvent(userId, "site_added", {
+        count: result.data.created.length,
+        total_sites: sitesBeforeAdd + result.data.created.length,
+        is_first_site: sitesBeforeAdd === 0,
+      });
     }
     return {
       data: {
