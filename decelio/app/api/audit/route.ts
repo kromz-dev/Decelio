@@ -46,17 +46,18 @@ export interface PageScanResult {
 
 function calculateGlobalScore(pages: PageScanResult[]): number {
   if (pages.length === 0) return 0;
-  
+
   let totalBots = 0;
   let accessibleBots = 0;
-  
+
   for (const page of pages) {
     // On ignore la requête de référence pour le score
     const aiRuns = page.runs.filter(r => r.agent !== BASELINE_AGENT);
     totalBots += aiRuns.length;
-    accessibleBots += aiRuns.filter(r => r.status === "ACCESSIBLE").length;
+    // LOW_TEXT : le robot a bien reçu la page ; c'est juste que le texte est court.
+    accessibleBots += aiRuns.filter(r => r.status === "ACCESSIBLE" || r.status === "LOW_TEXT").length;
   }
-  
+
   if (totalBots === 0) return 0;
   return Math.round((accessibleBots / totalBots) * 100);
 }
