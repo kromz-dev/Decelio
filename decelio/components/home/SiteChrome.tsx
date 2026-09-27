@@ -18,13 +18,39 @@ export const NAV_LINKS = [
   { href: "/#faq", label: "Questions" },
 ] as const;
 
+/**
+ * Marque Decelio : le « D » du logo sert de premiere lettre, suivi de
+ * « ecelio ». Les lecteurs d'ecran lisent « Decelio » (texte masque), le
+ * logo et « ecelio » visibles sont decoratifs.
+ */
+export function Wordmark({ light, size = "md" }: { light?: boolean; size?: "md" | "lg" }) {
+  const text = size === "lg" ? "text-[28px]" : "text-[24px]";
+  const logo = size === "lg" ? "h-[27px]" : "h-[23px]";
+  return (
+    <span className="inline-flex items-baseline">
+      <span className="sr-only">Decelio</span>
+      <Image
+        src={light ? "/logo-decelio-blanc.png" : "/logo-decelio.png"}
+        alt=""
+        aria-hidden="true"
+        width={502}
+        height={565}
+        priority={!light}
+        className={`${logo} w-auto self-baseline translate-y-[3px]`}
+      />
+      <span aria-hidden="true" className={`font-display ${text} font-bold leading-none tracking-[-0.03em] ${light ? "text-paper" : "text-ink"}`}>
+        ecelio
+      </span>
+    </span>
+  );
+}
+
 export function SiteHeader({ isLoggedIn, current }: { isLoggedIn?: boolean; current?: string }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-line/70 bg-paper/75 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-        <Link href="/" aria-label="Decelio, accueil" className="flex items-center gap-2.5">
-          <Image src="/logo-decelio.png" alt="" width={502} height={565} priority className="h-8 w-auto" />
-          <span className="font-display text-[22px] font-bold tracking-[-0.03em] text-ink">Decelio</span>
+        <Link href="/" aria-label="Decelio, accueil" className="flex items-center">
+          <Wordmark />
         </Link>
 
         <nav aria-label="Navigation principale" className="hidden items-center gap-7 text-sm font-medium text-ink-2 lg:flex">
@@ -69,9 +95,8 @@ export function SiteFooter({ isLoggedIn }: { isLoggedIn?: boolean }) {
       <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
         <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-5 md:gap-8">
           <div className="md:col-span-2">
-            <Link href="/" aria-label="Decelio, accueil" className="mb-4 inline-flex items-center gap-3">
-              <Image src="/logo-decelio-blanc.png" alt="" width={502} height={565} className="h-9 w-auto" />
-              <span className="font-display text-2xl font-bold tracking-[-0.03em]">Decelio</span>
+            <Link href="/" aria-label="Decelio, accueil" className="mb-4 inline-flex items-center">
+              <Wordmark light size="lg" />
             </Link>
             <p className="max-w-sm leading-relaxed text-paper/70">
               Surveillez l&apos;acc&egrave;s des robots de recherche IA aux sites de vos clients. Rep&eacute;rez les blocages techniques, sans confondre acc&egrave;s et citations.
