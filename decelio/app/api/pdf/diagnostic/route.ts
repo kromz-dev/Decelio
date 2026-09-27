@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateDiagnosticPdfBuffer } from "@/lib/reports/renderDiagnosticPdf";
 import { callerKey, rateLimit } from "@/lib/rate-limit";
 import type { ScanReport, ScanCoreResult } from "@/lib/scanner/core";
+import { platformSchema } from "@/lib/scanner/platform-schema";
 
 // Le rendu PDF (@react-pdf/renderer) est coûteux en CPU, et cette route est
 // publique, sans compte. Sans limite, un script peut la boucler avec un corps
@@ -25,32 +26,12 @@ const MAX_BODY_BYTES = 256 * 1024;
 const MAX_RESULTS = 20;
 const MAX_REASONS = 20;
 
-// `platform.signals` porte un signal par détection (ou contradiction) : voir
-// `lib/scanner/platform.ts`, qui n'en produit qu'une poignée par site
-// (au plus une dizaine avec les candidats CMS/SEO/pare-feu/hébergeur
-// actuels). Sans borne, ce tableau — fourni par le client, comme tout le
-// reste de `report` — était un vecteur d'abus au même titre que `results`.
-const MAX_PLATFORM_SIGNALS = 30;
-const MAX_PLATFORM_SIGNAL_LENGTH = 300;
-// Les identifiants de plateforme (`PlatformId`, `SeoPluginId`, `FirewallId`,
-// `HostId` dans `lib/scanner/platform.ts`) sont tous des mots courts : cette
-// borne n'a pas besoin de dupliquer la liste exacte pour rester utile.
-const MAX_PLATFORM_KEY_LENGTH = 50;
-
 // `report.platform` est optionnelle (`ScanReport.platform?`) et alimente
 // `remediationForPlatform` (lib/remediation/platformMatch.ts) : bornée en
-// forme et en taille, mais pas en valeurs précises, pour ne pas dupliquer ici
-// les unions de `lib/scanner/platform.ts`, qui évolueraient alors à deux
-// endroits.
-const platformSchema = z
-  .object({
-    cms: z.string().max(MAX_PLATFORM_KEY_LENGTH),
-    seoPlugin: z.string().max(MAX_PLATFORM_KEY_LENGTH).optional(),
-    firewall: z.string().max(MAX_PLATFORM_KEY_LENGTH).optional(),
-    host: z.string().max(MAX_PLATFORM_KEY_LENGTH).optional(),
-    signals: z.array(z.string().max(MAX_PLATFORM_SIGNAL_LENGTH)).max(MAX_PLATFORM_SIGNALS).optional(),
-  })
-  .passthrough();
+// forme et en taille via `platformSchema` (`lib/scanner/platform-schema.ts`,
+// partagé avec `lib/sites/latest-platform.ts`), mais pas en valeurs précises,
+// pour ne pas dupliquer ici les unions de `lib/scanner/platform.ts`, qui
+// évolueraient alors à deux endroits.
 
 // Validation volontairement limitée aux champs que le rendu consomme, en
 // laissant passer le reste : le but est de borner l'abus, pas de dupliquer ici
