@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { AuthShell } from "@/components/home/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -118,31 +119,19 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-paper text-ink">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-3.5">
-          <Link href="/" className="text-[19px] font-bold tracking-tight text-ink hover:opacity-80 transition-opacity">
-            Decelio
-          </Link>
-          <Link href="/login" className="text-sm text-ink-2 hover:text-ink transition-colors">
-            Retour à la connexion
-          </Link>
-        </div>
-      </header>
-
-      <div className="flex flex-1 items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-[420px]">
-          <p className="mb-2 text-sm font-medium text-ink-2">Nouveau mot de passe</p>
-          <h1 className="mb-2.5 text-[34px] font-extrabold leading-[1.08] text-ink">Choisissez un nouveau mot de passe</h1>
-          <p className="mb-6.5 text-sm leading-normal text-ink-2">
-            Ce lien est valable 1 heure et ne peut être utilisé qu&apos;une seule fois.
-          </p>
-
-          <Suspense fallback={null}>
-            <ResetPasswordForm />
-          </Suspense>
-        </div>
-      </div>
-    </div>
+    <AuthShell
+      eyebrow="Nouveau mot de passe"
+      title="Choisissez un nouveau mot de passe"
+      lede="Ce lien est valable 1 heure et ne peut être utilisé qu'une seule fois."
+      footer={
+        <Link href="/login" className="font-medium text-cobalt hover:underline">
+          Retour à la connexion
+        </Link>
+      }
+    >
+      <Suspense fallback={null}>
+        <ResetPasswordForm />
+      </Suspense>
+    </AuthShell>
   );
 }

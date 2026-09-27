@@ -209,7 +209,7 @@ Ce qu'il dit, c'est que la page promet aujourd'hui plus que ce que le produit fa
 
 Sept des dix correctifs de ce rapport sont faits et fusionnés. Voici ce qui attend, par ordre de gravité.
 
-### 1. La section « produits » n'a jamais été auditée
+### 1. La section « produits » n'a jamais été auditée (fait, #97)
 
 Ce rapport portait sur l'ensemble de la page ; cette section a été relue en détail après coup et porte **quatre écarts**, dont un sérieux.
 
@@ -218,7 +218,7 @@ Ce rapport portait sur l'ensemble de la page ; cette section a été relue en d�
 - « Nous garantissons que vos textes vitaux sont bien présents » — garantie absolue.
 - « Soyez alerté avant même que GPTBot ne désindexe le site » — sous-entend une réactivité supérieure au rythme quotidien.
 
-### 2. La navigation est incohérente
+### 2. La navigation est incohérente (fait, #97 et #119 : même navigation partout)
 
 L'en-tête (`HeroConcentric.tsx`) annonce « Solutions / Produits / Tarifs ». Le pied de page (`HomePage.tsx`) annonce « Comment ça marche / Fonctionnalités / Tarifs / Questions fréquentes » — pour les mêmes sections. Deux vocabulaires pour un seul site.
 
@@ -226,7 +226,7 @@ Pire : « Solutions » pointe sur `#solutions`, qui est la section **du problèm
 
 Le design system impose qu'une même chose porte le même nom partout.
 
-### 3. Les autres pages n'ont pas été touchées
+### 3. Les autres pages n'ont pas été touchées (`/pricing`, `/analyse` : #119 ; connexion : #124 ; application et `/design-system` : branche `design/harmonisation-app`)
 
 Seule la page d'accueil a été retravaillée. Restent à mettre en cohérence :
 
