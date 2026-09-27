@@ -40,7 +40,9 @@ export type FunnelEvent =
   | "site_added"
   | "checkout_started"
   | "subscription_activated"
-  | "subscription_canceled";
+  | "subscription_canceled"
+  | "trial_started"
+  | "trial_converted";
 
 /**
  * Propriétés autorisées pour chaque événement de tunnel.
@@ -56,6 +58,8 @@ export interface FunnelEventProperties {
   checkout_started: { plan: string };
   subscription_activated: { plan: string };
   subscription_canceled: { plan: string; previous_plan: string };
+  trial_started: { plan: string };
+  trial_converted: { plan: string };
 }
 
 /**

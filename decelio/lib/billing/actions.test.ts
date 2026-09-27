@@ -23,6 +23,7 @@ vi.mock("./stripe", () => ({
 vi.mock("./plans", () => ({
   isPurchasablePlan: vi.fn((value: unknown) => value === "SOLO"),
   priceIdForPlan: vi.fn(() => "price_solo"),
+  TRIAL_DAYS: 14,
 }));
 
 vi.mock("@/lib/posthog-server", () => ({
@@ -61,6 +62,7 @@ describe("createCheckoutSession", () => {
       id: "user-1",
       email: "user@example.com",
       stripeCustomerId: null,
+      trialUsedAt: null,
     } as unknown as MaybeUser);
 
     createStripeSessionMock.mockResolvedValue({ url: "https://checkout.stripe.com/session" });
@@ -113,5 +115,45 @@ describe("createCheckoutSession", () => {
 
     const call = createStripeSessionMock.mock.calls[0][0];
     expect(call.discounts).toBeUndefined();
+  });
+
+  it("accorde un essai de 14 jours au premier abonnement, carte demandée dès le départ", async () => {
+    await createCheckoutSession("SOLO");
+
+    const call = createStripeSessionMock.mock.calls[0][0];
+    expect(call.subscription_data).toEqual({ trial_period_days: 14 });
+    expect(call.payment_method_collection).toBe("always");
+  });
+
+  it("n'accorde aucun essai à un compte qui en a déjà eu un (ou a déjà été abonné)", async () => {
+    vi.mocked(db.user.findUnique).mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      stripeCustomerId: null,
+      trialUsedAt: new Date("2026-01-01T00:00:00Z"),
+    } as unknown as MaybeUser);
+
+    await createCheckoutSession("SOLO");
+
+    const call = createStripeSessionMock.mock.calls[0][0];
+    expect(call.subscription_data).toBeUndefined();
+    // La carte reste toujours demandée, essai ou pas.
+    expect(call.payment_method_collection).toBe("always");
+  });
+
+  it("n'accorde aucun essai si l'utilisateur a un stripeSubscriptionId même sans trialUsedAt", async () => {
+    vi.mocked(db.user.findUnique).mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      stripeCustomerId: "cus_123",
+      stripeSubscriptionId: "sub_456",
+      trialUsedAt: null,
+    } as unknown as MaybeUser);
+
+    await createCheckoutSession("SOLO");
+
+    const call = createStripeSessionMock.mock.calls[0][0];
+    expect(call.subscription_data).toBeUndefined();
+    expect(call.payment_method_collection).toBe("always");
   });
 });
