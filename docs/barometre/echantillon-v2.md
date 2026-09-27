@@ -88,3 +88,8 @@ Le kit de prospection cible explicitement les agences de maintenance WordPress e
 ## 8. Fichier
 
 `docs/barometre/echantillon-v2.csv` = 312 lignes de la v1 (inchangées) + 82 lignes ajoutées = **394 lignes de données + 1 ligne d'en-tête**, mêmes colonnes `domaine,categorie,sous_categorie,source_url,date_releve`. Domaines uniques (vérifié par comparaison exacte, aucun doublon avec la v1 ni entre les ajouts), sans `www.`, sans chemin.
+
+## Décisions du fondateur (27/09/2026)
+
+- Les 3 domaines issus d'articles écrits par leur propre agence (amphibee.fr, apsodia.com, sodigix.com) sont **conservés** dans l'échantillon.
+- La catégorie **PME / TPE de services est laissée de côté** pour cette édition : aucune source publique exploitable sans recherche site par site. L'échantillon v2 compte donc 394 domaines (226 médias, 44 e-commerce, 124 agences).
