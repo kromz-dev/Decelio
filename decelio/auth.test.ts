@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { authorizeCredentials, credentialsProvider, handleUserCreated } from "./auth";
+import { authorizeCredentials, credentialsProvider } from "./auth";
 import authConfig from "./auth.config";
 import { db } from "@/lib/db";
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password";
@@ -10,13 +10,8 @@ vi.mock("@/lib/db", () => ({
   db: {
     user: {
       findUnique: vi.fn(),
-      update: vi.fn(),
     },
   },
-}));
-
-vi.mock("@/lib/legal/terms", () => ({
-  TERMS_VERSION: "2026-09-27",
 }));
 
 vi.mock("@/lib/password", () => ({
@@ -198,59 +193,6 @@ describe("NextAuth Credentials Provider & Configuration", () => {
 
       expect(db.user.findUnique).not.toHaveBeenCalled();
       expect(verifyPassword).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("Google OAuth user creation — terms acceptance", () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
-    it("updates user with termsAcceptedAt and termsVersion on first Google login", async () => {
-      vi.mocked(db.user.update).mockResolvedValueOnce({
-        id: "google_user_123",
-        email: "newuser@gmail.com",
-        name: "New Google User",
-        termsAcceptedAt: new Date(),
-        termsVersion: "2026-09-27",
-      } as never);
-
-      const user = {
-        id: "google_user_123",
-        email: "newuser@gmail.com",
-        name: "New Google User",
-        image: "https://lh3.googleusercontent.com/photo",
-      };
-
-      const result = await handleUserCreated(user);
-
-      expect(db.user.update).toHaveBeenCalledWith({
-        where: { id: "google_user_123" },
-        data: {
-          termsAcceptedAt: expect.any(Date),
-          termsVersion: "2026-09-27",
-        },
-      });
-
-      expect(result).toEqual(user);
-    });
-
-    it("returns the user object unchanged", async () => {
-      const user = {
-        id: "google_user_456",
-        email: "user@gmail.com",
-        name: "Test User",
-      };
-
-      vi.mocked(db.user.update).mockResolvedValueOnce({
-        ...user,
-        termsAcceptedAt: new Date(),
-        termsVersion: "2026-09-27",
-      } as never);
-
-      const result = await handleUserCreated(user);
-
-      expect(result).toEqual(user);
     });
   });
 });

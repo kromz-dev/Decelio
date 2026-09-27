@@ -6,7 +6,6 @@ import authConfig from "./auth.config"
 import { verifyPassword, getDummyPasswordHash } from "@/lib/password"
 import { loginSchema } from "@/lib/auth-validation"
 import { callerKey, rateLimit } from "@/lib/rate-limit"
-import { TERMS_VERSION } from "@/lib/legal/terms"
 import {
   LOGIN_IP_LIMIT,
   LOGIN_IP_WINDOW_MS,
@@ -68,29 +67,6 @@ export const credentialsProvider = Credentials({
   authorize: authorizeCredentials,
 });
 
-/**
- * Enregistre l'acceptation des CGV lors de la première connexion Google.
- * L'acceptation repose sur la mention « En continuant avec Google,
- * vous acceptez les CGV » affichée par le Design à côté du bouton.
- */
-export async function handleUserCreated(user: {
-  id?: string;
-  email?: string | null;
-  name?: string | null;
-  image?: string | null;
-}) {
-  if (user.id) {
-    await db.user.update({
-      where: { id: user.id },
-      data: {
-        termsAcceptedAt: new Date(),
-        termsVersion: TERMS_VERSION,
-      },
-    });
-  }
-  return user;
-}
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
   ...authConfig,
@@ -100,15 +76,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   pages: {
     signIn: "/login",
-  },
-  callbacks: {
-    async signIn({ user }) {
-      // Intercepte la connexion de l'utilisateur (par ex. première connexion Google).
-      // Enregistre l'acceptation des CGV. Le PrismaAdapter a créé l'utilisateur
-      // avant ce callback, donc on le met à jour ici.
-      await handleUserCreated(user);
-      return true;
-    },
   },
 })
 
