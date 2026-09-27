@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { db } from "@/lib/db";
-import { renderAlertEmail, sendRegressionAlert, suggestFix } from "./sendAlert";
+import { renderAlertEmail, searchBotAlertSentence, sendRegressionAlert, suggestFix } from "./sendAlert";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -61,6 +61,60 @@ describe("renderAlertEmail", () => {
     expect(email.subject).toBe("Decelio — 2 domaines ne sont plus lisibles");
     expect(email.text).toContain("a.fr");
     expect(email.text).toContain("b.fr");
+  });
+
+  it("nomme l'assistant et précise qu'il s'agit du robot de recherche quand le bot décisif est connu", () => {
+    const email = renderAlertEmail({
+      kind: "REGRESSION",
+      domains: [
+        {
+          domain: "exemple.fr",
+          cause: "robots.txt interdit OAI-SearchBot.",
+          fix: suggestFix("robots.txt interdit OAI-SearchBot."),
+          bot: "OAI-SearchBot",
+        },
+      ],
+    });
+
+    expect(email.text).toContain("Le robot de recherche de ChatGPT (OAI-SearchBot) ne peut plus lire le site.");
+    expect(email.html).toContain("Le robot de recherche de ChatGPT (OAI-SearchBot) ne peut plus lire le site.");
+    // Honnêteté de la mesure (docs/08-constitution.md) : jamais de promesse
+    // de citation, Decelio ne mesure pas les citations.
+    expect(email.text).not.toMatch(/citation|cité|invisible dans les réponses/i);
+  });
+
+  it("ne casse pas les appelants qui n'indiquent aucun bot (rétrocompatibilité)", () => {
+    const email = renderAlertEmail({
+      kind: "REGRESSION",
+      domains: [{ domain: "exemple.fr", cause: "BLOQUÉ", fix: suggestFix("BLOQUÉ") }],
+    });
+
+    expect(email.text).toContain("Cause : BLOQUÉ");
+    expect(email.text).not.toContain("robot de recherche");
+  });
+});
+
+describe("searchBotAlertSentence", () => {
+  it("nomme ChatGPT pour OAI-SearchBot, en régression", () => {
+    expect(searchBotAlertSentence("OAI-SearchBot", "REGRESSION")).toBe(
+      "Le robot de recherche de ChatGPT (OAI-SearchBot) ne peut plus lire le site.",
+    );
+  });
+
+  it("nomme Claude pour Claude-SearchBot, en résolution", () => {
+    expect(searchBotAlertSentence("Claude-SearchBot", "RESOLUTION")).toBe(
+      "Le robot de recherche de Claude (Claude-SearchBot) peut de nouveau lire le site.",
+    );
+  });
+
+  it("nomme Perplexity pour PerplexityBot", () => {
+    expect(searchBotAlertSentence("PerplexityBot", "REGRESSION")).toBe(
+      "Le robot de recherche de Perplexity (PerplexityBot) ne peut plus lire le site.",
+    );
+  });
+
+  it("refuse un robot d'entraînement : GPTBot n'a rien à faire dans une alerte client", () => {
+    expect(() => searchBotAlertSentence("GPTBot", "REGRESSION")).toThrow();
   });
 });
 
@@ -116,5 +170,15 @@ describe("T026: sendRegressionAlert journalise l'alerte réellement envoyée", (
     expect(result.success).toBe(true);
     expect(sendMock).toHaveBeenCalledTimes(1);
     expect(db.alertEvent.createMany).not.toHaveBeenCalled();
+  });
+
+  it("nomme l'assistant dans l'e-mail envoyé quand le bot décisif est fourni", async () => {
+    vi.mocked(db.monitoredSite.findFirst).mockResolvedValueOnce({ id: "site-1" } as never);
+
+    await sendRegressionAlert("agence@example.com", "exemple.fr", "OK", "BLOQUÉ", "Claude-SearchBot");
+
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    const sentEmail = vi.mocked(sendMock).mock.calls[0][0] as { text: string };
+    expect(sentEmail.text).toContain("Le robot de recherche de Claude (Claude-SearchBot) ne peut plus lire le site.");
   });
 });
