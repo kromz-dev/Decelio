@@ -8,9 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Verdict } from "@/components/ui/verdict";
 import { consecutiveDaysDown } from "@/lib/sites/consecutive-days";
 import { assistantSnapshots } from "@/lib/sites/latest-bots";
+import { latestPlatform } from "@/lib/sites/latest-platform";
 import { buildScanHistory } from "@/lib/sites/scan-history";
 import { resolveDomainName } from "@/lib/sites/domain-name";
 import { verdictForSiteStatus } from "@/lib/sites/site-status";
+import { PlatformLine } from "@/components/scan/PlatformLine";
 
 export const metadata = {
   title: "Détail du domaine | Decelio",
@@ -54,6 +56,24 @@ export default async function SiteDetailPage(props: { params: Promise<{ siteId: 
   const bots = assistantSnapshots(latest);
   const daysInRed = consecutiveDaysDown(history);
 
+  // `scanLogs` ne porte que les 60 derniers jours, et `payload` (qui contient
+  // `report.platform`) n'est réécrit qu'au changement de verdict : un site
+  // stable depuis plus longtemps peut n'avoir aucun payload dans cette
+  // fenêtre alors qu'un plus ancien existe. `monitoredSite` est déjà vérifié
+  // ci-dessus comme appartenant à `session.user.id` : la requête de repli
+  // reste filtrée sur ce même site, jamais sur un `siteId` non vérifié.
+  let platform = monitoredSite ? latestPlatform(monitoredSite.scanLogs) : undefined;
+  if (!platform && monitoredSite) {
+    const olderPayloadLog = await db.scanLog.findFirst({
+      where: { siteId: monitoredSite.id, payload: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { payload: true },
+    });
+    if (olderPayloadLog) {
+      platform = latestPlatform([olderPayloadLog]);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[1240px] pb-16 text-ink">
       {/* En-tête */}
@@ -78,6 +98,7 @@ export default async function SiteDetailPage(props: { params: Promise<{ siteId: 
               />
               <span className="text-sm text-ink-2">Site surveillé, client : {clientName}</span>
             </div>
+            {platform && <PlatformLine platform={platform} className="mt-1.5 type-caption text-ink-2" />}
           </div>
 
           <SiteActions siteId={siteId} />
