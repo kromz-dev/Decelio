@@ -29,8 +29,10 @@ Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` l
 
 ## 2. En cours
 
-- **#159 (hygiène des secrets)** : `.env.example` complétable, scan gitleaks de l'historique à la demande. Verte, touche `.github/workflows` — fusion par le fondateur, l'agent n'a pas l'autorisation « workflow ».
-- **#101 (CodeQL v4)** : vérifiée, verte, même raison — fusion par le fondateur.
+- **Dépôt GitHub assaini (27/09, soir)** : `main` est désormais **protégée** — toute modification passe par une demande de fusion (PR), même pour l'administrateur ; pas d'écrasement (force push) ni de suppression de `main` ; aucune approbation obligatoire (fondateur seul). Les branches sont **supprimées automatiquement** après fusion. Les branches mortes ont été supprimées.
+- **#159 (hygiène des secrets)** et **#101 (CodeQL v4)** : vertes, mais touchent `.github/workflows` — fusion par le fondateur, l'agent n'a pas l'autorisation « workflow ».
+- **`claude/upbeat-franklin-3lkvc0`** : branche de compétences d'agent ajoutées le 27/09, non fusionnée, à décider par le fondateur.
+- **Dependabot** : #173 (lucide-react, resend, three) et #174 (undici 8, compatible Node 22.19+, Render sur Node 22) fusionnées ; #172 (PostgreSQL 18 pour la base locale) fermée — on garde PostgreSQL 17, comme Neon en production. #171 a corrigé l'écosystème docker → docker-compose.
 - Aucune autre branche ouverte connue à cette date.
 
 ## 3. Reste à faire
@@ -59,9 +61,9 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 
 ### Fondateur
 
-- Test complet en local sur Neon `local-dev`, après `npx prisma migrate deploy`. Le parcours est dans la liste de contrôle, section 4.
+- **Décision du fondateur : on ne déploie pas tant que le MVP n'est pas entièrement testé en local** (Neon `local-dev`, Stripe en mode test). C'est la prochaine étape, avant tout déploiement. Le parcours complet est dans la liste de contrôle, section 4. Prérequis à poser avant de commencer : installer Stripe CLI (absent du poste, nécessaire pour relayer les webhooks avec `stripe listen --forward-to localhost:3000/api/webhooks/stripe`) ; lancer le serveur Inngest local avec `npx inngest-cli@latest dev` ; savoir que les e-mails ne partiront pas tant que le domaine Resend n'est pas vérifié (DNS OVH, voir T068). Une fois le test local réussi : poser l'étiquette Git `v0.1-mvp` sur `main`.
 - SIREN : ensuite, compléter les pages légales et activer Stripe en paiement réel.
-- Fusionner #159 et #101 (droits « workflow » que l'agent n'a pas).
+- Fusionner #159 et #101 (droits « workflow » que l'agent n'a pas), et décider du sort de `claude/upbeat-franklin-3lkvc0`.
 
 ## 4. Façon de travailler
 
@@ -69,6 +71,7 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 - Crédits limités : peu d'agents en parallèle, sur un modèle économique.
 - Les fusions sont faites par le fondateur, ou par l'agent quand tout est vert et que le fondateur a donné son accord.
 - La session cloud ne peut pas supprimer de branche distante : le fondateur le fait depuis son clone.
+- Le détail de la façon de travailler avec Git (branches, commits, PR, CI) est dans `docs/git-et-branches.md`.
 
 ## 5. Pièges connus
 

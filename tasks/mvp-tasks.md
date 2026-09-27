@@ -606,3 +606,67 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Note** : preuve : #142, fusionnée sur `main`. `AUTH_TRUST_HOST=true` dans `.env.example`, `signup_completed` après connexion Google, suppression du texte « visibilité IA » du formulaire de prospection, suppression du client Stripe à la purge RGPD d'un compte.
   - **Vérification** : les quatre changements sont présents dans `main` ; `tsc`, `eslint`, `vitest` au vert.
   - **Taille** : S
+
+- [x] **T079** [ING] Dépôt GitHub sain - réglages GitHub (branche `main`, Dependabot)
+  - **Dépendances** : Aucune
+  - **Note** : preuve : #171 (correction de l'écosystème Dependabot docker → docker-compose), réglages du 27/09 (soir) : `main` protégée (PR obligatoire, même pour l'administrateur), suppression automatique des branches après fusion, branches mortes supprimées.
+  - **Vérification** : une tentative d'écriture directe sur `main` est refusée par GitHub ; une branche fusionnée disparaît automatiquement de la liste des branches distantes.
+  - **Taille** : S
+
+## Phase 12 : Test complet en local avant déploiement
+
+**But** : appliquer la décision du fondateur — aucun déploiement tant que le MVP n'est pas entièrement vérifié en local, sur Neon `local-dev` et Stripe en mode test. Le détail du parcours est dans `docs/runbooks/checklist-mise-en-production.md` §4.
+
+- [ ] **T080** [FONDATEUR] Installer Stripe CLI - poste du fondateur
+  - **Dépendances** : Aucune
+  - **Note** : nécessaire pour relayer les webhooks Stripe vers l'application locale (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`). Absent du poste au 27/09.
+  - **Vérification** : `stripe --version` répond dans un terminal.
+  - **Taille** : S
+
+- [ ] **T081** [FONDATEUR] Inscription, acceptation des CGV, connexion et limite de 10 essais - parcours manuel sur `http://localhost:3000`
+  - **Dépendances** : T080 non requise pour cette étape
+  - **EF/ENF** : constitution (honnêteté), EF-014
+  - **Vérification** : un compte se crée avec la case CGV cochée et refuse la création sans elle ; après 10 échecs de connexion consécutifs, le 11ᵉ essai est bloqué.
+  - **Taille** : S
+
+- [ ] **T082** [FONDATEUR] Ajout de site, scan, fiche avec plateforme détectée - parcours manuel
+  - **Dépendances** : T081
+  - **EF/ENF** : EF-001, EF-002, EF-018
+  - **Vérification** : un site ajouté déclenche un scan réel ; sa fiche affiche un verdict par assistant et la plateforme détectée (#168).
+  - **Taille** : S
+
+- [ ] **T083** [FONDATEUR] Alerte confirmée par le serveur Inngest local (délai de confirmation de 10 minutes) - `npx inngest-cli@latest dev` + parcours manuel
+  - **Dépendances** : T082
+  - **EF/ENF** : EF-035, EF-036, EF-037
+  - **Vérification** : une régression provoquée déclenche une alerte seulement après confirmation par un second scan à 10 minutes ; l'alerte apparaît dans le journal (`AlertEvent`).
+  - **Taille** : S
+
+- [ ] **T084** [FONDATEUR] Essai gratuit et paiement test Stripe avec Stripe CLI, bandeau d'essai visible - parcours manuel
+  - **Dépendances** : T080, T083
+  - **EF/ENF** : EF-063, ADR-002
+  - **Vérification** : un Checkout de test avec `stripe listen` actif crée un abonnement `trialing` de 14 jours ; le bandeau d'essai s'affiche dans l'application.
+  - **Taille** : S
+
+- [ ] **T085** [FONDATEUR] Rapport mensuel PDF - parcours manuel
+  - **Dépendances** : T082
+  - **EF/ENF** : EF-047 à EF-051
+  - **Vérification** : un rapport généré à la demande produit un PDF téléchargeable avec de vraies données.
+  - **Taille** : S
+
+- [ ] **T086** [FONDATEUR] Purge RGPD avec suppression du client Stripe - parcours manuel
+  - **Dépendances** : T084
+  - **EF/ENF** : EF-015
+  - **Vérification** : un compte résilié puis purgé n'a plus de client Stripe associé (vérifié dans le tableau de bord Stripe en mode test).
+  - **Taille** : S
+
+- [ ] **T087** [FONDATEUR] Console du navigateur sans erreur CSP pendant tout le parcours - vérification manuelle continue
+  - **Dépendances** : T081, T082, T083, T084, T085, T086
+  - **EF/ENF** : sécurité (constitution)
+  - **Vérification** : aucune erreur « Content Security Policy » n'apparaît dans la console du navigateur pendant l'ensemble du parcours ci-dessus.
+  - **Taille** : S
+
+- [ ] **T088** [FONDATEUR] Étiquette `v0.1-mvp` sur `main` une fois tout vérifié - `git tag`
+  - **Dépendances** : T080, T081, T082, T083, T084, T085, T086, T087
+  - **Note** : les e-mails du parcours (alerte, rapport) ne partiront pas tant que le domaine Resend n'est pas vérifié (T068, DNS OVH) — à noter comme limite connue si le test local est fait avant.
+  - **Vérification** : `git tag v0.1-mvp` posé sur le commit de `main` correspondant au test local réussi, poussé sur GitHub.
+  - **Taille** : S

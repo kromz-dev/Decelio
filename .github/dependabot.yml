@@ -45,3 +45,8 @@ updates:
     directory: /decelio
     schedule:
       interval: weekly
+    ignore:
+      # postgres 18 : on reste sur la même version majeure que Neon en
+      # production (PostgreSQL 17). A lever quand Neon passera en 18.
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]

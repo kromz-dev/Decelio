@@ -1,5 +1,7 @@
 # Decelio — état du projet et reprise
 
+L'état actuel est dans `docs/REPRISE.md` ; ce fichier est le journal historique.
+
 Source de vérité pour reprendre le travail, avec un humain ou un agent.
 **Dernière mise à jour :** 27 septembre 2026.
 
@@ -8,6 +10,8 @@ Source de vérité pour reprendre le travail, avec un humain ou un agent.
 ## 27/09 — état et reprise
 
 **Fin de soirée (27/09)** : e-mails aux couleurs du site (#167), plateforme détectée affichée sur la fiche site (#168), mode sombre de l'application (#169). `main` : 733 tests sur 89 fichiers.
+
+**Fin de soirée (27/09), suite** : dépôt GitHub assaini (`main` protégée, suppression automatique des branches, branches mortes supprimées, Dependabot corrigé — #171, #173, #174 fusionnées, #172 fermée). Prochaine étape : test complet en local avant tout déploiement (décision du fondateur).
 
 **Fin de journée (27/09)** : douze demandes de fusion supplémentaires sur `main`, dont l'essai gratuit de 14 jours (#139, ADR-002 appliqué), l'acceptation des CGV de bout en bout (#152, #155, #160), la page « Qui est derrière Decelio » (#150), le bandeau d'essai (#151), et la préparation du lancement (#142). `main` : 705 tests sur 87 fichiers, CI verte. Restent ouvertes #159 et #101, vertes, à fusionner par le fondateur (droits « workflow »). État détaillé et reste à faire : `docs/REPRISE.md`.
 
