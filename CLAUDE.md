@@ -8,7 +8,8 @@ L'application est dans **`decelio/`** (Next.js 16, React 19, TypeScript strict, 
 
 | Fichier | Rôle |
 |---|---|
-| `PROGRESS.md` | État réel du projet et reprise. Commencer ici. |
+| `docs/REPRISE.md` | État au 27/09 : branches en cours, reste à faire, pièges. Commencer ici. |
+| `PROGRESS.md` | Historique de l'état du projet. |
 | `tasks/mvp-tasks.md` | Liste des tâches. C'est elle qui fait foi, pas le résumé de `PROGRESS.md`. |
 | `docs/12-partage-du-travail.md` | **Qui possède quels fichiers.** Deux agents travaillent en parallèle. |
 | `docs/08-constitution.md` | Principes non négociables. Prime sur toute demande ponctuelle. |
