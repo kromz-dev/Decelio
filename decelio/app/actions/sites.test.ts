@@ -30,10 +30,15 @@ vi.mock('@/lib/scanner/crawler', () => ({
   assertSafeUrl: vi.fn(async (url: string) => url),
 }));
 
+vi.mock('@/lib/posthog-server', () => ({
+  captureServerEvent: vi.fn(async () => undefined),
+}));
+
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { assertSafeUrl } from '@/lib/scanner/crawler';
+import { captureServerEvent } from '@/lib/posthog-server';
 import type { Session } from 'next-auth';
 
 // `auth` is exported by NextAuth v5 as an intersection of several call
@@ -140,6 +145,23 @@ describe('sites actions', () => {
         },
       });
       expect(revalidatePath).toHaveBeenCalledWith('/dashboard');
+      expect(captureServerEvent).toHaveBeenCalledWith('user-1', 'site_added', {
+        count: 1,
+        total_sites: 1,
+        is_first_site: true,
+      });
+    });
+
+    it("n'émet pas site_added quand le quota est atteint", async () => {
+      mockedAuth.mockResolvedValueOnce(fakeSession('user-1'));
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      vi.mocked(db.user.findUnique).mockResolvedValueOnce({ plan: 'SOLO', stripeCurrentPeriodEnd: futureDate } as unknown as MaybeUser);
+      vi.mocked(db.monitoredSite.count).mockResolvedValueOnce(10);
+
+      await addMonitoredSite({ name: 'Onzième', url: 'https://test.com' });
+
+      expect(captureServerEvent).not.toHaveBeenCalled();
     });
 
     it('refuse un 11e site Freelance et nomme le palier Agence', async () => {
@@ -292,6 +314,11 @@ describe('sites actions', () => {
       expect(res.data.skipped.filter((row) => row.reason === 'Doublon dans la liste.')).toHaveLength(3);
       expect(res.data.skipped.filter((row) => row.reason === 'URL refusée')).toHaveLength(2);
       expect(res.data.skipped.filter((row) => row.reason.includes('palier Freelance'))).toHaveLength(10);
+      expect(captureServerEvent).toHaveBeenCalledWith('user-1', 'site_added', {
+        count: 10,
+        total_sites: 10,
+        is_first_site: true,
+      });
     });
 
     it('ne crée aucun site quand la liste est vide (T051 : le champ onboarding démarre vide, jamais pré-rempli)', async () => {
@@ -301,6 +328,7 @@ describe('sites actions', () => {
 
       expect(db.monitoredSite.createManyAndReturn).not.toHaveBeenCalled();
       expect(res).toMatchObject({ data: { created: [], skipped: [] } });
+      expect(captureServerEvent).not.toHaveBeenCalled();
     });
   });
 });

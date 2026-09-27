@@ -21,3 +21,20 @@ export async function verifyPassword(password: string, encoded: string): Promise
   const actual = (await scrypt(password, Buffer.from(saltHex, "hex"), KEY_BYTES)) as Buffer;
   return timingSafeEqual(actual, expected);
 }
+
+/**
+ * Hash factice, calculé une seule fois par processus (mémoïsé), au même
+ * format que `hashPassword`. Sert à égaliser le temps de réponse de la
+ * connexion : quand aucun compte ou aucun mot de passe ne correspond, on
+ * vérifie quand même contre ce hash plutôt que de répondre tout de suite,
+ * pour qu'un e-mail inconnu ne se distingue pas d'un mot de passe erroné par
+ * le temps de calcul de scrypt.
+ */
+let dummyPasswordHash: Promise<string> | null = null;
+
+export function getDummyPasswordHash(): Promise<string> {
+  if (!dummyPasswordHash) {
+    dummyPasswordHash = hashPassword("hash-factice-egalisation-du-temps-de-reponse");
+  }
+  return dummyPasswordHash;
+}

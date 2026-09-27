@@ -1,7 +1,7 @@
 import { inngest } from "../client";
 import { db } from "@/lib/db";
 import { runCoreScan, type SimpleStatus } from "@/lib/scanner/core";
-import { DEFAULT_PROBE_BOTS } from "../../lib/scanner/agents";
+import { DEFAULT_PROBE_BOTS, type BotAgent } from "../../lib/scanner/agents";
 import { sendRegressionAlert } from "@/lib/alerting/sendAlert";
 import { NonRetriableError } from "inngest";
 import { SCAN_CONCURRENCY } from "../../lib/sites/scan-throughput";
@@ -60,6 +60,8 @@ type MonitoredSiteWithUser = NonNullable<
 interface ScanAndLogResult {
   newStatus: SimpleStatus;
   cause: string;
+  /** Robot de recherche sondé qui porte le verdict, pour nommer l'assistant dans l'alerte. */
+  decidingBot: BotAgent | undefined;
 }
 
 interface PendingConfirmation {
@@ -176,7 +178,11 @@ async function scanAndLog(
     },
   });
 
-  return { newStatus, cause };
+  // L'alerte nomme l'assistant seulement si le robot décisif est l'un des
+  // robots de recherche sondés ; sinon elle reste générique.
+  const decidingBot = DEFAULT_PROBE_BOTS.find((bot) => bot === deciding?.agent);
+
+  return { newStatus, cause, decidingBot };
 }
 
 async function applyStatusChange(
@@ -185,6 +191,7 @@ async function applyStatusChange(
   newStatus: SimpleStatus,
   cause: string,
   sendAlert: boolean,
+  decidingBot?: BotAgent,
 ): Promise<void> {
   await db.monitoredSite.update({
     where: { id: site.id },
@@ -192,7 +199,7 @@ async function applyStatusChange(
   });
 
   if (sendAlert) {
-    await sendRegressionAlert(site.user.email, site.url, oldStatus, newStatus);
+    await sendRegressionAlert(site.user.email, site.url, oldStatus, newStatus, decidingBot);
   }
 }
 
@@ -212,7 +219,7 @@ async function runInitialScan(siteId: string): Promise<PendingConfirmation | Set
     select: { simpleStatus: true, cause: true },
   });
 
-  const { newStatus, cause } = await scanAndLog(site, history[0]);
+  const { newStatus, cause, decidingBot } = await scanAndLog(site, history[0]);
   const oldStatus = site.status;
 
   if (oldStatus === newStatus) {
@@ -226,7 +233,7 @@ async function runInitialScan(siteId: string): Promise<PendingConfirmation | Set
     return { siteId: site.id, oldStatus, newStatus, pendingConfirmation: true };
   }
 
-  await applyStatusChange(site, oldStatus, newStatus, cause, isCandidate);
+  await applyStatusChange(site, oldStatus, newStatus, cause, isCandidate, decidingBot);
 
   return { siteId: site.id, oldStatus, newStatus, pendingConfirmation: false };
 }
@@ -248,7 +255,7 @@ async function runConfirmationScan(
     select: { simpleStatus: true, cause: true },
   });
 
-  const { newStatus, cause } = await scanAndLog(site, history[0]);
+  const { newStatus, cause, decidingBot } = await scanAndLog(site, history[0]);
   const confirmed =
     newStatus !== "ERREUR" && STATUS_RANK[newStatus] >= STATUS_RANK[pending.newStatus];
 
@@ -261,7 +268,7 @@ async function runConfirmationScan(
     return { siteId: site.id, oldStatus: pending.oldStatus, newStatus, pendingConfirmation: false };
   }
 
-  await applyStatusChange(site, pending.oldStatus, newStatus, cause, true);
+  await applyStatusChange(site, pending.oldStatus, newStatus, cause, true, decidingBot);
 
   return { siteId: site.id, oldStatus: pending.oldStatus, newStatus, pendingConfirmation: false };
 }

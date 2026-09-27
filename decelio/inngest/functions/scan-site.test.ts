@@ -95,8 +95,8 @@ describe("scanSiteJob", () => {
     });
 
     expect(runCoreScan).toHaveBeenCalledWith("https://exemple.fr", [
-      "GPTBot",
-      "ClaudeBot",
+      "OAI-SearchBot",
+      "Claude-SearchBot",
       "PerplexityBot",
     ]);
     const rows = createdRows();
@@ -276,7 +276,8 @@ describe("scanSiteJob", () => {
       data: { status: "BLOQUÉ" },
     });
     expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
-    expect(sendRegressionAlert).toHaveBeenCalledWith("agence@exemple.fr", "https://exemple.fr", "OK", "BLOQUÉ");
+    // Les robots simulés ici ne sont pas des robots de recherche : pas de nom d'assistant.
+    expect(sendRegressionAlert).toHaveBeenCalledWith("agence@exemple.fr", "https://exemple.fr", "OK", "BLOQUÉ", undefined);
   });
 
   it("n'alerte pas si le second scan ne confirme pas la dégradation (raté transitoire)", async () => {
@@ -343,7 +344,8 @@ describe("scanSiteJob", () => {
       data: { status: "BLOQUÉ" },
     });
     expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
-    expect(sendRegressionAlert).toHaveBeenCalledWith("agence@exemple.fr", "https://exemple.fr", "OK", "BLOQUÉ");
+    // Les robots simulés ici ne sont pas des robots de recherche : pas de nom d'assistant.
+    expect(sendRegressionAlert).toHaveBeenCalledWith("agence@exemple.fr", "https://exemple.fr", "OK", "BLOQUÉ", undefined);
   });
 
   it("une amélioration (retour à OK) ne demande pas de confirmation ni de second scan", async () => {
@@ -374,6 +376,36 @@ describe("scanSiteJob", () => {
       data: { status: "OK" },
     });
     expect(sendRegressionAlert).not.toHaveBeenCalled();
+  });
+
+  it("nomme dans l'alerte le robot de recherche qui a fait régresser le site", async () => {
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(runCoreScan).mockResolvedValue({
+      report: {},
+      results: [
+        { agent: "OAI-SearchBot", simpleStatus: "OK", reasons: [], httpStatus: 200, durationMs: 10, wordCount: 80 },
+        { agent: "Claude-SearchBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows Claude-SearchBot"], httpStatus: 200, durationMs: 10, wordCount: 80 },
+        { agent: "PerplexityBot", simpleStatus: "OK", reasons: [], httpStatus: 200, durationMs: 10, wordCount: 80 },
+      ],
+    } as unknown as CoreScanOutput);
+
+    await invokeHandler(scanSiteJob, {
+      event: { data: { siteIds: ["site-1"] } },
+      step: stepThatRuns(),
+    });
+
+    expect(sendRegressionAlert).toHaveBeenCalledWith(
+      "agence@exemple.fr",
+      "https://exemple.fr",
+      "OK",
+      "BLOQUÉ",
+      "Claude-SearchBot",
+    );
   });
 
   it("parcours P2 complet : ajout, scan, changement de statut, une seule alerte même après un second scan identique", async () => {

@@ -96,4 +96,52 @@ describe("POST /api/pdf/diagnostic", () => {
     expect(corps).not.toContain("secret.tsx");
     expect(corps).not.toContain("chemin/interne");
   });
+
+  describe("report.platform", () => {
+    it("laisse passer un report.platform valide (utilisé par l'annexe de correctifs)", async () => {
+      const corps = JSON.stringify({
+        report: {
+          finalUrl: "https://exemple.fr/",
+          platform: { cms: "wordpress", seoPlugin: "yoast", firewall: "cloudflare", signals: ["indice 1"] },
+        },
+        results: [{ agent: "GPTBot", simpleStatus: "OK", reasons: [] }],
+      });
+      const res = await poster(corps);
+      expect(res.status).toBe(200);
+      expect(genererPdf).toHaveBeenCalledOnce();
+    });
+
+    // Comme `results`, `report` est fourni par le client : un tableau
+    // `signals` non borné serait un vecteur d'abus au même titre.
+    it("refuse un report.platform.signals non borné", async () => {
+      const corps = JSON.stringify({
+        report: {
+          finalUrl: "https://exemple.fr/",
+          platform: { cms: "wordpress", signals: Array.from({ length: 5000 }, () => "x") },
+        },
+        results: [{ agent: "GPTBot", simpleStatus: "OK", reasons: [] }],
+      });
+      const res = await poster(corps);
+      expect(res.status).toBe(400);
+      expect(genererPdf).not.toHaveBeenCalled();
+    });
+
+    it("refuse un signal individuel démesurément long", async () => {
+      const corps = JSON.stringify({
+        report: {
+          finalUrl: "https://exemple.fr/",
+          platform: { cms: "wordpress", signals: ["x".repeat(10_000)] },
+        },
+        results: [{ agent: "GPTBot", simpleStatus: "OK", reasons: [] }],
+      });
+      const res = await poster(corps);
+      expect(res.status).toBe(400);
+      expect(genererPdf).not.toHaveBeenCalled();
+    });
+
+    it("répond 200 quand report.platform est absent (champ optionnel)", async () => {
+      const res = await poster(CORPS_VALIDE);
+      expect(res.status).toBe(200);
+    });
+  });
 });
