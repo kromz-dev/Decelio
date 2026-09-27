@@ -17,7 +17,7 @@ import {
   verdictForBot,
   type ResultSummary,
 } from "@/lib/scanner/verdicts";
-import { describePlatform } from "./platformLabel";
+import { PlatformLine } from "./PlatformLine";
 
 /**
  * Résultat d'un appel à `/api/scan`. Type partagé entre `ScanForm` (scan
@@ -84,8 +84,6 @@ export function ScanResultPanel({ data, submittedUrl }: { data: ScanApiResponse;
     }
   }
 
-  const platformLabel = describePlatform(report.platform);
-
   // Verdicts par assistant qui ne sont pas « Lu » : leur cause doit etre lisible,
   // en particulier « a verifier » (blocage general sans preuve de ciblage).
   // Regroupees par cause identique pour ne pas repeter trois fois la meme phrase.
@@ -112,12 +110,7 @@ export function ScanResultPanel({ data, submittedUrl }: { data: ScanApiResponse;
               Vérifié à <span className="tnum">{formatTime(report.scannedAt)}</span>
             </p>
           </div>
-          {platformLabel && (
-            <p className="mt-1 type-caption text-ink-2">
-              <span className="font-medium text-ink">Plateforme d&eacute;tect&eacute;e&nbsp;: </span>
-              {platformLabel}
-            </p>
-          )}
+          <PlatformLine platform={report.platform} className="mt-1 type-caption text-ink-2" />
           {redirected && (
             <p className="mt-1 type-caption text-ink-2">
               Redirigé depuis {submittedUrl} ({redirectCount} redirection{redirectCount > 1 ? "s" : ""}).

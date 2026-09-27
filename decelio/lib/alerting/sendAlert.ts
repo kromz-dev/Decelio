@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { db } from "@/lib/db";
 import { logFailure } from "../log";
+import type { BotAgent } from "@/lib/scanner/agents";
 
 export type AlertKind = "REGRESSION" | "RESOLUTION";
 
@@ -9,9 +10,40 @@ export interface AlertSiteChange {
   domain: string;
   cause: string;
   fix: string;
+  /**
+   * Robot de recherche décisif pour ce changement (celui d'entre les
+   * `DEFAULT_PROBE_BOTS` qui a déterminé le nouveau statut), quand
+   * l'appelant le connaît. Sert à nommer l'assistant dans le texte
+   * d'alerte — jamais un robot d'entraînement (GPTBot, ClaudeBot) : ceux-là
+   * restent informatifs et ne déclenchent pas d'alerte.
+   */
+  bot?: BotAgent;
 }
 
 const FROM = "Decelio <bonjour@decelio.fr>";
+
+/** Nom grand public de l'assistant derrière chaque robot de recherche. */
+const SEARCH_ASSISTANT_LABEL: Partial<Record<BotAgent, string>> = {
+  "OAI-SearchBot": "ChatGPT",
+  "Claude-SearchBot": "Claude",
+  PerplexityBot: "Perplexity",
+};
+
+/**
+ * Phrase en français simple nommant l'assistant et précisant qu'il s'agit
+ * du robot de **recherche** (jamais d'entraînement), sans jamais promettre
+ * une citation ni dire que le site serait « invisible dans les réponses » —
+ * Decelio ne mesure pas les citations (voir docs/08-constitution.md).
+ */
+export function searchBotAlertSentence(bot: BotAgent, kind: AlertKind): string {
+  const label = SEARCH_ASSISTANT_LABEL[bot];
+  if (!label) {
+    throw new Error(`${bot} n'est pas un robot de recherche connu pour une alerte client.`);
+  }
+  return kind === "REGRESSION"
+    ? `Le robot de recherche de ${label} (${bot}) ne peut plus lire le site.`
+    : `Le robot de recherche de ${label} (${bot}) peut de nouveau lire le site.`;
+}
 
 export function suggestFix(cause: string): string {
   if (/robots\.txt/i.test(cause)) {
@@ -58,8 +90,11 @@ export function renderAlertEmail(input: {
       ? "Un passage du scan vient de constater que ce domaine est de nouveau lisible par les assistants."
       : "Un passage du scan vient de constater que ces domaines sont de nouveau lisibles par les assistants.";
 
+  const causeFor = (item: AlertSiteChange): string =>
+    item.bot ? `${searchBotAlertSentence(item.bot, input.kind)} ${item.cause}` : item.cause;
+
   const lines = input.domains.map(
-    (item) => `${item.domain}\nCause : ${item.cause}\nCorrectif : ${item.fix}`,
+    (item) => `${item.domain}\nCause : ${causeFor(item)}\nCorrectif : ${item.fix}`,
   );
   const text = `${intro}\n\n${lines.join("\n\n")}\n`;
   const html = `<div style="font-family: sans-serif; max-width: 600px;">
@@ -67,7 +102,7 @@ export function renderAlertEmail(input: {
     ${input.domains
       .map(
         (item) => `<h2 style="font-size: 16px;">${escapeHtml(item.domain)}</h2>
-      <p><strong>Cause :</strong> ${escapeHtml(item.cause)}</p>
+      <p><strong>Cause :</strong> ${escapeHtml(causeFor(item))}</p>
       <p><strong>Correctif :</strong> ${escapeHtml(item.fix)}</p>`,
       )
       .join("")}
@@ -166,12 +201,18 @@ export async function sendUserDigest(
   return sent;
 }
 
-/** Conservé pour les appelants existants : un domaine, gabarit de régression. */
+/**
+ * Conservé pour les appelants existants : un domaine, gabarit de régression.
+ * `bot` est optionnel et rétrocompatible : quand l'appelant connaît le
+ * robot de recherche décisif (celui des `DEFAULT_PROBE_BOTS` qui a fait
+ * basculer le statut), le texte de l'alerte le nomme explicitement.
+ */
 export async function sendRegressionAlert(
   to: string,
   domain: string,
   _oldStatus: string,
   newStatus: string,
+  bot?: BotAgent,
 ) {
   const cause = newStatus;
   const site = await db.monitoredSite.findFirst({
@@ -179,6 +220,6 @@ export async function sendRegressionAlert(
     select: { id: true },
   });
   return sendUserDigest(to, "REGRESSION", [
-    { siteId: site?.id, domain, cause, fix: suggestFix(cause) },
+    { siteId: site?.id, domain, cause, fix: suggestFix(cause), bot },
   ]);
 }

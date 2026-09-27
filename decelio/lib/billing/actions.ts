@@ -4,6 +4,7 @@ import { getStripe } from "./stripe";
 import { isPurchasablePlan, priceIdForPlan } from "./plans";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { captureServerEvent } from "@/lib/posthog-server";
 import { redirect } from "next/navigation";
 
 /**
@@ -76,6 +77,8 @@ export async function createCheckoutSession(plan: string, couponCode?: string) {
   if (!stripeSession.url) {
     throw new Error("Could not create stripe session");
   }
+
+  await captureServerEvent(user.id, "checkout_started", { plan });
 
   redirect(stripeSession.url);
 }

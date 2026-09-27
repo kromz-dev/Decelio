@@ -25,11 +25,16 @@ vi.mock("./plans", () => ({
   priceIdForPlan: vi.fn(() => "price_solo"),
 }));
 
+vi.mock("@/lib/posthog-server", () => ({
+  captureServerEvent: vi.fn(async () => undefined),
+}));
+
 import { createCheckoutSession } from "./actions";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { getStripe } from "./stripe";
+import { captureServerEvent } from "@/lib/posthog-server";
 import type { Session } from "next-auth";
 
 type SessionGetter = () => Promise<Session | null>;
@@ -73,6 +78,7 @@ describe("createCheckoutSession", () => {
       }),
     );
     expect(redirect).toHaveBeenCalledWith("https://checkout.stripe.com/session");
+    expect(captureServerEvent).toHaveBeenCalledWith("user-1", "checkout_started", { plan: "SOLO" });
   });
 
   it("throws on an unknown promo code and never creates a session", async () => {
@@ -82,6 +88,7 @@ describe("createCheckoutSession", () => {
 
     expect(createStripeSessionMock).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
+    expect(captureServerEvent).not.toHaveBeenCalled();
   });
 
   it("throws when a code is supplied but no founder coupon is configured", async () => {

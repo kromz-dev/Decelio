@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
 import { planForPriceId } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
+import { captureServerEvent } from "@/lib/posthog-server";
 import { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -66,6 +67,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  // Événements de tunnel à émettre après la transaction, une fois
+  // l'idempotence Stripe vérifiée (ProcessedWebhook). Alimentés depuis
+  // l'intérieur de la transaction ; un événement rejoué échoue sur le
+  // marqueur d'idempotence avant que ce tableau ne soit jamais rempli, donc
+  // n'émet rien une seconde fois.
+  const pendingFunnelEvents: Array<() => Promise<void>> = [];
+
   try {
     let fetchedSubscription: Stripe.Subscription | null = null;
     if (event.type === "checkout.session.completed") {
@@ -115,6 +123,9 @@ export async function POST(req: Request) {
                 : {}),
             },
           });
+          pendingFunnelEvents.push(() =>
+            captureServerEvent(userId, "subscription_activated", { plan }),
+          );
           break;
         }
 
@@ -148,7 +159,7 @@ export async function POST(req: Request) {
           const subscription = event.data.object;
           const user = await tx.user.findUnique({
             where: { stripeCustomerId: subscription.customer as string },
-            select: { id: true },
+            select: { id: true, plan: true },
           });
           if (!user) break;
 
@@ -165,10 +176,20 @@ export async function POST(req: Request) {
               purgeAt,
             },
           });
+          pendingFunnelEvents.push(() =>
+            captureServerEvent(user.id, "subscription_canceled", {
+              plan: "FREE",
+              previous_plan: user.plan,
+            }),
+          );
           break;
         }
       }
     });
+
+    for (const emit of pendingFunnelEvents) {
+      await emit();
+    }
 
     return NextResponse.json({ received: true });
   } catch (error) {

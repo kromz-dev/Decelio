@@ -127,8 +127,39 @@ export const ALL_BOTS = Object.keys(BOTS) as BotAgent[];
 /** Robots dont la politique robots.txt est rapportée par défaut. */
 export const DEFAULT_SCAN_BOTS: BotAgent[] = ALL_BOTS;
 
-/** Robots sondés par défaut en « requérant non vérifié » (User-Agent public requis). */
-export const DEFAULT_PROBE_BOTS: BotAgent[] = ["GPTBot", "ClaudeBot", "PerplexityBot"];
+/**
+ * Robots sondés par défaut en « requérant non vérifié » (User-Agent public
+ * requis). Ce sont eux qui déterminent le statut surveillé et les alertes
+ * (voir `inngest/functions/scan-site.ts`) : les robots de **recherche** de
+ * ChatGPT, Claude et Perplexity — ceux qui lisent le site pour le citer dans
+ * une réponse. Un site peut légitimement refuser l'entraînement (GPTBot,
+ * ClaudeBot, voir `TRAINING_BOTS`) tout en restant lisible par ces
+ * robots-là : ce n'est pas une panne, donc pas une alerte.
+ *
+ * Jetons robots.txt / User-Agent vérifiés le 27/09/2026 (recherche web,
+ * les domaines officiels étant inaccessibles depuis cet environnement) :
+ * - OAI-SearchBot : https://developers.openai.com/api/docs/bots (jeton et
+ *   User-Agent confirmés par plusieurs répertoires tiers indépendants,
+ *   dont https://knownagents.com/agents/oai-searchbot et
+ *   https://radar.cloudflare.com/bots/directory/oai-searchbot).
+ * - Claude-SearchBot : https://support.anthropic.com/en/articles/8896518
+ *   (« ClaudeBot, Claude-User & Claude-SearchBot ») — le jeton lui-même
+ *   (« Claude-SearchBot ») est confirmé par toutes les sources croisées ;
+ *   la chaîne User-Agent complète n'a pas pu être revérifiée d'après une
+ *   page officielle (accès bloqué), à vérifier lors d'un prochain passage
+ *   avec accès réseau complet.
+ * - PerplexityBot : https://docs.perplexity.ai/docs/resources/perplexity-crawlers
+ *   (jeton et User-Agent confirmés, y compris la mention explicite que ce
+ *   robot ne sert pas à l'entraînement).
+ */
+export const DEFAULT_PROBE_BOTS: BotAgent[] = ["OAI-SearchBot", "Claude-SearchBot", "PerplexityBot"];
+
+/**
+ * Robots d'entraînement : gardés dans le rapport (politique robots.txt par
+ * robot, `report.robots.policies`) à titre informatif seulement. Ils ne
+ * déclenchent plus d'alerte ni de statut surveillé — voir `DEFAULT_PROBE_BOTS`.
+ */
+export const TRAINING_BOTS: BotAgent[] = ALL_BOTS.filter((bot) => BOTS[bot].purpose === "training");
 
 /**
  * User-Agent honnête du scanner : il dit qui nous sommes et où lire pourquoi

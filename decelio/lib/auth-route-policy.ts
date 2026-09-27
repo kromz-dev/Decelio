@@ -1,4 +1,15 @@
-const protectedPrefixes = ["/dashboard", "/sites", "/sources", "/settings"] as const;
+// Doit couvrir chaque dossier de route de `app/(app)/` : le test
+// `auth-route-policy.test.ts` relit ce répertoire et échoue si l'un d'eux
+// manque ici.
+const protectedPrefixes = [
+  "/alerts",
+  "/dashboard",
+  "/onboarding",
+  "/reports",
+  "/settings",
+  "/sites",
+  "/sources",
+] as const;
 
 export function isProtectedPath(pathname: string): boolean {
   return protectedPrefixes.some(
