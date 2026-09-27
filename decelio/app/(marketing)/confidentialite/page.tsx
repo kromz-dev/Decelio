@@ -56,11 +56,7 @@ export default async function ConfidentialitePage() {
                 <li>
                   Mesure d&apos;audience : PostHog (hébergé dans l&apos;Union européenne), sans cookie, sans
                   enregistrement de session, avec un identifiant interne et jamais l&apos;e-mail. Les données de mesure
-                  transitent par notre propre domaine.{" "}
-                  <ToFill>
-                    à confirmer par le fondateur après vérification dans le navigateur qu&apos;aucune requête ne part
-                    vers posthog.com : « votre adresse IP n&apos;est pas transmise à PostHog »
-                  </ToFill>
+                  transitent par notre propre domaine : votre adresse IP n&apos;est pas transmise à PostHog.
                 </li>
                 <li>
                   Journaux techniques et limitation de débit : adresse IP, conservés pour une durée courte.
