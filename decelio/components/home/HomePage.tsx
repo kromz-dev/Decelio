@@ -46,7 +46,7 @@ const SWITCHES = [
 
 /** Trois engagements verifiables : ce qu'on peut tester avant de payer. */
 const PROOFS = [
-  "Le diagnostic est gratuit, sans compte, et vous donne la cause en 15 secondes.",
+  "Le diagnostic est gratuit et sans compte, et il vous donne la cause du blocage.",
   "Chaque verdict est relié à une cause vérifiable : règle robots.txt, code HTTP, challenge du pare-feu ou dépendance au JavaScript.",
   "Quand nous ne pouvons pas conclure, nous écrivons « à vérifier », jamais un verdict tranché.",
 ] as const;
@@ -597,7 +597,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                       return (
                         <li key={feature} className="flex items-start gap-3">
                           {absent ? (
-                            <span aria-hidden="true" className="w-5 shrink-0 text-center leading-5 text-ink-3">&mdash;</span>
+                            <span aria-hidden="true" className="w-5 shrink-0 text-center leading-5 text-ink-2">&times;</span>
                           ) : (
                             <Check className={plan.featured ? "text-[#4fcb8e]" : "text-ok"} />
                           )}
@@ -796,7 +796,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 Pr&ecirc;t &agrave; v&eacute;rifier votre premier site&nbsp;?
               </h2>
               <p className="mx-auto mb-10 max-w-xl text-lg text-surface-2">
-                En une quinzaine de secondes, sachez si les robots des IA sont bloqu&eacute;s sur votre domaine.
+                Sachez si les robots des IA sont bloqu&eacute;s sur votre domaine.
                 Le diagnostic est gratuit et ne demande pas de compte.
               </p>
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
