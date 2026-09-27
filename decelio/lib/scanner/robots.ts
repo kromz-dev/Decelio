@@ -162,12 +162,24 @@ export function isAllowed(robots: ParsedRobots, token: string, pathWithQuery: st
 
 /**
  * - ok          : 2xx, le fichier est analysé ;
- * - unavailable : 4xx (ou plus de 5 redirections), la RFC autorise alors tout ;
- * - unreachable : 5xx ou erreur réseau, la RFC impose de tout interdire ;
- * - challenged  : un défi anti-bot a répondu à la place du fichier, on ne
- *                 peut rien conclure.
+ * - unavailable : un vrai 4xx (404, 410...) sans signal de pare-feu, ou plus
+ *                 de 5 redirections ; la RFC 9309 §2.3.1 autorise alors tout,
+ *                 car c'est le cas d'un fichier absent ;
+ * - blocked     : 401, 403 ou 429 sans défi identifiable. La RFC 9309 traite
+ *                 ce cas comme un 4xx ordinaire (donc « tout permis »), mais
+ *                 un refus nu sur robots.txt signale le plus souvent un
+ *                 pare-feu qui bloque la requête elle-même, pas un fichier
+ *                 absent : conclure « autorisé » serait un faux positif, donc
+ *                 le verdict rendu est « à vérifier » (`unknown`) ;
+ * - unreachable : 5xx, erreur réseau, ou un 503 sans défi identifiable ; la
+ *                 RFC 9309 §2.3.1 permet alors de considérer que tout est
+ *                 interdit (ou de réessayer plus tard) — on retient
+ *                 l'interdiction, plus prudente ;
+ * - challenged  : un défi anti-bot reconnu (Cloudflare, Turnstile, DataDome,
+ *                 PerimeterX, Akamai Bot Manager...) a répondu à la place du
+ *                 fichier, on ne peut rien conclure.
  */
-export type RobotsFetchStatus = "ok" | "unavailable" | "unreachable" | "challenged";
+export type RobotsFetchStatus = "ok" | "unavailable" | "blocked" | "unreachable" | "challenged";
 export type RobotsVerdict = "allowed" | "disallowed" | "unknown";
 
 export interface BotRobotsPolicy {
@@ -197,11 +209,23 @@ export function buildRobotsReport(
 ): RobotsReport {
   let fetchStatus: RobotsFetchStatus;
   // Plus de cinq redirections : la RFC permet de considérer le fichier indisponible.
-  if (fetched.status === 0) fetchStatus = fetched.errorKind === "too_many_redirects" ? "unavailable" : "unreachable";
-  else if (detectChallenge(fetched).challenged) fetchStatus = "challenged";
-  else if (fetched.status >= 200 && fetched.status < 300) fetchStatus = "ok";
-  else if (fetched.status >= 400 && fetched.status < 500) fetchStatus = "unavailable";
-  else fetchStatus = "unreachable";
+  if (fetched.status === 0) {
+    fetchStatus = fetched.errorKind === "too_many_redirects" ? "unavailable" : "unreachable";
+  } else {
+    const challenge = detectChallenge(fetched);
+    if (challenge.challenged) fetchStatus = "challenged";
+    else if (fetched.status >= 200 && fetched.status < 300) fetchStatus = "ok";
+    else if (fetched.status >= 400 && fetched.status < 500) {
+      // Dans la plage 4xx, seuls 401/403/429 (`blocked`) signalent un pare-feu
+      // sans défi reconnu ; un 404/410 (ou tout autre 4xx hors de cette liste)
+      // reste un vrai « fichier absent » au sens de la RFC.
+      fetchStatus = challenge.blocked ? "blocked" : "unavailable";
+    } else {
+      // 5xx (dont un 503 sans défi reconnu) : la RFC 9309 §2.3.1 permet de
+      // tout interdire, on ne bascule donc pas vers `blocked` ici.
+      fetchStatus = "unreachable";
+    }
+  }
 
   const parsed = fetchStatus === "ok" ? parseRobotsTxt(fetched.html) : { groups: [], sitemaps: [] };
 
@@ -222,6 +246,7 @@ export function buildRobotsReport(
         return { ...base, verdict: "allowed", group: "none", rule: null };
       case "unreachable":
         return { ...base, verdict: "disallowed", group: "none", rule: null };
+      case "blocked":
       case "challenged":
         return { ...base, verdict: "unknown", group: "none", rule: null };
     }

@@ -49,6 +49,26 @@ describe("detectChallenge", () => {
     const d = detectChallenge(crawl(200, "<title>Our CDN</title><p>We use Cloudflare. Just a moment of your time.</p>"));
     expect(d).toEqual({ challenged: false, blocked: false, signals: [] });
   });
+
+  it("flags the Akamai Bot Manager deny page (Access Denied + Reference #) as challenged", () => {
+    const page =
+      "<html><body><h1>Access Denied</h1><p>You don't have permission to access this resource.</p>" +
+      "<p>Reference #18.7c1d5f68.1732000000.abcdef</p></body></html>";
+    const d = detectChallenge(crawl(403, page, { server: "AkamaiGHost" }));
+    expect(d.challenged).toBe(true);
+    expect(d.signals).toContain("markup:akamai-access-denied");
+  });
+
+  it("does not flag a normal 200 response that merely carries Akamai's _abck/ak_bmsc cookies", () => {
+    // _abck/ak_bmsc only prove Bot Manager is deployed, not that this request was blocked
+    // (see cited sources on the Akamai signal in analyzer.ts). A 200 must stay unchallenged.
+    const d = detectChallenge(
+      crawl(200, "<html><body>Bienvenue</body></html>", {
+        "set-cookie": "_abck=0~-1~abcdef; path=/; ak_bmsc=deadbeef; path=/",
+      }),
+    );
+    expect(d).toEqual({ challenged: false, blocked: false, signals: [] });
+  });
 });
 
 describe("classifyAccess", () => {
