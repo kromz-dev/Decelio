@@ -8,6 +8,32 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+      vitest:
+        # Regroupe vitest et ses paquets @vitest/* : coverage-v8 exige la
+        # meme version majeure que vitest en dependance homologue stricte,
+        # une montee separee de l'un des deux fait echouer npm ci.
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+    ignore:
+      # eslint 10 : eslint-plugin-react, embarque par eslint-config-next
+      # 16.3.6, n'accepte pas encore ESLint 10. A lever quand
+      # eslint-config-next publiera une version compatible.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # typescript 7 : typescript-eslint ne prend pas encore en charge
+      # TypeScript 7. A lever quand typescript-eslint publiera une
+      # version compatible.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Prisma 7 : migration a part entiere (schema, client, moteur de
+      # requetes), a traiter dans sa propre branche dediee plutot que
+      # via une mise a jour automatique. A lever quand cette migration
+      # sera planifiee.
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
