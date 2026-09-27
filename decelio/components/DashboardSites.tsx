@@ -432,9 +432,9 @@ export function DashboardSites({
                           <Verdict value={verdict} variant="inline" detail={site.status === "À VÉRIFIER" ? "à vérifier" : undefined} />
                         )}
                       </td>
-                      <td className="px-3 py-2 text-right text-ink-2 tnum">—</td>
-                      <td className="px-3 py-2 text-right text-ink-2 tnum">—</td>
-                      <td className="px-3 py-2 text-right text-ink-2 tnum">—</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">-</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">-</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">-</td>
                       <td className="px-3 py-2 text-right text-ink-2 tnum">
                         {new Date(site.createdAt).toLocaleDateString("fr-FR")}
                       </td>

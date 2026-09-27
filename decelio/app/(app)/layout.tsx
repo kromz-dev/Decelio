@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { LayoutDashboard, Globe, Settings, LogOut, Bell, FileText } from "lucide-react";
 import { redirect } from "next/navigation";
+import { Wordmark } from "@/components/home/SiteChrome";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -12,8 +13,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-paper text-ink">
       <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4 md:hidden">
-        <Link href="/dashboard" className="text-xl font-semibold tracking-tight">
-          Decelio<span className="text-cobalt">.</span>
+        <Link href="/dashboard" aria-label="Decelio, portefeuille">
+          <Wordmark />
         </Link>
         <details className="relative">
           <summary className="cursor-pointer list-none rounded-sm border border-line-strong px-3 py-2 text-sm font-medium text-ink">
@@ -30,8 +31,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <div className="flex min-h-[calc(100vh-65px)] md:min-h-screen">
         <aside className="hidden w-64 border-r border-line bg-surface p-5 md:flex md:flex-col">
-          <Link href="/dashboard" className="mb-10 text-xl font-semibold tracking-tight text-ink">
-            Decelio<span className="text-cobalt">.</span>
+          <Link href="/dashboard" aria-label="Decelio, portefeuille" className="mb-10">
+            <Wordmark />
           </Link>
           <nav className="flex-1 space-y-1">
             <Link href="/dashboard" className="flex items-center gap-2 rounded-sm px-3 py-2.5 text-sm font-medium text-ink-2 hover:bg-surface-2 hover:text-ink">
