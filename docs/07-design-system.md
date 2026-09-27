@@ -45,6 +45,19 @@ Classes Tailwind : `bg-paper`, `text-ink-2`, `border-line-strong`, `text-ok`, `b
 
 Alias historiques conservés le temps de la migration : `paper-deep` → surface-2, `cited` → ok, `rival` → stop, `signal` → warn, `muted` → ink-2 (texte gris : **ne pas utiliser `bg-muted`**), `line` → line.
 
+### Thème sombre — activation (septembre 2026)
+
+Le thème sombre couvre l'espace client (`app/(app)/**`) ; les pages publiques et marketing restent toujours claires, quel que soit le réglage choisi.
+
+- **Réglage** : `components/ThemeToggle.tsx`, trois options (Clair / Sombre / Système), affiché deux fois dans `app/(app)/layout.tsx` (en-tête mobile, pied de la barre latérale sur bureau). Préférence de confort stockée en `localStorage` (clé `decelio-theme`), jamais un cookie ni un champ du compte : lue et écrite entourée de `try/catch` (navigation privée, quota dépassé).
+- **Lecture sans effet de bord** : le thème est lu via `useSyncExternalStore` (pas de `setState` dans un effet, qui déclencherait des rendus en cascade) ; le rendu serveur et le premier rendu client renvoient tous les deux « système », resynchronisés juste après sans décalage d'hydratation. Un `useEffect` séparé applique ensuite la classe `.dark` sur `<html>` en réaction à ce thème (effet de bord DOM, pas de mise à jour de state React).
+- **Anti-flash** : script inline `beforeInteractive` dans `app/layout.tsx` (root layout, requis par Next.js pour cette stratégie), qui applique `.dark` avant le premier rendu visible — mais seulement si l'URL commence par un préfixe de l'application (`/dashboard`, `/alerts`, `/reports`, `/settings`, `/onboarding`, `/sources`, `/sites`). Une page marketing chargée directement ne l'exécute jamais.
+- **Sortie de l'application** : au démontage de `ThemeToggle` (navigation vers une page marketing), la classe `.dark` est retirée de `<html>` : une page publique reste claire même si « Sombre » est le choix mémorisé.
+- **Système** : écoute `prefers-color-scheme` en direct (changement de thème du système sans recharger la page) tant que le réglage est « Système ».
+- **Logo** : `Wordmark` (`components/home/SiteChrome.tsx`) pose les deux fichiers (`logo-decelio.png` bleu, `logo-decelio-blanc.png` blanc) côte à côte et bascule avec `dark:hidden` / `hidden dark:block`, sans JavaScript ; `light="invert"` sert au bandeau d'onboarding (fond `bg-ink`, qui s'inverse déjà avec le thème) pour que le logo suive l'inverse du thème plutôt que le thème.
+- **Bouton destructif** (`components/ui/button.tsx`) : `--stop` s'éclaircit en sombre pour rester lisible comme texte, ce qui fait tomber un texte blanc sous 3:1 sur `bg-stop` ; `dark:text-paper` reprend l'encre sombre du thème pour un contraste AA sur les deux fonds.
+- **Vérifié en sombre** : `/dashboard`, `/sites/[id]`, `/reports`, `/alerts`, `/settings`, `/onboarding`, `/sources`, bandeau d'essai (`TrialBanner`, jetons uniquement, pas de changement de code nécessaire).
+
 ### Typographie
 
 Texte : **Schibsted Grotesk** (`next/font/google`, variable `--font-marketing`, exposée comme `font-sans`). Titres d'affichage : **Bricolage Grotesque** à taille optique (variable `--font-bricolage`, classe `font-display`), jamais pour du texte courant. Depuis l'harmonisation de septembre 2026 (décision du fondateur), `font-display` couvre aussi le Titre 1 de chaque page de l'application (Portefeuille, Alertes, Rapports, Paramètres) : c'est le seul usage de Bricolage dans l'application, tout le reste du texte applicatif reste en Schibsted. Les deux familles sont servies depuis notre domaine par `next/font` (aucune requête vers Google depuis le navigateur). Mono : Geist Mono (`font-mono`), uniquement pour du code.
