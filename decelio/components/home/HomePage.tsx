@@ -636,6 +636,7 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
             <ul className="mt-12 flex flex-wrap items-center justify-center gap-x-3 gap-y-3 text-sm text-ink-2">
               {[
                 "Facturation mensuelle, sans engagement",
+                "TVA non applicable (art. 293 B du CGI)",
                 "Paiement par carte, via Stripe",
                 "Rien à installer chez vos clients",
                 "Au-delà du quota, Decelio indique le palier suivant",
