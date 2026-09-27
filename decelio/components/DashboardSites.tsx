@@ -168,7 +168,7 @@ export function DashboardSites({
                 </h2>
               </div>
             </div>
-            <Button variant="outline" render={<Link href={`/sites/${activeAlerts[0].id}`} />}>
+            <Button variant="outline" nativeButton={false} render={<Link href={`/sites/${activeAlerts[0].id}`} />}>
               Voir le détail
             </Button>
           </CardContent>
