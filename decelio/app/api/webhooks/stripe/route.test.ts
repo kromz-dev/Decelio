@@ -15,20 +15,27 @@ vi.mock("@/lib/billing/plans", () => ({
 }));
 
 const txUserUpdate = vi.fn();
+const txUserFindUnique = vi.fn();
 const txProcessedWebhookCreate = vi.fn();
+const captureServerEventMock = vi.fn(async () => undefined);
 
 vi.mock("@/lib/db", () => ({
   db: {
     $transaction: vi.fn(async (callback: (tx: unknown) => unknown) =>
       callback({
         processedWebhook: { create: txProcessedWebhookCreate },
-        user: { update: txUserUpdate },
+        user: { update: txUserUpdate, findUnique: txUserFindUnique },
       }),
     ),
   },
 }));
 
+vi.mock("@/lib/posthog-server", () => ({
+  captureServerEvent: captureServerEventMock,
+}));
+
 import { getStripe } from "@/lib/billing/stripe";
+import { Prisma } from "@prisma/client";
 
 const { POST } = await import("./route");
 
@@ -96,6 +103,9 @@ describe("POST /api/webhooks/stripe — checkout.session.completed", () => {
         }),
       }),
     );
+    expect(captureServerEventMock).toHaveBeenCalledWith("user-1", "subscription_activated", {
+      plan: "SOLO",
+    });
   });
 
   it("does not touch founder fields when no coupon was applied", async () => {
@@ -119,5 +129,91 @@ describe("POST /api/webhooks/stripe — checkout.session.completed", () => {
     const data = txUserUpdate.mock.calls[0][0].data;
     expect(data.isFounderMember).toBeUndefined();
     expect(data.founderOfferAt).toBeUndefined();
+  });
+
+  it("n'émet aucun événement quand le webhook a déjà été traité (rejoué)", async () => {
+    mockStripe(fakeSession([]));
+    txProcessedWebhookCreate.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "5.22.0",
+      }),
+    );
+
+    const res = await POST(fakeRequest());
+    const body = await res.json();
+
+    expect(body).toEqual({ received: true, duplicate: true });
+    expect(txUserUpdate).not.toHaveBeenCalled();
+    expect(captureServerEventMock).not.toHaveBeenCalled();
+  });
+});
+
+function mockStripeSubscriptionDeleted(customerId: string) {
+  const event = {
+    id: "evt_deleted_1",
+    type: "customer.subscription.deleted",
+    data: { object: { customer: customerId } },
+  };
+
+  vi.mocked(getStripe).mockReturnValue({
+    webhooks: { constructEvent: vi.fn(() => event) },
+  } as unknown as ReturnType<typeof getStripe>);
+}
+
+describe("POST /api/webhooks/stripe — customer.subscription.deleted", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("émet subscription_canceled avec le plan retiré et le plan précédent", async () => {
+    mockStripeSubscriptionDeleted("cus_1");
+    txUserFindUnique.mockResolvedValueOnce({ id: "user-1", plan: "PRO" });
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "user-1" },
+        data: expect.objectContaining({ plan: "FREE" }),
+      }),
+    );
+    expect(captureServerEventMock).toHaveBeenCalledWith("user-1", "subscription_canceled", {
+      plan: "FREE",
+      previous_plan: "PRO",
+    });
+  });
+
+  it("n'émet rien quand aucun utilisateur ne correspond au client Stripe", async () => {
+    mockStripeSubscriptionDeleted("cus_inconnu");
+    txUserFindUnique.mockResolvedValueOnce(null);
+
+    const res = await POST(fakeRequest());
+
+    expect(res.status).toBe(200);
+    expect(txUserUpdate).not.toHaveBeenCalled();
+    expect(captureServerEventMock).not.toHaveBeenCalled();
+  });
+
+  it("n'émet pas deux fois quand le même événement Stripe est rejoué", async () => {
+    mockStripeSubscriptionDeleted("cus_1");
+    txUserFindUnique.mockResolvedValue({ id: "user-1", plan: "PRO" });
+
+    await POST(fakeRequest());
+    expect(captureServerEventMock).toHaveBeenCalledTimes(1);
+
+    // Rejeu du même événement Stripe : le marqueur d'idempotence existe déjà.
+    txProcessedWebhookCreate.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "5.22.0",
+      }),
+    );
+    const replay = await POST(fakeRequest());
+    const replayBody = await replay.json();
+
+    expect(replayBody).toEqual({ received: true, duplicate: true });
+    expect(captureServerEventMock).toHaveBeenCalledTimes(1);
   });
 });
