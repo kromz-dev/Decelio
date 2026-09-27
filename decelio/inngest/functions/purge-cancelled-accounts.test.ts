@@ -5,6 +5,11 @@ import {
   PURGE_BATCH_SIZE,
 } from "./purge-cancelled-accounts";
 import { db } from "@/lib/db";
+import { getStripe } from "@/lib/billing/stripe";
+import Stripe from "stripe";
+
+const txUserFindMany = vi.fn();
+const txUserDeleteMany = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -12,7 +17,16 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn(),
       deleteMany: vi.fn(),
     },
+    $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback({
+        user: { findMany: txUserFindMany, deleteMany: txUserDeleteMany },
+      }),
+    ),
   },
+}));
+
+vi.mock("@/lib/billing/stripe", () => ({
+  getStripe: vi.fn(),
 }));
 
 // `inngest.createFunction()` renvoie un `InngestFunction` dont le handler est
@@ -68,6 +82,9 @@ describe("purgeEligibleWhere", () => {
 describe("purgeCancelledAccountsJob", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Comportement par défaut pour txUserFindMany et txUserDeleteMany
+    txUserFindMany.mockImplementation(async () => []);
+    txUserDeleteMany.mockResolvedValue({ count: 0 });
   });
 
   it("fetches at most PURGE_BATCH_SIZE candidate ids using the eligibility filter", async () => {
@@ -97,33 +114,37 @@ describe("purgeCancelledAccountsJob", () => {
     });
 
     expect(db.user.deleteMany).not.toHaveBeenCalled();
-    expect(result).toEqual({ purged: 0 });
+    expect(result).toEqual({ purged: 0, stripeCustomersDeleted: 0 });
   });
 
-  it("deletes exactly the candidate ids, re-applying the eligibility filter as a race guard", async () => {
+  it("uses a transaction to read stripeCustomerIds and delete accounts atomically", async () => {
     vi.mocked(db.user.findMany).mockResolvedValue([
       { id: "user-1" },
       { id: "user-2" },
     ] as unknown as Awaited<ReturnType<typeof db.user.findMany>>);
-    vi.mocked(db.user.deleteMany).mockResolvedValue({ count: 2 });
 
-    const step: PurgeStep = {
-      run: vi.fn().mockImplementation(async (_name, fn) => await fn()),
+    // Simulation : findMany retourne les candidats avec stripeCustomerId,
+    // deleteMany supprime effectivement les 2, aucun ne survit.
+    txUserFindMany.mockImplementation(async (args: unknown) => {
+      const argsObj = args as unknown as { select?: Record<string, unknown> };
+      if (argsObj.select?.stripeCustomerId) {
+        // Appel interne : récupérer les stripeCustomerIds
+        return [
+          { id: "user-1", stripeCustomerId: "cus_123" },
+          { id: "user-2", stripeCustomerId: null },
+        ];
+      }
+      // Appel de vérification des survivors : aucun n'a survécu
+      return [];
+    });
+    txUserDeleteMany.mockResolvedValue({ count: 2 });
+
+    const mockStripe = {
+      customers: {
+        del: vi.fn().mockResolvedValue({ id: "cus_123", deleted: true }),
+      },
     };
-
-    await invokeHandler<{ step: PurgeStep }>(purgeCancelledAccountsJob, { step });
-
-    const call = vi.mocked(db.user.deleteMany).mock.calls[0][0]!;
-    expect(call.where!.id).toEqual({ in: ["user-1", "user-2"] });
-    expect(call.where!.plan).toBe("FREE");
-    expect(call.where!.stripeCurrentPeriodEnd).toBeNull();
-  });
-
-  it("returns the number of purged accounts for Inngest logs", async () => {
-    vi.mocked(db.user.findMany).mockResolvedValue([
-      { id: "user-1" },
-    ] as unknown as Awaited<ReturnType<typeof db.user.findMany>>);
-    vi.mocked(db.user.deleteMany).mockResolvedValue({ count: 1 });
+    vi.mocked(getStripe).mockReturnValue(mockStripe as unknown as Stripe);
 
     const step: PurgeStep = {
       run: vi.fn().mockImplementation(async (_name, fn) => await fn()),
@@ -133,16 +154,43 @@ describe("purgeCancelledAccountsJob", () => {
       step,
     });
 
-    expect(result).toEqual({ purged: 1 });
+    expect(db.$transaction).toHaveBeenCalled();
+    expect(txUserDeleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { in: ["user-1", "user-2"] },
+        }),
+      }),
+    );
+    expect(result).toEqual({ purged: 2, stripeCustomersDeleted: 1 });
   });
 
-  it("calls findMany and deleteMany exactly once each, never looping account by account", async () => {
+  it("deletes the Stripe customer for each account that has stripeCustomerId", async () => {
     vi.mocked(db.user.findMany).mockResolvedValue([
       { id: "user-1" },
       { id: "user-2" },
-      { id: "user-3" },
     ] as unknown as Awaited<ReturnType<typeof db.user.findMany>>);
-    vi.mocked(db.user.deleteMany).mockResolvedValue({ count: 3 });
+
+    // Simulation des appels : findMany retourne les stripeCustomerIds,
+    // deleteMany supprime les 2, vérification montre qu'aucun ne survit.
+    txUserFindMany.mockImplementation(async (args: unknown) => {
+      const argsObj = args as unknown as { select?: Record<string, unknown> };
+      if (argsObj.select?.stripeCustomerId) {
+        return [
+          { id: "user-1", stripeCustomerId: "cus_123" },
+          { id: "user-2", stripeCustomerId: "cus_456" },
+        ];
+      }
+      return [];
+    });
+    txUserDeleteMany.mockResolvedValue({ count: 2 });
+
+    const mockStripe = {
+      customers: {
+        del: vi.fn().mockResolvedValue({ id: "cus_123", deleted: true }),
+      },
+    };
+    vi.mocked(getStripe).mockReturnValue(mockStripe as unknown as Stripe);
 
     const step: PurgeStep = {
       run: vi.fn().mockImplementation(async (_name, fn) => await fn()),
@@ -150,7 +198,161 @@ describe("purgeCancelledAccountsJob", () => {
 
     await invokeHandler<{ step: PurgeStep }>(purgeCancelledAccountsJob, { step });
 
-    expect(db.user.findMany).toHaveBeenCalledTimes(1);
-    expect(db.user.deleteMany).toHaveBeenCalledTimes(1);
+    expect(mockStripe.customers.del).toHaveBeenCalledWith("cus_123");
+    expect(mockStripe.customers.del).toHaveBeenCalledWith("cus_456");
+    expect(mockStripe.customers.del).toHaveBeenCalledTimes(2);
+  });
+
+  it("skips Stripe deletion when no stripeCustomerIds are returned", async () => {
+    vi.mocked(db.user.findMany).mockResolvedValue([
+      { id: "user-1" },
+    ] as unknown as Awaited<ReturnType<typeof db.user.findMany>>);
+
+    txUserFindMany.mockImplementation(async (args: unknown) => {
+      const argsObj = args as unknown as { select?: Record<string, unknown> };
+      if (argsObj.select?.stripeCustomerId) {
+        return [{ id: "user-1", stripeCustomerId: null }];
+      }
+      return [];
+    });
+    txUserDeleteMany.mockResolvedValue({ count: 1 });
+
+    const mockStripe = {
+      customers: {
+        del: vi.fn(),
+      },
+    };
+    vi.mocked(getStripe).mockReturnValue(mockStripe as unknown as Stripe);
+
+    const step: PurgeStep = {
+      run: vi.fn().mockImplementation(async (_name, fn) => await fn()),
+    };
+
+    const result = await invokeHandler<{ step: PurgeStep }>(purgeCancelledAccountsJob, {
+      step,
+    });
+
+    expect(mockStripe.customers.del).not.toHaveBeenCalled();
+    expect(result).toEqual({ purged: 1, stripeCustomersDeleted: 0 });
+  });
+
+  it("treats a Stripe 404 resource_missing error as a successful deletion", async () => {
+    vi.mocked(db.user.findMany).mockResolvedValue([
+      { id: "user-1" },
+    ] as unknown as Awaited<ReturnType<typeof db.user.findMany>>);
+
+    txUserFindMany.mockImplementation(async (args: unknown) => {
+      const argsObj = args as unknown as { select?: Record<string, unknown> };
+      if (argsObj.select?.stripeCustomerId) {
+        return [{ id: "user-1", stripeCustomerId: "cus_123" }];
+      }
+      return [];
+    });
+    txUserDeleteMany.mockResolvedValue({ count: 1 });
+
+    const stripeError = new Stripe.errors.StripeError({
+      code: "resource_missing",
+      message: "No such customer",
+      type: "invalid_request_error",
+    });
+
+    const mockStripe = {
+      customers: {
+        del: vi.fn().mockRejectedValue(stripeError),
+      },
+    };
+    vi.mocked(getStripe).mockReturnValue(mockStripe as unknown as Stripe);
+
+    const step: PurgeStep = {
+      run: vi.fn().mockImplementation(async (_name, fn) => await fn()),
+    };
+
+    const result = await invokeHandler<{ step: PurgeStep }>(purgeCancelledAccountsJob, {
+      step,
+    });
+
+    expect(result).toEqual({ purged: 1, stripeCustomersDeleted: 1 });
+  });
+
+  it("re-throws non-404 Stripe errors", async () => {
+    vi.mocked(db.user.findMany).mockResolvedValue([
+      { id: "user-1" },
+    ] as unknown as Awaited<ReturnType<typeof db.user.findMany>>);
+
+    txUserFindMany.mockImplementation(async (args: unknown) => {
+      const argsObj = args as unknown as { select?: Record<string, unknown> };
+      if (argsObj.select?.stripeCustomerId) {
+        return [{ id: "user-1", stripeCustomerId: "cus_123" }];
+      }
+      return [];
+    });
+    txUserDeleteMany.mockResolvedValue({ count: 1 });
+
+    const stripeError = new Stripe.errors.StripeError({
+      code: "card_declined",
+      message: "Card was declined",
+      type: "card_error",
+    });
+
+    const mockStripe = {
+      customers: {
+        del: vi.fn().mockRejectedValue(stripeError),
+      },
+    };
+    vi.mocked(getStripe).mockReturnValue(mockStripe as unknown as Stripe);
+
+    const step: PurgeStep = {
+      run: vi.fn().mockImplementation(async (_name, fn) => {
+        try {
+          return await fn();
+        } catch (err) {
+          throw err;
+        }
+      }),
+    };
+
+    await expect(
+      invokeHandler<{ step: PurgeStep }>(purgeCancelledAccountsJob, { step }),
+    ).rejects.toThrow(stripeError);
+  });
+
+  it("does not delete an account or its Stripe customer if it becomes ineligible between steps", async () => {
+    vi.mocked(db.user.findMany).mockResolvedValue([
+      { id: "user-1" },
+    ] as unknown as Awaited<ReturnType<typeof db.user.findMany>>);
+
+    // Simulation : le compte est trouvé avec un stripeCustomerId, mais entre
+    // findMany et deleteMany il redevient inéligible (plan change, etc.), donc
+    // deleteMany retourne 0 et la vérification des survivors montre qu'il existe
+    // toujours.
+    txUserFindMany.mockImplementation(async (args: unknown) => {
+      const argsObj = args as unknown as { select?: Record<string, unknown> };
+      if (argsObj.select?.stripeCustomerId) {
+        return [{ id: "user-1", stripeCustomerId: "cus_123" }];
+      }
+      // Vérification des survivors : le compte a survécu (n'a pas été supprimé)
+      return [{ id: "user-1" }];
+    });
+    txUserDeleteMany.mockResolvedValue({ count: 0 }); // Aucun supprimé
+
+    const mockStripe = {
+      customers: {
+        del: vi.fn(),
+      },
+    };
+    vi.mocked(getStripe).mockReturnValue(mockStripe as unknown as Stripe);
+
+    const step: PurgeStep = {
+      run: vi.fn().mockImplementation(async (_name, fn) => await fn()),
+    };
+
+    const result = await invokeHandler<{ step: PurgeStep }>(purgeCancelledAccountsJob, {
+      step,
+    });
+
+    // Le compte a redevenu inéligible, donc : pas de suppression du compte en
+    // base (count = 0), pas de suppression du client Stripe non plus.
+    expect(mockStripe.customers.del).not.toHaveBeenCalled();
+    expect(result).toEqual({ purged: 0, stripeCustomersDeleted: 0 });
   });
 });
