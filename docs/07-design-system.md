@@ -12,9 +12,9 @@ Cinq principes :
 2. **Un verdict, c'est une forme et un mot.** Jamais une couleur seule : cercle plein + coche, octogone + croix, anneau pointillé, anneau + point d'interrogation.
 3. **Filets avant ombres.** Les cartes sont délimitées par un filet 1 px et le contraste papier / surface. L'ombre n'existe que pour ce qui flotte (menu, dialogue).
 4. **Tout état porte sa date.** « Vérifié à 04:12 », « stable depuis 41 j ». C'est la preuve que l'agence revend.
-5. **Le mouvement répond, il n'accueille pas.** Aucune animation d'entrée par section ; les transitions montrent ce qui a changé après une action.
+5. **Le mouvement répond, il n'accueille pas — sauf l'onde de la page d'accueil.** Dans l'application, aucune animation d'entrée ; les transitions montrent ce qui a changé après une action. Sur la page d'accueil marketing (décision du fondateur, 27/09/2026), une seule idée de mouvement, reprise du logo : l'onde. Les anneaux du héros se tracent du centre vers l'extérieur, les mots du titre arrivent en cascade, une onde lente repart du centre, et au défilement les blocs marqués `.reveal` montent en cascade selon leur rang (`--i`). Défilement en CSS pur (`animation-timeline: view()`) : sans prise en charge, le contenu est simplement visible. Tout est coupé par `prefers-reduced-motion`. Voir `globals.css`, section 6.
 
-Choix revus lors de la passe anti-cliché : bouton principal en encre marine plutôt qu'en bleu (le bleu ne signale que l'interactif dans le texte) ; pas de mono pour les domaines et codes HTTP (chiffres tabulaires du sans, mono réservé aux extraits `robots.txt`) ; en-têtes et libellés en casse de phrase, sans capitales espacées ; aucun dégradé ; rayons hiérarchisés (4 / 6 / 10 / 14) au lieu d'un rayon unique ; pas de flèche dans les boutons ; encre visiblement bleutée (#18213a) plutôt qu'un noir teinté.
+Choix revus lors de la passe anti-cliché : bouton principal en encre marine plutôt qu'en bleu (le bleu ne signale que l'interactif dans le texte) ; pas de mono pour les domaines et codes HTTP (chiffres tabulaires du sans, mono réservé aux extraits `robots.txt`) ; en-têtes et libellés en casse de phrase, sans capitales espacées ; aucun dégradé, sauf le halo radial bleu du héros de la page d'accueil, qui reprend `--brand-soft` ; rayons hiérarchisés (4 / 6 / 10 / 14 ; la page d'accueil utilise des rayons plus généreux, 20 à 32, pour ses blocs) au lieu d'un rayon unique ; pas de flèche dans les boutons ; encre visiblement bleutée (#18213a) plutôt qu'un noir teinté.
 
 ## 2. Jetons
 
@@ -47,7 +47,7 @@ Alias historiques conservés le temps de la migration : `paper-deep` → surface
 
 ### Typographie
 
-Une seule famille, **Schibsted Grotesk** (`next/font/google`, variable `--font-marketing`, exposée comme `font-sans`). Mono : Geist Mono (`font-mono`), uniquement pour du code.
+Texte : **Schibsted Grotesk** (`next/font/google`, variable `--font-marketing`, exposée comme `font-sans`). Titres d'affichage des pages marketing : **Bricolage Grotesque** à taille optique (variable `--font-bricolage`, classe `font-display`), jamais pour du texte courant ni dans l'application. Les deux sont servies depuis notre domaine par `next/font` (aucune requête vers Google depuis le navigateur). Mono : Geist Mono (`font-mono`), uniquement pour du code.
 
 | Rôle | Taille / interligne | Graisse | Classe |
 |---|---|---|---|
