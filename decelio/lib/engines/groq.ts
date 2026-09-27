@@ -5,7 +5,24 @@ import { captureAiGeneration } from "../posthog-ai";
 import { EngineConnector, EngineId, EngineQuery, EngineResponse, EngineError, EngineUsage } from "./types";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = "llama-3.1-70b-versatile";
+
+/**
+ * Modèle Groq utilisé par le juge et le générateur de prompts.
+ *
+ * Ce fichier codait `llama-3.1-70b-versatile` en dur, un modèle que Groq ne
+ * sert plus : chaque appel échouait donc, et les deux appelants
+ * (`lib/analysis/llm-judge.ts`, `lib/prompts/query-generator.ts`) retombaient
+ * en silence sur leur repli lexical. Le registre `engines/index.ts` documente
+ * d'ailleurs `llama-3.3-70b-versatile` depuis le début — le code ne suivait
+ * pas son propre commentaire.
+ *
+ * Surchargeable par variable d'environnement, parce que la panne va se
+ * reproduire : Groq retire régulièrement ses modèles, et on doit pouvoir
+ * basculer sans redéployer. `DEFAULT_GROQ_MODEL` reste la valeur de
+ * référence, testée.
+ */
+export const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
 
 /**
  * Tarif Groq, en dollars par million de tokens.
