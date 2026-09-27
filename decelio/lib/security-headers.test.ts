@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildContentSecurityPolicy, getSecurityHeaders } from "./security-headers";
+import {
+  buildContentSecurityPolicy,
+  getSecurityHeaders,
+  posthogAssetsHost,
+} from "./security-headers";
 
 function findHeader(headers: ReturnType<typeof getSecurityHeaders>, key: string) {
   return headers.find((header) => header.key === key)?.value;
@@ -60,19 +64,28 @@ describe("buildContentSecurityPolicy", () => {
     expect(buildContentSecurityPolicy(true)).toContain("frame-ancestors 'none'");
   });
 
-  it("n'autorise aucun CDN tiers pour les scripts (seulement 'self', dette 'unsafe-inline' documentée pour le bootstrap Next.js)", () => {
+  it("n'autorise que l'hôte d'assets PostHog pour les scripts, aucun autre CDN tiers (dette 'unsafe-inline' documentée pour le bootstrap Next.js)", () => {
     const csp = buildContentSecurityPolicy(true);
-    expect(csp).toContain("script-src 'self' 'unsafe-inline'");
-    expect(csp).not.toMatch(/script-src[^;]*https?:/);
+    expect(csp).toContain("script-src 'self' 'unsafe-inline' https://eu-assets.i.posthog.com");
+    expect(csp).not.toMatch(/script-src[^;]*https:\/\/(?!eu-assets\.i\.posthog\.com)/);
   });
 
   it("autorise les styles inline (dette documentée) mais rien d'externe", () => {
     expect(buildContentSecurityPolicy(true)).toContain("style-src 'self' 'unsafe-inline'");
   });
 
-  it("autorise uniquement l'hôte PostHog Cloud UE réellement utilisé, en plus de 'self'", () => {
+  it("autorise l'hôte API et l'hôte d'assets PostHog Cloud UE réellement utilisés, en plus de 'self'", () => {
     const csp = buildContentSecurityPolicy(true);
-    expect(csp).toContain("connect-src 'self' https://eu.i.posthog.com");
+    expect(csp).toContain(
+      "connect-src 'self' https://eu.i.posthog.com https://eu-assets.i.posthog.com",
+    );
+  });
+
+  it("autorise Stripe Checkout et le portail de facturation Stripe comme cible de form-action (Server Actions soumises via de vrais <form>)", () => {
+    const csp = buildContentSecurityPolicy(true);
+    expect(csp).toContain(
+      "form-action 'self' https://checkout.stripe.com https://billing.stripe.com",
+    );
   });
 
   it("force HTTPS uniquement en production", () => {
@@ -87,5 +100,25 @@ describe("buildContentSecurityPolicy", () => {
     expect(dev).toContain("ws: wss:");
     expect(prod).not.toContain("'unsafe-eval'");
     expect(prod).not.toContain("ws:");
+  });
+});
+
+describe("posthogAssetsHost", () => {
+  it("dérive l'hôte d'assets EU observé dans un vrai navigateur à partir de l'hôte API EU", () => {
+    expect(posthogAssetsHost("https://eu.i.posthog.com")).toBe(
+      "https://eu-assets.i.posthog.com",
+    );
+  });
+
+  it("s'adapte à une autre région Cloud PostHog (ex. US)", () => {
+    expect(posthogAssetsHost("https://us.i.posthog.com")).toBe(
+      "https://us-assets.i.posthog.com",
+    );
+  });
+
+  it("retombe sur l'hôte EU si la valeur ne correspond à aucune région PostHog Cloud connue", () => {
+    expect(posthogAssetsHost("https://posthog.example.com")).toBe(
+      "https://eu-assets.i.posthog.com",
+    );
   });
 });
