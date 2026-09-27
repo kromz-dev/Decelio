@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { Wordmark } from "@/components/home/SiteChrome";
 import { getTrialEndsAt } from "@/lib/billing/trial";
 import { TrialBanner } from "@/components/TrialBanner";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
+// Le script anti-flash (application de `.dark` avant le premier rendu) vit
+// dans `app/layout.tsx` (`beforeInteractive` exige un root layout). Ici,
+// `ThemeToggle` prend le relais côté client : lecture de la préférence,
+// écoute du système, nettoyage au démontage pour que les pages publiques
+// restent toujours claires.
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -22,18 +29,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Link href="/dashboard" aria-label="Decelio, portefeuille">
           <Wordmark />
         </Link>
-        <details className="relative">
-          <summary className="cursor-pointer list-none rounded-sm border border-line-strong px-3 py-2 text-sm font-medium text-ink">
-            Menu
-          </summary>
-          <nav className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-line bg-surface p-2 shadow-float">
-            <Link href="/dashboard" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Portefeuille</Link>
-            <Link href="/alerts" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Alertes</Link>
-            <Link href="/reports" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Rapports</Link>
-            <Link href="/sources" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Sources</Link>
-            <Link href="/settings" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Réglages</Link>
-          </nav>
-        </details>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <details className="relative">
+            <summary className="cursor-pointer list-none rounded-sm border border-line-strong px-3 py-2 text-sm font-medium text-ink">
+              Menu
+            </summary>
+            <nav className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-line bg-surface p-2 shadow-float">
+              <Link href="/dashboard" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Portefeuille</Link>
+              <Link href="/alerts" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Alertes</Link>
+              <Link href="/reports" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Rapports</Link>
+              <Link href="/sources" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Sources</Link>
+              <Link href="/settings" className="block rounded-sm px-3 py-2 text-sm text-ink hover:bg-surface-2">Réglages</Link>
+            </nav>
+          </details>
+        </div>
       </div>
       <div className="flex flex-1">
         <aside className="hidden w-64 border-r border-line bg-surface p-5 md:flex md:flex-col">
@@ -65,7 +75,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Voir les plans
             </Link>
           </nav>
-          <div className="flex items-center justify-between gap-2 border-t border-line pt-4 text-sm">
+          <div className="border-t border-line pt-4">
+            <ThemeToggle />
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-3 text-sm">
             <span className="truncate text-ink-2">{session.user?.name || session.user?.email}</span>
             <form action={async () => {
               "use server";

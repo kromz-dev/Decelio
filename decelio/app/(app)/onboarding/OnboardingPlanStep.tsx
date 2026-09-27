@@ -27,7 +27,7 @@ export function OnboardingPlanStep() {
       <header className="bg-ink text-paper">
         <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-3.5">
           <Link href="/" aria-label="Decelio, accueil" className="mr-auto inline-flex items-center">
-            <Wordmark light />
+            <Wordmark light="invert" />
           </Link>
           <span className="type-caption font-medium opacity-70">Étape 2 sur 3</span>
         </div>
