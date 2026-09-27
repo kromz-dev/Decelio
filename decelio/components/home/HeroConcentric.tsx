@@ -1,6 +1,6 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import { ScanForm } from './ScanForm';
+import { SiteHeader } from './SiteChrome';
 
 /**
  * Schema du hero : les trois controles, en courbes de niveau.
@@ -75,17 +75,6 @@ const ASSISTANTS = [
   { name: "Copilot", icon: "/icons/github-copilot.svg", radius: 780, angle: 150 },
 ];
 
-/**
- * Navigation unique, partagee par l'en-tete et le pied de page : une meme
- * section porte le meme nom partout (docs/11-audit-landing-page.md, Reprise §2).
- */
-export const NAV_LINKS = [
-  { href: "#probleme", label: "Le problème" },
-  { href: "#controles", label: "Les contrôles" },
-  { href: "#methode", label: "Comment ça marche" },
-  { href: "#tarifs", label: "Tarifs" },
-  { href: "#faq", label: "Questions" },
-] as const;
 
 /** Titre decoupe en mots pour l'entree en cascade. Deux lignes, coupees au sens. */
 const TITLE_LINES = [
@@ -120,40 +109,7 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
 
   return (
     <>
-      {/* En-tete colle en haut : il reste a portee pendant toute la lecture. */}
-      <header className="sticky top-0 z-50 w-full border-b border-line/70 bg-paper/75 backdrop-blur-xl backdrop-saturate-150">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-          <Link href="/" aria-label="Decelio, accueil" className="flex items-center gap-2.5">
-            <Image src="/logo-decelio.png" alt="" width={502} height={565} priority className="h-8 w-auto" />
-            <span className="font-display text-[22px] font-bold tracking-[-0.03em] text-ink">Decelio</span>
-          </Link>
-
-          <nav aria-label="Navigation principale" className="hidden items-center gap-7 text-sm font-medium text-ink-2 lg:flex">
-            {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} className="nav-link pb-0.5 hover:text-ink">
-                {link.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-              <Link href="/dashboard" className="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-ink/90">
-                Tableau de bord
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" className="hidden px-3 text-sm font-medium text-ink-2 transition-colors hover:text-ink sm:block">
-                  Connexion
-                </Link>
-                <Link href="/register" className="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper shadow-float transition-all duration-300 hover:-translate-y-0.5">
-                  Cr&eacute;er un compte
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteHeader isLoggedIn={isLoggedIn} />
 
       <section
         aria-labelledby="hero-titre"
