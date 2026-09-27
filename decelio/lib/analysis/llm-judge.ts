@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { groqPlainJson } from "../engines/groq";
 import { detectBrandMention } from "./mention-detector";
+import { captureServerException } from "../posthog-server";
 import { z } from "zod";
 
 const JudgeResultSchema = z.object({
@@ -114,7 +115,17 @@ export async function evaluateBrandMention(text: string, brandName: string, grou
 
     return reconcile(raw, detection);
   } catch (error) {
+    // Ce repli est volontaire (une panne du juge ne doit pas faire échouer une
+    // mesure), mais il a masqué une panne totale pendant des mois : le modèle
+    // Groq code en dur n'existait plus, chaque appel echouait, et seule une
+    // ligne de console le disait. On remonte donc aussi dans PostHog, qui est
+    // le canal d'erreurs du projet (ADR-001), pour que la degradation soit
+    // visible au lieu d'etre silencieuse.
     console.error("Erreur lors du jugement LLM, fallback sur la détection lexicale:", error);
+    await captureServerException(error, undefined, {
+      source: "llm-judge",
+      degraded_to: "detection-lexicale",
+    });
     return fallbackFromDetection(detection);
   }
 }

@@ -14,6 +14,7 @@ import {
 import { ALL_BOTS, BOTS, BotAgent, decelioUserAgent, DEFAULT_PROBE_BOTS } from "./agents";
 import { fetchRobotsReport, RobotsReport } from "./robots";
 import { getDefaultRenderer, Renderer } from "./renderer";
+import { detectPlatform, PlatformDetection } from "./platform";
 
 /**
  * Sonde secondaire : même requête, User-Agent d'un robot IA. Nous ne sommes
@@ -55,6 +56,12 @@ export interface ScanReport {
   access: AccessReport;
   jsDependency: JsDependencyReport;
   indexing: IndexingReport;
+  /**
+   * Détection de plateforme (CMS, extension SEO, pare-feu, hébergeur) à partir
+   * des seules données déjà récupérées ci-dessus — aucune requête réseau
+   * supplémentaire. Absent quand la page honnête n'a pas pu être lue.
+   */
+  platform?: PlatformDetection;
 }
 
 export interface ScanOptions {
@@ -99,6 +106,7 @@ export async function runScan(url: string, options: ScanOptions = {}): Promise<S
   const js = access.risk === "ok"
     ? analyzeJsDependency(page.html, renderedHtml)
     : analyzeJsDependency("", null);
+  const platform = page.status !== 0 ? detectPlatform({ headers: page.headers, html: page.html }) : undefined;
 
   return {
     url,
@@ -111,6 +119,7 @@ export async function runScan(url: string, options: ScanOptions = {}): Promise<S
       sources: directives.sources,
       perBot: reportBots.map((bot) => indexingForBot(directives, bot)),
     },
+    platform,
   };
 }
 

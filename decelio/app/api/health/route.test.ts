@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -21,11 +21,53 @@ describe("GET /api/health", () => {
     vi.clearAllMocks();
   });
 
-  it("1. retourne 200 avec { status: 'ok' }", async () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("1. retourne 200 avec status 'ok' et l'état de PostHog", async () => {
     const response = await GET();
+    const body = await response.json();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ status: "ok" });
+    expect(body.status).toBe("ok");
+    // La valeur dépend de l'environnement (voir tests 5 et 6 pour les deux cas) ;
+    // ici on prouve seulement que le champ existe et a la bonne forme.
+    expect(typeof body.posthogConfigured).toBe("boolean");
+  });
+
+  it("5. signale posthogConfigured=true quand le jeton et l'hôte sont présents", async () => {
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN", "phc_test_token_do_not_leak");
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_HOST", "https://eu.i.posthog.com");
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.posthogConfigured).toBe(true);
+  });
+
+  it("6. signale posthogConfigured=false quand le jeton ou l'hôte manque", async () => {
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN", "");
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_HOST", "https://eu.i.posthog.com");
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.posthogConfigured).toBe(false);
+  });
+
+  it("7. n'expose jamais le jeton, un fragment du jeton, ni sa longueur", async () => {
+    const secretToken = "phc_super_secret_token_value_12345";
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN", secretToken);
+    vi.stubEnv("NEXT_PUBLIC_POSTHOG_HOST", "https://eu.i.posthog.com");
+
+    const response = await GET();
+    const rawBody = await response.text();
+    const body = JSON.parse(rawBody) as Record<string, unknown>;
+
+    expect(rawBody).not.toContain(secretToken);
+    expect(rawBody).not.toContain(secretToken.slice(0, 6));
+    expect(Object.keys(body).sort()).toEqual(["posthogConfigured", "status"]);
   });
 
   it("2. n'appelle jamais @/lib/db", async () => {

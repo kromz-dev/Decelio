@@ -11,7 +11,7 @@ export interface AlertSiteChange {
   fix: string;
 }
 
-const FROM = "Decelio <bonjour@decelio.app>";
+const FROM = "Decelio <bonjour@decelio.fr>";
 
 export function suggestFix(cause: string): string {
   if (/robots\.txt/i.test(cause)) {
@@ -99,6 +99,16 @@ async function deliver(
       html: email.html,
       text: email.text,
     });
+    // Le SDK Resend ne leve PAS sur un rejet : il resout avec
+    // `{ data: null, error: {...} }`. Sans ce controle, un envoi refuse
+    // etait rapporte comme reussi — et pour une alerte, une ligne
+    // `AlertEvent` etait ecrite affirmant que le client avait ete
+    // prevenu alors qu'aucun e-mail n'etait parti.
+    if (response.error) {
+      console.error("Echec d'envoi (deliver) :", response.error);
+      return { success: false as const, error: response.error };
+    }
+
     return { success: true as const, id: response.data?.id };
   } catch (error) {
     logFailure("alert.send_failed", {
