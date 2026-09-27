@@ -6,8 +6,11 @@ Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` l
 
 ## 1. Ce qui est sur `main`
 
-- Code vérifié en fin de journée : `tsc`, `eslint`, `vitest` (**705 tests sur 87 fichiers**) et `build` au vert. CI verte sur les derniers commits.
+- Code vérifié en fin de journée : `tsc`, `eslint`, `vitest` (**733 tests sur 89 fichiers**) et `build` au vert. CI verte sur les derniers commits.
 - Fusionné depuis hier soir :
+  - **E-mails aux couleurs du site** (#167) : gabarit commun `lib/email/layout.ts` (logo servi depuis `https://decelio.fr`, couleurs du site, bouton en pilule, polices système, pied `contact@decelio.fr` + `/confidentialite`, verdicts avec forme et mot), appliqué à la réinitialisation du mot de passe, la découverte, le rapport mensuel, la fin d'essai, l'alerte et le récapitulatif, l'offre fondatrice. Pas d'e-mail de bienvenue, il n'existe pas.
+  - **Plateforme détectée affichée sur la fiche d'un site** (#168) : lue dans le payload du `ScanLog`, sans migration (`lib/sites/latest-platform.ts`, schéma partagé `lib/scanner/platform-schema.ts`).
+  - **Mode sombre de l'application** (#169, Design).
   - **Essai gratuit de 14 jours** (#139, ADR-002, maintenant « appliqué », #157).
   - **Préparation du lancement** (#142) : `AUTH_TRUST_HOST` dans `.env.example`, `signup_completed` après une connexion Google, texte « visibilité IA » retiré, suppression du client Stripe à la purge RGPD.
   - **PROGRESS.md et tâches à jour** (#143).
@@ -32,11 +35,9 @@ Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` l
 
 ## 3. Reste à faire
 
-### Code (Ingénierie), dans l'ordre
+### Code (Ingénierie)
 
-1. **E-mails aux couleurs du site** (demande du Design) : logo hébergé sur `decelio.fr`, couleurs de la marque, verdicts avec forme et mot (pas seulement une couleur), pile système pour la police, pied de page avec `contact@decelio.fr` et lien vers `/confidentialite`.
-2. **Plateforme détectée enregistrée en base**, pour l'afficher sur la fiche site (`PlatformLine`).
-3. Ensuite : la configuration ci-dessous, au fondateur.
+Rien en attente côté code ; suite : configuration et déploiement ci-dessous.
 
 ### Design
 
@@ -76,3 +77,5 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 - Ne jamais réécrire l'historique d'une branche poussée : `git merge origin/main`, pas de rebase.
 - La mesure des citations (`lib/engines`, `llm-judge`, `query-generator`, `visibility`, `posthog-ai`) est en test local. Ne pas la supprimer, ne pas la brancher sans le fondateur.
 - Un test instable a été signalé par le Design le 27/09 : non reproduit après six passages complets, aucun échec dans l'historique CI du jour hors Dependabot. À surveiller, pas encore un défaut confirmé.
+- Le logo des e-mails pointe vers `https://decelio.fr` et restera cassé tant que le site n'est pas déployé — c'est normal.
+- Dans un gabarit d'e-mail, ne jamais mettre de guillemets doubles dans une valeur de style (ex. police `"Segoe UI"`) : ils coupent l'attribut `style="…"` en plein milieu (corrigé dans #167).
