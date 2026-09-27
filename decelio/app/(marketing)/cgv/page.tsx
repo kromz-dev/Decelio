@@ -93,8 +93,11 @@ export default async function CgvPage() {
 
             <LegalSection id="essai" title="Essai">
               <p>
-                Une période d&apos;essai est en préparation. Tant qu&apos;elle n&apos;est pas proposée sur la page
-                des tarifs, l&apos;abonnement démarre au premier paiement.
+                Chaque formule payante commence par un essai gratuit de 14 jours, limité à un essai par compte.
+                Les coordonnées bancaires sont demandées à l&apos;inscription par Stripe. Le premier prélèvement a
+                lieu à la fin de l&apos;essai, sauf résiliation avant cette date depuis « Gérer mon abonnement ». Un
+                e-mail de rappel est envoyé 3 jours avant la fin de l&apos;essai, avec la date et le montant du
+                premier prélèvement. Pendant l&apos;essai, le client a accès à toute la formule choisie.
               </p>
             </LegalSection>
 
