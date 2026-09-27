@@ -364,8 +364,19 @@ export function analyzeJsDependency(rawHtml: string, renderedHtml: string | null
 // Statut combiné (rétrocompatibilité /api/audit)
 // ---------------------------------------------------------------------------
 
+/**
+ * Statut combiné pour une page Web (accès + contenu texte).
+ * - ACCESSIBLE           : la page est lisible par un robot ;
+ * - LOW_TEXT             : page courte sans indice de rendu côté client — à vérifier,
+ *                          jamais un verdict tranché (constitution, principe I) ;
+ * - EMPTY_JS_REQUIRED    : la page est une coquille vide qui dépend du rendu JS ;
+ * - BLOCKED_403          : accès explicitement refusé (403) ;
+ * - BLOCKED_CAPTCHA      : défi (Cloudflare, CAPTCHA...) au lieu du contenu ;
+ * - ERROR                : accès impossible ou erreur serveur.
+ */
 export type ScannerStatus =
   | "ACCESSIBLE"
+  | "LOW_TEXT"
   | "BLOCKED_403"
   | "BLOCKED_CAPTCHA"
   | "EMPTY_JS_REQUIRED"
@@ -400,8 +411,17 @@ export function analyzeResponse(result: CrawlResult, agent: string, controlWordC
 
   const js = analyzeJsDependency(result.html, null);
   let status: ScannerStatus = "ACCESSIBLE";
-  if (js.rawWordCount < MIN_WORDS) status = "EMPTY_JS_REQUIRED";
-  else if (controlWordCount !== undefined && js.rawWordCount < controlWordCount * 0.2) status = "EMPTY_JS_REQUIRED";
+
+  // Le robot reçoit bien moins de texte que la requête de référence (comportement inchangé).
+  if (controlWordCount !== undefined && controlWordCount >= MIN_WORDS && js.rawWordCount < controlWordCount * 0.2) {
+    status = "EMPTY_JS_REQUIRED";
+  }
+  // Page courte : ne déclarer « coquille vide » que si un indice de rendu côté
+  // client est présent. Sans indice, c'est une page statique légitime (constitution,
+  // principe I : jamais de verdict tranché sans preuve). Voir analyzeJsDependency.
+  else if (js.rawWordCount < MIN_WORDS) {
+    status = js.verdict === "likely_js_dependent" ? "EMPTY_JS_REQUIRED" : "LOW_TEXT";
+  }
 
   return { ...base, status, wordCount: js.rawWordCount, hasAppRoot: js.hasAppRoot };
 }
