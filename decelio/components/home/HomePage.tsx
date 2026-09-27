@@ -105,14 +105,47 @@ const PLANS = [
   },
 ] as const;
 
+/**
+ * Comparatif : Decelio face aux deux familles d'outils qu'une agence utilise
+ * deja. Prix releves sur les pages tarifaires officielles le 27/09/2026
+ * (wp-umbrella.com/pricing, managewp.com/pricing, citeme.io/pricing,
+ * semrush.com/pricing/ai). Le prix de Peec AI n'a pas pu etre lu sur sa page
+ * officielle (charge en JavaScript) : aucun chiffre n'est donc affiche pour lui.
+ * Peec AI annonce une lecture des regles robots.txt : d'ou « en partie ».
+ */
+const COMPARISON_COLUMNS = [
+  { key: "decelio", label: "Decelio" },
+  { key: "maintenance", label: "Outils de maintenance WordPress", tools: "WP Umbrella, ManageWP" },
+  { key: "visibility", label: "Outils de visibilité IA", tools: "Citeme, Peec AI, Semrush AI Toolkit" },
+  { key: "manual", label: "Vérification manuelle" },
+] as const;
+
 const COMPARISON = [
-  ["Vérifie l'accès des robots IA", "Oui, chaque jour", "Non", "Une seule fois"],
-  ["Portefeuille multi-clients", "Oui", "Oui", "Non"],
-  ["Volume de données SEO", "Aucun", "Très important", "Aucun"],
-  ["Suivi de positions et backlinks", "Non", "Oui", "Non"],
-  ["Alerte au changement d'état", "Oui", "Non", "Non"],
-  ["Rapport à votre marque", "Oui, à partir de 99 €", "Oui", "Non"],
-  ["Prix de départ", "39 €", "Plus de 130 €", "Gratuit"],
+  {
+    criterion: "Vérifie chaque jour que les robots IA peuvent lire le site (robots.txt, pare-feu, page sans JavaScript)",
+    values: ["Oui, chaque jour", "Non", "En partie selon l'outil : règles robots.txt", "Une fois, à la main"],
+  },
+  {
+    criterion: "Mesure la présence d'une marque dans les réponses des IA",
+    values: ["En préparation", "Non", "Oui, c'est leur métier", "Non"],
+  },
+  {
+    criterion: "Mises à jour et sauvegardes WordPress",
+    values: ["Non", "Oui, c'est leur métier", "Non", "Non"],
+  },
+  {
+    criterion: "Portefeuille de sites clients",
+    values: ["Oui", "Oui", "Par projet ou par domaine", "Non"],
+  },
+  {
+    criterion: "Prix d'entrée relevé",
+    values: [
+      "39 € par mois pour 10 sites",
+      "WP Umbrella : 1,99 € par site et par mois. ManageWP : base gratuite, modules payants par site",
+      "Citeme : dès 49 € par mois. Semrush AI Toolkit : 94,94 € par mois pour un domaine, engagement annuel. Peec AI : voir l'éditeur",
+      "Gratuit",
+    ],
+  },
 ] as const;
 
 /**
@@ -143,6 +176,10 @@ const faqs = [
   {
     q: "Quelle différence avec Semrush ?",
     a: "Semrush audite le référencement classique. Decelio vérifie uniquement l'accès technique des robots IA à vos sites, chaque jour.",
+  },
+  {
+    q: "Decelio remplace-t-il WP Umbrella ou ManageWP ?",
+    a: "Non, il les complète : eux gèrent les mises à jour et les sauvegardes, Decelio vérifie chaque jour que les robots des assistants IA peuvent lire les sites.",
   },
   {
     q: "Faut-il installer un plugin WordPress ?",
@@ -659,38 +696,68 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
         {/* 6. Comparatif honnete */}
         <section id="comparatif" aria-labelledby="comparatif-titre" className="border-y border-line bg-surface py-28">
           <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
-            <SectionHeading id="comparatif-titre" title="Decelio, une suite SEO ou une vérification manuelle ?">
-              Trois outils, trois questions diff&eacute;rentes. Voici, sans enjoliver, ce que Decelio fait et ce qu&apos;il ne fait pas.
+            <SectionHeading id="comparatif-titre" title="Un complément, pas un remplaçant">
+              Vos outils de maintenance mettent les sites &agrave; jour. Les outils de visibilit&eacute; IA mesurent si
+              une marque appara&icirc;t dans les r&eacute;ponses. Decelio v&eacute;rifie la cause technique en amont&nbsp;:
+              les robots peuvent-ils lire le site&nbsp;?
             </SectionHeading>
-            <div className="reveal overflow-x-auto rounded-[1.25rem] border border-line bg-paper">
-              <table className="w-full min-w-[640px] border-collapse text-left">
+
+            {/* Bureau : tableau. Mobile : une carte par critere, pour eviter le defilement horizontal. */}
+            <div className="reveal hidden overflow-hidden rounded-[1.25rem] border border-line bg-paper lg:block">
+              <table className="w-full border-collapse text-left">
                 <caption className="sr-only">
-                  Comparaison entre Decelio, les suites SEO comme Semrush ou Ahrefs, et une v&eacute;rification manuelle du blocage des robots IA
+                  Comparaison entre Decelio, les outils de maintenance WordPress, les outils de visibilit&eacute; IA et une v&eacute;rification manuelle
                 </caption>
                 <thead>
-                  <tr className="border-b border-line">
-                    <th scope="col" className="px-5 py-4 text-sm font-semibold text-ink-2">Crit&egrave;re</th>
-                    <th scope="col" className="bg-brand-soft/60 px-5 py-4 text-sm font-semibold text-brand">Decelio</th>
-                    <th scope="col" className="px-5 py-4 text-sm font-semibold text-ink-2">Semrush / Ahrefs</th>
-                    <th scope="col" className="px-5 py-4 text-sm font-semibold text-ink-2">V&eacute;rification manuelle</th>
+                  <tr className="border-b border-line align-top">
+                    <th scope="col" className="w-[24%] px-5 py-4 text-sm font-semibold text-ink-2">Crit&egrave;re</th>
+                    {COMPARISON_COLUMNS.map((col) => (
+                      <th
+                        key={col.key}
+                        scope="col"
+                        className={`px-5 py-4 text-sm font-semibold ${col.key === "decelio" ? "bg-brand-soft/60 text-brand" : "text-ink"}`}
+                      >
+                        {col.label}
+                        {"tools" in col && <span className="mt-1 block text-xs font-normal text-ink-2">{col.tools}</span>}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="text-sm text-ink-2">
-                  {COMPARISON.map(([criterion, decelio, suite, manual], i) => (
-                    <tr key={criterion} className={i < COMPARISON.length - 1 ? "border-b border-line/60" : ""}>
-                      <th scope="row" className="px-5 py-3.5 font-semibold text-ink">{criterion}</th>
-                      <td className="bg-brand-soft/40 px-5 py-3.5 font-medium text-ink">{decelio}</td>
-                      <td className="px-5 py-3.5">{suite}</td>
-                      <td className="px-5 py-3.5">{manual}</td>
+                  {COMPARISON.map((row, i) => (
+                    <tr key={row.criterion} className={`align-top ${i < COMPARISON.length - 1 ? "border-b border-line/60" : ""}`}>
+                      <th scope="row" className="px-5 py-4 font-semibold text-ink">{row.criterion}</th>
+                      {row.values.map((value, v) => (
+                        <td key={COMPARISON_COLUMNS[v].key} className={`px-5 py-4 ${v === 0 ? "bg-brand-soft/40 font-medium text-ink" : ""}`}>
+                          {value}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            <div className="space-y-4 lg:hidden">
+              {COMPARISON.map((row, i) => (
+                <section key={row.criterion} style={rank(i % 3)} aria-label={row.criterion} className="reveal rounded-[1.25rem] border border-line bg-paper p-5">
+                  <h3 className="mb-3 font-semibold text-ink">{row.criterion}</h3>
+                  <dl className="space-y-2 text-sm">
+                    {row.values.map((value, v) => (
+                      <div key={COMPARISON_COLUMNS[v].key} className={v === 0 ? "rounded-[10px] bg-brand-soft/60 p-3" : "px-3"}>
+                        <dt className={`font-semibold ${v === 0 ? "text-brand" : "text-ink"}`}>{COMPARISON_COLUMNS[v].label}</dt>
+                        <dd className="text-ink-2">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ))}
+            </div>
+
             {/* Un prix concurrent non date devient faux avec le temps. */}
             <p className="mt-4 text-sm text-ink-2">
-              Prix des suites SEO relevés sur leurs pages publiques en septembre 2026, pour leur premier palier
-              mensuel. Ils changent&nbsp;: vérifiez chez l’éditeur avant de vous décider.
+              Prix relev&eacute;s sur les pages tarifaires publiques des &eacute;diteurs le 27 septembre 2026, hors promotion
+              temporaire. Ils changent&nbsp;: v&eacute;rifiez chez l&apos;&eacute;diteur avant de vous d&eacute;cider.
             </p>
           </div>
         </section>
