@@ -172,7 +172,7 @@ export function accessSummary(report: ScanReport): ResultSummary {
     case "ok":
       return { value: "lu", cause: `Le site répond normalement (HTTP ${access.httpStatus}).` };
     case "challenged":
-      // Blocage général : même logique qu'en verdictForBot. Voir ligne ~63.
+      // Blocage général : même logique que le bloc « Blocage général » plus haut.
       // Rien ne prouve que ce blocage vise spécifiquement les robots IA.
       return {
         value: "inconnu",
@@ -182,7 +182,7 @@ export function accessSummary(report: ScanReport): ResultSummary {
         fix: "Vérifier manuellement si ce pare-feu cible spécifiquement les robots IA.",
       };
     case "blocked":
-      // Blocage général : même logique qu'en verdictForBot. Voir ligne ~63.
+      // Blocage général : même logique que le bloc « Blocage général » plus haut.
       // Rien ne prouve que ce refus vise spécifiquement les robots IA.
       return {
         value: "inconnu",
