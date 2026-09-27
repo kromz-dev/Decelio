@@ -105,14 +105,47 @@ const PLANS = [
   },
 ] as const;
 
+/**
+ * Comparatif : Decelio face aux deux familles d'outils qu'une agence utilise
+ * deja. Prix releves sur les pages tarifaires officielles le 27/09/2026
+ * (wp-umbrella.com/pricing, managewp.com/pricing, citeme.io/pricing,
+ * semrush.com/pricing/ai). Le prix de Peec AI n'a pas pu etre lu sur sa page
+ * officielle (charge en JavaScript) : aucun chiffre n'est donc affiche pour lui.
+ * Peec AI annonce une lecture des regles robots.txt : d'ou « en partie ».
+ */
+const COMPARISON_COLUMNS = [
+  { key: "decelio", label: "Decelio" },
+  { key: "maintenance", label: "Outils de maintenance WordPress", tools: "WP Umbrella, ManageWP" },
+  { key: "visibility", label: "Outils de visibilité IA", tools: "Citeme, Peec AI, Semrush AI Toolkit" },
+  { key: "manual", label: "Vérification manuelle" },
+] as const;
+
 const COMPARISON = [
-  ["Vérifie l'accès des robots IA", "Oui, chaque jour", "Non", "Une seule fois"],
-  ["Portefeuille multi-clients", "Oui", "Oui", "Non"],
-  ["Volume de données SEO", "Aucun", "Très important", "Aucun"],
-  ["Suivi de positions et backlinks", "Non", "Oui", "Non"],
-  ["Alerte au changement d'état", "Oui", "Non", "Non"],
-  ["Rapport à votre marque", "Oui, à partir de 99 €", "Oui", "Non"],
-  ["Prix de départ", "39 €", "Plus de 130 €", "Gratuit"],
+  {
+    criterion: "Vérifie chaque jour que les robots IA peuvent lire le site (robots.txt, pare-feu, page sans JavaScript)",
+    values: ["Oui, chaque jour", "Non", "En partie selon l'outil : règles robots.txt", "Une fois, à la main"],
+  },
+  {
+    criterion: "Mesure la présence d'une marque dans les réponses des IA",
+    values: ["En préparation", "Non", "Oui, c'est leur métier", "Non"],
+  },
+  {
+    criterion: "Mises à jour et sauvegardes WordPress",
+    values: ["Non", "Oui, c'est leur métier", "Non", "Non"],
+  },
+  {
+    criterion: "Portefeuille de sites clients",
+    values: ["Oui", "Oui", "Par projet ou par domaine", "Non"],
+  },
+  {
+    criterion: "Prix d'entrée relevé",
+    values: [
+      "39 € par mois pour 10 sites",
+      "WP Umbrella : 1,99 € par site et par mois. ManageWP : base gratuite, modules payants par site",
+      "Citeme : dès 49 € par mois. Semrush AI Toolkit : 94,94 € par mois pour un domaine, engagement annuel. Peec AI : voir l'éditeur",
+      "Gratuit",
+    ],
+  },
 ] as const;
 
 /**
@@ -145,6 +178,10 @@ const faqs = [
     a: "Semrush audite le référencement classique. Decelio vérifie uniquement l'accès technique des robots IA à vos sites, chaque jour.",
   },
   {
+    q: "Decelio remplace-t-il WP Umbrella ou ManageWP ?",
+    a: "Non, il les complète : eux gèrent les mises à jour et les sauvegardes, Decelio vérifie chaque jour que les robots des assistants IA peuvent lire les sites.",
+  },
+  {
     q: "Faut-il installer un plugin WordPress ?",
     a: "Non. Decelio interroge chaque site depuis l'extérieur, comme le ferait un robot IA. Aucun script ni accès n'est requis.",
   },
@@ -153,6 +190,33 @@ const faqs = [
     a: "Oui. À partir de la formule Agence, le rapport mensuel en PDF porte le logo de votre agence : vous pouvez ajouter une ligne « surveillance IA » à vos contrats de maintenance.",
   },
 ];
+
+/**
+ * Robots d'entrainement et robots de recherche, par editeur. Noms verifies
+ * dans la documentation publique d'OpenAI et d'Anthropic, et identiques a
+ * ceux que le scanner interroge (lib/scanner/agents.ts).
+ */
+const BOT_FAMILIES = [
+  { vendor: "OpenAI (ChatGPT)", training: "GPTBot", search: "OAI-SearchBot" },
+  { vendor: "Anthropic (Claude)", training: "ClaudeBot", search: "Claude-SearchBot" },
+] as const;
+
+/** Exemple de robots.txt : refuser l'entrainement, rester lisible pour la recherche. */
+const ROBOTS_EXAMPLE = [
+  "# Refuser l'entraînement",
+  "User-agent: GPTBot",
+  "Disallow: /",
+  "",
+  "User-agent: ClaudeBot",
+  "Disallow: /",
+  "",
+  "# Rester lisible pour la recherche",
+  "User-agent: OAI-SearchBot",
+  "Allow: /",
+  "",
+  "User-agent: Claude-SearchBot",
+  "Allow: /",
+].join("\n");
 
 /** Les deux publics de Decelio, et ce que chacun en tire. */
 const AUDIENCES = [
@@ -412,6 +476,59 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
           </div>
         </section>
 
+        {/* 3a. Pedagogie : entrainement et recherche sont deux robots, donc deux decisions */}
+        <section id="robots" aria-labelledby="robots-titre" className="scroll-mt-16 bg-paper pb-28">
+          <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
+            <SectionHeading id="robots-titre" title="Refuser l’entraînement, rester lisible pour la recherche">
+              Chaque assistant envoie plusieurs robots. Un robot d&apos;exploration est le programme qui lit les
+              pages d&apos;un site pour le compte d&apos;une IA. L&apos;un sert &agrave; entra&icirc;ner les
+              mod&egrave;les, l&apos;autre &agrave; r&eacute;pondre aux questions en direct&nbsp;: ce sont deux
+              d&eacute;cisions distinctes.
+            </SectionHeading>
+
+            <div className="reveal overflow-hidden rounded-[1.75rem] border border-line bg-surface">
+              <div className="grid grid-cols-1 border-b border-line md:grid-cols-3">
+                <p className="hidden px-8 py-4 text-sm font-semibold text-ink-2 md:block">Assistant</p>
+                <p className="px-8 py-4 text-sm font-semibold text-ink-2 md:border-l md:border-line">
+                  Robot d&apos;entra&icirc;nement
+                  <span className="block font-normal">Lit les pages pour entra&icirc;ner les futurs mod&egrave;les</span>
+                </p>
+                <p className="bg-brand-soft/60 px-8 py-4 text-sm font-semibold text-brand md:border-l md:border-line">
+                  Robot de recherche
+                  <span className="block font-normal text-ink-2">Lit les pages pour r&eacute;pondre et citer ses sources</span>
+                </p>
+              </div>
+              {BOT_FAMILIES.map((family, i) => (
+                <div key={family.vendor} className={`grid grid-cols-1 md:grid-cols-3 ${i > 0 ? "border-t border-line" : ""}`}>
+                  <p className="px-8 pb-2 pt-5 font-semibold text-ink md:py-5">{family.vendor}</p>
+                  <p className="px-8 py-2 font-mono text-sm text-ink-2 md:border-l md:border-line md:py-5">{family.training}</p>
+                  <p className="bg-brand-soft/40 px-8 pb-5 pt-2 font-mono text-sm font-medium text-ink md:border-l md:border-line md:py-5">{family.search}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div style={rank(0)} className="reveal rounded-[1.75rem] border border-line bg-surface p-8">
+                <h3 className="font-display mb-3 text-[22px] font-bold tracking-[-0.02em] text-ink">Ce que cela permet</h3>
+                <p className="text-[16px] leading-relaxed text-ink-2">
+                  Le fichier robots.txt dit &agrave; chaque robot ce qu&apos;il a le droit de lire. Une agence peut
+                  y refuser GPTBot et ClaudeBot, donc l&apos;entra&icirc;nement, tout en laissant passer
+                  OAI-SearchBot et Claude-SearchBot&nbsp;: le site reste lisible quand un assistant cherche une
+                  r&eacute;ponse.
+                </p>
+              </div>
+              <figure style={rank(1)} className="reveal rounded-[1.75rem] border border-line bg-surface p-8">
+                <figcaption className="type-caption mb-3 text-ink-2">Exemple de robots.txt</figcaption>
+                <pre className="overflow-x-auto rounded-[10px] bg-paper px-4 py-3 font-mono text-[13px] leading-relaxed text-ink">{ROBOTS_EXAMPLE}</pre>
+                <p className="mt-3 text-sm text-ink-2">
+                  Decelio v&eacute;rifie chaque jour que ces r&egrave;gles, et le pare-feu, laissent bien passer les
+                  robots que vous avez choisis.
+                </p>
+              </figure>
+            </div>
+          </div>
+        </section>
+
         {/* 3bis. Pour qui : les deux publics, et un appel au moment ou le lecteur est convaincu */}
         <section id="pour-qui" aria-labelledby="pour-qui-titre" className="scroll-mt-16 bg-paper pb-28">
           <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
@@ -579,38 +696,68 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
         {/* 6. Comparatif honnete */}
         <section id="comparatif" aria-labelledby="comparatif-titre" className="border-y border-line bg-surface py-28">
           <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
-            <SectionHeading id="comparatif-titre" title="Decelio, une suite SEO ou une vérification manuelle ?">
-              Trois outils, trois questions diff&eacute;rentes. Voici, sans enjoliver, ce que Decelio fait et ce qu&apos;il ne fait pas.
+            <SectionHeading id="comparatif-titre" title="Un complément, pas un remplaçant">
+              Vos outils de maintenance mettent les sites &agrave; jour. Les outils de visibilit&eacute; IA mesurent si
+              une marque appara&icirc;t dans les r&eacute;ponses. Decelio v&eacute;rifie la cause technique en amont&nbsp;:
+              les robots peuvent-ils lire le site&nbsp;?
             </SectionHeading>
-            <div className="reveal overflow-x-auto rounded-[1.25rem] border border-line bg-paper">
-              <table className="w-full min-w-[640px] border-collapse text-left">
+
+            {/* Bureau : tableau. Mobile : une carte par critere, pour eviter le defilement horizontal. */}
+            <div className="reveal hidden overflow-hidden rounded-[1.25rem] border border-line bg-paper lg:block">
+              <table className="w-full border-collapse text-left">
                 <caption className="sr-only">
-                  Comparaison entre Decelio, les suites SEO comme Semrush ou Ahrefs, et une v&eacute;rification manuelle du blocage des robots IA
+                  Comparaison entre Decelio, les outils de maintenance WordPress, les outils de visibilit&eacute; IA et une v&eacute;rification manuelle
                 </caption>
                 <thead>
-                  <tr className="border-b border-line">
-                    <th scope="col" className="px-5 py-4 text-sm font-semibold text-ink-2">Crit&egrave;re</th>
-                    <th scope="col" className="bg-brand-soft/60 px-5 py-4 text-sm font-semibold text-brand">Decelio</th>
-                    <th scope="col" className="px-5 py-4 text-sm font-semibold text-ink-2">Semrush / Ahrefs</th>
-                    <th scope="col" className="px-5 py-4 text-sm font-semibold text-ink-2">V&eacute;rification manuelle</th>
+                  <tr className="border-b border-line align-top">
+                    <th scope="col" className="w-[24%] px-5 py-4 text-sm font-semibold text-ink-2">Crit&egrave;re</th>
+                    {COMPARISON_COLUMNS.map((col) => (
+                      <th
+                        key={col.key}
+                        scope="col"
+                        className={`px-5 py-4 text-sm font-semibold ${col.key === "decelio" ? "bg-brand-soft/60 text-brand" : "text-ink"}`}
+                      >
+                        {col.label}
+                        {"tools" in col && <span className="mt-1 block text-xs font-normal text-ink-2">{col.tools}</span>}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="text-sm text-ink-2">
-                  {COMPARISON.map(([criterion, decelio, suite, manual], i) => (
-                    <tr key={criterion} className={i < COMPARISON.length - 1 ? "border-b border-line/60" : ""}>
-                      <th scope="row" className="px-5 py-3.5 font-semibold text-ink">{criterion}</th>
-                      <td className="bg-brand-soft/40 px-5 py-3.5 font-medium text-ink">{decelio}</td>
-                      <td className="px-5 py-3.5">{suite}</td>
-                      <td className="px-5 py-3.5">{manual}</td>
+                  {COMPARISON.map((row, i) => (
+                    <tr key={row.criterion} className={`align-top ${i < COMPARISON.length - 1 ? "border-b border-line/60" : ""}`}>
+                      <th scope="row" className="px-5 py-4 font-semibold text-ink">{row.criterion}</th>
+                      {row.values.map((value, v) => (
+                        <td key={COMPARISON_COLUMNS[v].key} className={`px-5 py-4 ${v === 0 ? "bg-brand-soft/40 font-medium text-ink" : ""}`}>
+                          {value}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            <div className="space-y-4 lg:hidden">
+              {COMPARISON.map((row, i) => (
+                <section key={row.criterion} style={rank(i % 3)} aria-label={row.criterion} className="reveal rounded-[1.25rem] border border-line bg-paper p-5">
+                  <h3 className="mb-3 font-semibold text-ink">{row.criterion}</h3>
+                  <dl className="space-y-2 text-sm">
+                    {row.values.map((value, v) => (
+                      <div key={COMPARISON_COLUMNS[v].key} className={v === 0 ? "rounded-[10px] bg-brand-soft/60 p-3" : "px-3"}>
+                        <dt className={`font-semibold ${v === 0 ? "text-brand" : "text-ink"}`}>{COMPARISON_COLUMNS[v].label}</dt>
+                        <dd className="text-ink-2">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ))}
+            </div>
+
             {/* Un prix concurrent non date devient faux avec le temps. */}
             <p className="mt-4 text-sm text-ink-2">
-              Prix des suites SEO relevés sur leurs pages publiques en septembre 2026, pour leur premier palier
-              mensuel. Ils changent&nbsp;: vérifiez chez l’éditeur avant de vous décider.
+              Prix relev&eacute;s sur les pages tarifaires publiques des &eacute;diteurs le 27 septembre 2026, hors promotion
+              temporaire. Ils changent&nbsp;: v&eacute;rifiez chez l&apos;&eacute;diteur avant de vous d&eacute;cider.
             </p>
           </div>
         </section>

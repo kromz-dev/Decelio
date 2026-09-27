@@ -340,6 +340,13 @@ export default async function PricingPage() {
               </p>
             </details>
             <details className={styles.faqItem}>
+              <summary>Decelio remplace-t-il WP Umbrella ou ManageWP ?</summary>
+              <p className={styles.faqAnswer}>
+                Non, il les compl&egrave;te&nbsp;: eux g&egrave;rent les mises &agrave; jour et les sauvegardes, Decelio
+                v&eacute;rifie chaque jour que les robots des assistants IA peuvent lire les sites.
+              </p>
+            </details>
+            <details className={styles.faqItem}>
               <summary>Comment fonctionnent la facturation et la TVA ?</summary>
               <p className={styles.faqAnswer}>
                 Les prix affichés sont HT. Une facture est disponible après
