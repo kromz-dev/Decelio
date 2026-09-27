@@ -16,7 +16,7 @@ Légende : ✅ fait et vérifié · ⚠️ partiel · ❌ à faire · 🔒 bloqu
 
 | | Élément | État |
 |---|---|---|
-| ✅ | 4 contrôles : tsc, eslint, vitest, build | Verts sur `main` (705 tests, 87 fichiers, en fin de journée le 27/09). |
+| ✅ | 4 contrôles : tsc, eslint, vitest, build | Verts sur `main` (733 tests, 89 fichiers, en fin de journée le 27/09). |
 | ✅ | Audit de sécurité | Critique et hauts corrigés : #115, #116, #120. Aucune faille de contrôle d'accès entre comptes trouvée. |
 | ✅ | Fiabilité du scanner | Corrections fusionnées : #103, #107, #110, #111, #128 à #131 (faux « COQUILLE VIDE », 429 provoqués par le scanner, rebinding DNS, taille du corps de `/api/pdf/diagnostic`), puis #146 (le même faux « COQUILLE VIDE » dans l'ancienne route `/api/audit`, qui compte désormais `LOW_TEXT` comme accessible). |
 | ✅ | Essai gratuit de 14 jours (ADR-002) | Fusionné (#139). L'ADR-002 est passé au statut « appliqué » (#157). |
