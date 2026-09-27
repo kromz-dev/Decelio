@@ -81,9 +81,10 @@ export function ScanForm() {
             disabled={loading}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "scan-error" : undefined}
+            className="rounded-full px-5"
           />
         </div>
-        <Button type="submit" size="lg" disabled={loading || !url.trim()} className="w-full sm:w-auto">
+        <Button type="submit" size="lg" disabled={loading || !url.trim()} className="w-full sm:w-auto rounded-full px-8 font-semibold">
           {loading ? (
             <>
               <LoaderCircle className="animate-spin" aria-hidden />

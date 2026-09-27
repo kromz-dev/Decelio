@@ -30,6 +30,7 @@ Choix revus lors de la passe anti-cliché : bouton principal en encre marine plu
 | Encre 3 (placeholder, désactivé) | `--ink-3` | `#8a93a6` | `#6e7a90` | 3.1:1, jamais pour du texte courant |
 | Filet | `--line` | `#d9dfe7` | `#273142` | — |
 | Filet fort (bordure de contrôle) | `--line-strong` | `#8390a3` | `#5f6b82` | 3.2:1 (WCAG 1.4.11) |
+| Marque (logo, accents de marque) | `--brand` / `--brand-soft` | `#1d4ca4` / `#e8eefb` | `#7ea6f0` / `#16233d` | 8,0:1 sur blanc, 7,3:1 sur `--paper` |
 | Cobalt (liens, focus, sélection) | `--cobalt` / `--cobalt-soft` | `#2b55d0` / `#e6ecfb` | `#8caaff` / `#1b2a4f` | 6.3:1 |
 | Lu | `--ok` / `--ok-soft` | `#177249` / `#e1f3ea` | `#4fcb8e` / `#12331f` | 5.9:1 blanc, 5.1:1 sur soft |
 | Refusé | `--stop` / `--stop-soft` | `#be2b2b` / `#fbe7e7` | `#f2716a` / `#3e1a1a` | 5.6:1, 5.0:1 sur soft |
@@ -37,6 +38,10 @@ Choix revus lors de la passe anti-cliché : bouton principal en encre marine plu
 | Inconnu | `--unknown` / `--unknown-soft` | `#5d6880` / `#edf0f4` | `#9aa4b8` / `#242c3a` | 4.9:1, 4.9:1 sur soft |
 
 Classes Tailwind : `bg-paper`, `text-ink-2`, `border-line-strong`, `text-ok`, `bg-stop-soft`, etc. Les alias shadcn (`bg-primary`, `text-muted-foreground`, `border-border`, `ring-ring`) pointent sur ces jetons. Le thème sombre s'active avec la classe `.dark` sur `<html>` ou sur un conteneur ; il est prévu pour l'application, le marketing reste clair.
+
+`--brand` est le bleu du logo. Il sert à l'identité — marque déposée, accents, tracé du héros — jamais à un verdict : un site lu reste `--ok`, un site bloqué reste `--stop`. En sombre, le bleu d'origine tombe à 1,4:1 sur `--paper` ; la variante `#7ea6f0` le remonte à 7,6:1.
+
+**Attention au faux ami.** `--color-cited` et l'alias `cited` désignent l'état « cité par une IA », hérité du nom précédent du produit. Ce n'est pas la couleur de la marque. Les renommer en `--color-brand` casserait le sens.
 
 Alias historiques conservés le temps de la migration : `paper-deep` → surface-2, `cited` → ok, `rival` → stop, `signal` → warn, `muted` → ink-2 (texte gris : **ne pas utiliser `bg-muted`**), `line` → line.
 
@@ -97,6 +102,25 @@ Ligne de 44 px (`h-11`), texte 13 px, en-tête 12 px 500 en casse de phrase avec
 
 Modèle d'une alerte (voir `/design-system`) : glyphe du verdict, titre en 15 px 600 qui nomme l'assistant et le site, puis deux lignes `Cause` et `Correctif`, l'heure à droite, deux actions au plus (« Voir le site », « Marquer traité »). Une alerte résolue reste listée à 70 % d'opacité.
 
+### Logo
+
+| Fichier | Usage |
+|---|---|
+| `public/logo-decelio.png` | Fonds clairs. Détouré, fond transparent, recadré au contenu. |
+| `public/logo-decelio-blanc.png` | Fonds sombres (pied de page en `--ink`), où le bleu tombe sous le seuil. |
+| `app/icon.png` | Favicon, 512 px, transparent. Convention de fichiers Next.js. |
+| `app/apple-icon.png` | Écran d'accueil iOS, 180 px, fond blanc (iOS n'accepte pas la transparence). |
+
+Le logo est un D tracé en lignes concentriques irrégulières. Toujours accompagné du mot « Decelio » : seul, il n'est pas encore
+reconnaissable. Dans une pastille, utiliser `--brand-soft` en fond et `--brand` à 15 % en filet.
+
+### Motif du héros
+
+Le fond du héros reprend le logo : des anneaux concentriques légèrement ondulés, chacun avec son propre nombre de lobes et sa
+propre phase, de sorte qu'aucun ne se superpose exactement à un autre (`contourPath()` dans `components/home/HeroConcentric.tsx`).
+L'amplitude reste sous 2 % du rayon — au-delà, l'anneau cesse de se lire comme un cercle. Les deux anneaux intérieurs restent
+nus : le centre appartient au contenu.
+
 ## 4. Faire / ne pas faire
 
 | Faire | Ne pas faire |
@@ -124,6 +148,10 @@ Cible : freelances et agences de maintenance WordPress, fondateurs d'agences SEO
 5. **Lisibilité des tarifs.** Trois formules au plus, prix mensuel en gros chiffres tabulaires, ce qui change entre formules en une ligne (nombre de sites, rapport en marque blanche, intégration Cloudflare), la formule recommandée signalée par un filet d'encre et non par une couleur. Indiquer « sans engagement » et « sans installation chez vos clients » près du bouton. Pas de « Contactez-nous » pour la formule de base.
 6. **Friction du formulaire.** Scan gratuit : un champ (domaine), pas de compte. Inscription : trois champs (agence, e-mail, mot de passe), le nombre de sites en second écran ; carte bancaire à la dernière étape et dit clairement. Étiquette visible, aide sous le champ, erreur en texte, validation au blur et non à la frappe.
 7. **Copie.** Phrases courtes, verbes actifs, vocabulaire du client (« pare-feu », « plugin », « rapport mensuel ») plutôt que « GEO », « AEO ». Aucun tiret cadratin décoratif, aucune flèche.
+8. **Une grille tarifaire se compare ou ne sert à rien.** Les trois paliers exposent les mêmes lignes, dans le même ordre. Ce qui manque à un palier s'écrit avec un tiret et un `sr-only` « non inclus », jamais par omission : c'est le manque visible qui vend le palier supérieur. Le même verbe sur les trois boutons, et le même que dans l'application (« Choisir Agence »).
+9. **Répondre aux quatre questions d'achat près du bouton.** Engagement, moyen de paiement, essai, dépassement de quota. Chaque réponse se vérifie dans `lib/billing/` avant d'être écrite : au 27 septembre 2026, abonnement Stripe mensuel, sans `trial_period_days`, carte obligatoire, quota appliqué par `PLAN_LIMITS`.
+10. **Une comparaison à un concurrent se date.** Un prix relevé chez un tiers vieillit et devient faux tout seul. Indiquer le mois du relevé et inviter à vérifier chez l'éditeur.
+11. **Pas de liste de plus de cinq points opposée à une autre liste.** Deux colonnes de six puces ne se comparent pas : on lit les six premières, puis les six suivantes. Aligner les paires sur une même ligne, et en garder quatre au plus.
 
 ## 6. Accessibilité (plancher)
 
@@ -133,7 +161,7 @@ Cible : freelances et agences de maintenance WordPress, fondateurs d'agences SEO
 - Verdicts : forme + mot ; `variant="glyph"` conserve le mot en `sr-only`.
 - Formulaires : `<label htmlFor>` visible, `aria-invalid`, `aria-describedby` vers le message, erreur qui dit quoi corriger.
 - Tableaux : `<caption>` (`sr-only` accepté), `scope="col"`, colonne d'actions avec en-tête `sr-only`.
-- Mouvement : `prefers-reduced-motion` respecté globalement.
+- Mouvement : `prefers-reduced-motion` respecté globalement. La règle remet aussi `animation-delay` à zéro — raccourcir la durée ne suffit pas quand l'animation part d'une opacité nulle : la page resterait vide pendant toute l'attente.
 - Langue : `lang="fr"` sur `<html>` ; sentence case ; guillemets « » et espaces insécables devant `: ; ? !`.
 
 ## 7. Migration

@@ -486,3 +486,60 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : Impossible d'insérer deux fois la même URL pour un même utilisateur.
   - **Taille** : S
 
+
+- [x] **T060** [DB] Migration manquante pour `updatedAt` et l'unicité `MonitoredSite(userId, url)` - `prisma/migrations/20260926230000_add_updated_at_and_site_unique`
+  - **Dépendances** : T059
+  - **Note** : T059 avait été cochée alors que `schema.prisma` déclarait ces objets qu'aucune migration ne créait. Une base construite depuis les migrations ne les avait donc pas, le job `prisma` de la CI échouait, et toute création de compte ou de site aurait échoué en production. Les tests ne l'attrapaient pas : ils simulent la base.
+  - **Vérification** : `prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel ./prisma/schema.prisma --exit-code` répond `No difference detected.`
+  - **Taille** : S
+
+- [x] **T061** [QUALITÉ] Remettre la CI au vert sur `main` - `components/home/HomePage.tsx`, `app/(app)/sources/page.tsx`
+  - **Dépendances** : Aucune
+  - **Note** : `main` était rouge depuis le 26/09 14 h 51 alors que `PROGRESS.md` annonçait le contraire. Deux jobs échouaient : `lint` (23 apostrophes non échappées) et `prisma` (voir T060).
+  - **Vérification** : les dix jobs de la CI passent sur `main`.
+  - **Taille** : S
+
+- [x] **T062** [MARKETING] Renommer Cited en Decelio partout - dépôt GitHub, dossier `decelio/`, identifiants techniques, `llms.txt`
+  - **Dépendances** : Aucune
+  - **Note** : `llms.txt` décrivait encore le positionnement abandonné au pivot (mesure de part de voix). Les jetons `--color-cited` sont conservés : ils désignent l'état « cité par une IA », pas la marque.
+  - **Vérification** : plus aucune occurrence de `cited` hors état « cité » et noms réels des ressources Neon et Render.
+  - **Taille** : M
+
+- [x] **T063** [MARKETING] Audit de la page d'accueil et correction des écarts à la constitution - `docs/11-audit-landing-page.md`
+  - **Dépendances** : Aucune
+  - **EF/ENF** : Constitution I (honnêteté de la mesure), III (ne rien promettre de non construit)
+  - **Note** : sept écarts corrigés — `llms.txt`, « temps réel » contre quotidien, trois surpromesses de mesure, deux faux badges de popularité, et deux fausses notifications de scan dans le héros.
+  - **Vérification** : aucune des formulations relevées ne subsiste dans le HTML servi.
+  - **Taille** : M
+
+- [x] **T064** [MARKETING] Données structurées JSON-LD de la page d'accueil - `components/home/StructuredData.tsx`
+  - **Dépendances** : T063
+  - **Note** : un seul bloc, trois nœuds — `Organization`, `SoftwareApplication` avec les trois offres, `FAQPage` alimenté par le tableau déjà affiché. Pas d'`aggregateRating` : aucun avis n'existe.
+  - **Vérification** : le bloc `application/ld+json` est présent et se parse ; les six questions y figurent.
+  - **Taille** : S
+
+- [x] **T065** [DESIGN] Identité visuelle : logo, jeton `--brand`, icônes du site - `public/logo-decelio*.png`, `app/icon.png`, `app/globals.css`
+  - **Dépendances** : Aucune
+  - **Note** : le site n'avait aucun favicon. Défaut d'accessibilité corrigé au passage : `prefers-reduced-motion` ne remettait pas `animation-delay` à zéro, laissant le héros vide près de deux secondes.
+  - **Vérification** : logo visible en en-tête et en pied de page, favicon dans l'onglet.
+  - **Taille** : M
+
+- [x] **T066** [DESIGN] Refonte du héros et des sections de conversion - `HeroConcentric.tsx`, `HomePage.tsx`
+  - **Dépendances** : T065
+  - **EF/ENF** : `docs/07-design-system.md` §5
+  - **Note** : anneaux en courbes de niveau reprenant le logo, huit assistants IA servis localement, grille tarifaire rendue comparable, douze puces ramenées à quatre paires alignées.
+  - **Vérification** : `tsc`, `eslint`, `vitest` au vert ; rendu vérifié à 1440 px et à 375 px.
+  - **Taille** : L
+
+- [ ] **T067** [MARKETING] Page « Qui est derrière Decelio », signée - `app/(marketing)/a-propos/page.tsx`
+  - **Dépendances** : Aucune
+  - **EF/ENF** : `docs/11-audit-landing-page.md` §2.2
+  - **Note** : seul trou E-E-A-T de la page. Aucun nom humain n'apparaît nulle part, alors que « qui affirme cela » est un critère de sélection pour les moteurs de réponse, et une objection commerciale directe quand une agence confie son portefeuille.
+  - **Vérification** : la page existe, elle est liée depuis le pied de page, et porte un nom.
+  - **Taille** : S
+
+- [ ] **T068** [MARKETING] Vérifier le domaine `decelio.fr` chez Resend - tableau de bord Resend
+  - **Dépendances** : Aucune
+  - **Note** : bloquant pour tous les e-mails produits. Sans domaine vérifié, seul `onboarding@resend.dev` peut envoyer, ce qui est inutilisable pour démarcher des agences. Le domaine est acheté depuis le 26/09.
+  - **Vérification** : `list-domains` renvoie `decelio.fr` avec le statut vérifié.
+  - **Taille** : S
