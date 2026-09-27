@@ -71,11 +71,11 @@ export function OnboardingPlanStep() {
                 key={plan.id}
                 className={
                   "flex flex-col rounded-lg border bg-surface p-4.5 " +
-                  (plan.id === "PRO" ? "border-cobalt" : "border-line")
+                  (plan.id === "PRO" ? "border-ink" : "border-line")
                 }
               >
                 {plan.id === "PRO" && (
-                  <span className="mb-2.5 self-start rounded-xs bg-cobalt-soft px-2 py-0.5 type-caption font-medium text-cobalt">
+                  <span className="mb-2.5 self-start rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-paper">
                     Recommandé
                   </span>
                 )}
@@ -102,7 +102,7 @@ function PlanSubmitButton({ label, primary }: { label: string; primary: boolean 
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" size="lg" variant={primary ? "default" : "outline"} disabled={pending} className="w-full">
+    <Button type="submit" size="lg" variant={primary ? "default" : "outline"} disabled={pending} className="h-auto min-h-11 w-full whitespace-normal py-2.5 text-center leading-snug">
       {pending ? (
         <>
           <Loader2 className="size-4 animate-spin" />
