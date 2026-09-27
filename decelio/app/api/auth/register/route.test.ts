@@ -30,9 +30,7 @@ vi.mock("@/lib/posthog-server", () => ({
   captureServerEvent: vi.fn(async () => undefined),
 }));
 
-vi.mock("@/lib/legal/terms", () => ({
-  TERMS_VERSION: "2026-09-27",
-}));
+import { TERMS_VERSION } from "@/lib/legal/terms";
 
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
@@ -143,7 +141,7 @@ describe("POST /api/auth/register — acceptation des CGV", () => {
           email: "avec-acceptation@example.com",
           name: "Test",
           termsAcceptedAt: expect.any(Date),
-          termsVersion: "2026-09-27",
+          termsVersion: TERMS_VERSION,
         }),
       }),
     );

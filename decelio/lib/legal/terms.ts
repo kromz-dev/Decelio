@@ -24,4 +24,4 @@
  * description ; l'Ingénierie la pose ici dans la même fusion. Sans cela, des
  * comptes sont enregistrés comme ayant accepté un texte qu'ils n'ont pas lu.
  */
-export const TERMS_VERSION = "2026-09-27";
+export const TERMS_VERSION = "2026-09-27-2";
