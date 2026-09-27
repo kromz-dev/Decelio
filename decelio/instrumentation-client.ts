@@ -15,7 +15,17 @@ if (process.env.NODE_ENV === "development" && (!projectToken || !host)) {
 
 if (projectToken && host) {
   posthog.init(projectToken, {
-    api_host: host,
+    // Proxy inverse sur notre propre domaine (`app/ingest/[...path]/
+    // route.ts`) : le navigateur du visiteur n'appelle jamais
+    // `eu.i.posthog.com` ni `eu-assets.i.posthog.com` directement, donc son
+    // IP ne part vers aucun tiers (règle « pas d'appel tiers depuis une page
+    // publique »). Le relais serveur retire lui-même `x-forwarded-for`,
+    // `x-real-ip` et `cf-connecting-ip` avant de transmettre à PostHog.
+    api_host: "/ingest",
+    // `ui_host` sert uniquement les liens de la barre d'outils PostHog
+    // (Toolbar) affichés dans le tableau de bord PostHog lui-même — jamais
+    // chargé ni appelé depuis le navigateur d'un visiteur du site public.
+    ui_host: "https://eu.posthog.com",
     defaults: "2026-01-30",
     // ADR-001 : aucun cookie ni localStorage, donc pas de traceur soumis à
     // consentement (règle « pas de cookie » de T006 sur les pages
