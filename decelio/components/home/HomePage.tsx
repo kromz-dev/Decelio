@@ -363,9 +363,6 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               <h2 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight mb-4">
                 En pilote automatique
               </h2>
-              <p className="text-xl text-ink-2 max-w-3xl mx-auto">
-                Pas de plugin &agrave; installer. Pas de code &agrave; modifier.
-              </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -381,8 +378,8 @@ export function HomePage({ isLoggedIn }: { isLoggedIn?: boolean }) {
               </div>
               <div className="bg-paper p-8 rounded-3xl relative overflow-hidden group">
                 <div className="text-6xl font-black text-line-strong mb-6 opacity-50 group-hover:opacity-100 transition-opacity">3</div>
-                <h3 className="text-2xl font-bold text-ink mb-3">Alerte avec Correctif</h3>
-                <p className="text-ink-2 text-lg">Un e-mail d&egrave;s qu&apos;un site casse, avec la cause et le correctif technique. Rapport r&eacute;capitulatif envoy&eacute; en fin de mois.</p>
+                <h3 className="text-2xl font-bold text-ink mb-3">Alerte avec correctif</h3>
+                <p className="text-ink-2 text-lg">Un e-mail d&egrave;s qu&apos;un robot IA est bloqu&eacute;, avec la cause et le correctif technique. Le site r&eacute;pond normalement &agrave; un visiteur humain&nbsp;: c&apos;est ce qui rend le blocage invisible sans alerte. Rapport r&eacute;capitulatif envoy&eacute; en fin de mois.</p>
               </div>
             </div>
           </div>
