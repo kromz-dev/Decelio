@@ -18,9 +18,9 @@ Légende : ✅ fait et vérifié · ⚠️ partiel · ❌ à faire · 🔒 bloqu
 |---|---|---|
 | ✅ | 4 contrôles : tsc, eslint, vitest, build | Verts sur `main` (608 tests au 27/09, après #120). |
 | ✅ | Audit de sécurité | Critique et hauts corrigés : #115, #116, #120. Aucune faille de contrôle d'accès entre comptes trouvée. |
-| ⚠️ | Fiabilité du scanner | Principales corrections fusionnées (#103, #107, #110, #111). En cours : faux « COQUILLE VIDE », 429 provoqués par le scanner, rebinding DNS, taille du corps de `/api/pdf/diagnostic`. |
+| ✅ | Fiabilité du scanner | Corrections fusionnées : #103, #107, #110, #111, puis #128 à #131 (faux « COQUILLE VIDE », 429 provoqués par le scanner, rebinding DNS, taille du corps de `/api/pdf/diagnostic`). Reste mineur : le même faux « COQUILLE VIDE » dans l'ancienne route `/api/audit`. |
 | ⚠️ | Essai gratuit de 14 jours (ADR-002) | Branche `feat/essai-gratuit-14-jours` en cours. |
-| ⚠️ | PostHog par notre domaine (ADR-004) | Branche `fix/posthog-proxy-domaine` en cours. |
+| ⚠️ | PostHog par notre domaine (ADR-004) | Fusionné (#134). Reste la vérification dans un vrai navigateur. |
 | ❌ | Acceptation des CGV à l'inscription | À faire après la fusion des pages légales : colonne `termsAcceptedAt` avec la version. |
 
 ## 3. Services externes
