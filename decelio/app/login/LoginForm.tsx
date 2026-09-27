@@ -35,7 +35,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-ink-2" htmlFor="email">
           Adresse e-mail
@@ -59,12 +59,6 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       <Button type="submit" size="lg" disabled={loading} className="w-full">
         {loading ? "Connexion..." : "Se connecter"}
       </Button>
-      <p className="text-center text-sm text-ink-2">
-        Pas encore de compte ?{" "}
-        <Link href="/register" className="font-medium text-cobalt hover:underline">
-          Créer mon compte
-        </Link>
-      </p>
     </form>
   );
 }
