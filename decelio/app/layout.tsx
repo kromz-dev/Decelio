@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 // `strategy="beforeInteractive"` exige un root layout (voir doc Next.js),
 // d'où sa présence ici plutôt que dans `app/(app)/layout.tsx`.
 const APP_ROUTE_PREFIXES = ["/dashboard", "/alerts", "/reports", "/settings", "/onboarding", "/sources", "/sites"];
-const NO_FLASH_SCRIPT = `(function(){try{var p=location.pathname;var isApp=${JSON.stringify(APP_ROUTE_PREFIXES)}.some(function(r){return p===r||p.indexOf(r+"/")===0;});if(!isApp){return;}var t=localStorage.getItem("decelio-theme");var sys=window.matchMedia("(prefers-color-scheme: dark)").matches;var dark=t==="dark"||(t!=="light"&&sys);var el=document.documentElement;el.classList.toggle("dark",dark);el.style.colorScheme=dark?"dark":"light";}catch(e){}})();`;
+const NO_FLASH_SCRIPT = `(function(){try{var p=location.pathname;var isApp=${JSON.stringify(APP_ROUTE_PREFIXES)}.some(function(r){return p===r||p.indexOf(r+"/")===0;});if(!isApp){return;}var t=localStorage.getItem("decelio-theme");var sys=window.matchMedia("(prefers-color-scheme: dark)").matches;var dark=t==="dark"||(t!=="light"&&sys);var el=document.documentElement;el.classList.toggle("dark",dark);el.style.colorScheme=dark?"dark":"light";}catch(e){document.documentElement.classList.remove("dark");}})();`;
 
 export const metadata: Metadata = {
   title: "Decelio | La lisibilité IA de tout votre portefeuille client",
