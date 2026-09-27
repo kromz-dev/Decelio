@@ -370,9 +370,14 @@
   animation: ring-draw 2.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
 }
 
+/* L'onde (radar). Vitesse constante (linear) : le rayon atteint a chaque
+   instant est donc calculable, et HeroConcentric.tsx en deduit l'instant ou
+   l'onde touche chaque bulle d'assistant (voir RIPPLE et .bubble-ping).
+   Garder ces valeurs synchronisees avec la constante RIPPLE. */
 @keyframes ripple {
   0%   { transform: scale(0.42); opacity: 0; }
-  12%  { opacity: 0.55; }
+  6%   { opacity: 0.6; }
+  80%  { opacity: 0.4; }
   100% { transform: scale(1.08); opacity: 0; }
 }
 
@@ -380,7 +385,22 @@
   transform-box: view-box;
   transform-origin: center;
   opacity: 0;
-  animation: ripple 7s cubic-bezier(0.25, 0.6, 0.3, 1) 2.6s infinite;
+  animation: ripple 7s linear 2.6s infinite;
+}
+
+/* La bulle touchee par l'onde : un sursaut, le bord qui passe au bleu de la
+   marque, et un anneau qui s'echappe. Meme periode que l'onde ; chaque bulle
+   est decalee par --ping-delay, calcule selon son rayon. */
+@keyframes bubble-ping {
+  0%   { transform: scale(1); border-color: rgb(255 255 255 / 0.8); box-shadow: 0 0 0 0 rgb(29 76 164 / 0.45), var(--float-shadow); }
+  3%   { transform: scale(1.14); border-color: var(--brand); background-color: var(--brand-soft); }
+  11%  { transform: scale(1); border-color: rgb(255 255 255 / 0.8); background-color: rgb(255 255 255 / 0.8); box-shadow: 0 0 0 16px rgb(29 76 164 / 0), var(--float-shadow); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgb(29 76 164 / 0), var(--float-shadow); }
+}
+
+.bubble-ping {
+  animation: bubble-ping 7s linear infinite;
+  animation-delay: var(--ping-delay, 0s);
 }
 
 @keyframes word-in {

@@ -93,6 +93,19 @@ const TITLE_LINES = [
   ["lisibles", "par", "toutes", "les", "IA"],
 ] as const;
 
+/**
+ * L'onde du radar (classe `.ripple`, globals.css) : un anneau de rayon
+ * `radius`, mis a l'echelle de `from` a `to` a vitesse constante, pendant
+ * `duration` secondes, apres `delay`. A garder synchronise avec le CSS.
+ */
+const RIPPLE = { radius: 780, from: 0.42, to: 1.08, delay: 2.6, duration: 7 };
+
+/** Instant (en s) ou l'onde atteint une bulle posee sur l'orbite `radius`. */
+function pingDelay(radius: number): string {
+  const progress = (radius / RIPPLE.radius - RIPPLE.from) / (RIPPLE.to - RIPPLE.from);
+  return `${(RIPPLE.delay + progress * RIPPLE.duration).toFixed(2)}s`;
+}
+
 /** Position en pourcentage du conteneur carre, pour un angle et un rayon donnes. */
 function polarPercent(radius: number, angleDeg: number) {
   const a = (angleDeg * Math.PI) / 180;
@@ -175,7 +188,7 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
               ))}
               {/* L'onde : repart du centre, lentement, a la maniere du controle quotidien. */}
               <path
-                d={contourPath(780, 11, 7, 0.8)}
+                d={contourPath(RIPPLE.radius, 11, 7, 0.8)}
                 fill="none"
                 stroke="var(--brand)"
                 strokeWidth={2}
@@ -188,22 +201,23 @@ export default function HeroConcentric({ isLoggedIn }: { isLoggedIn?: boolean })
               <span
                 key={assistant.name}
                 aria-hidden="true"
-                className="animate-cascade absolute hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/80 py-1.5 pl-1.5 pr-3.5 shadow-float backdrop-blur-md lg:flex"
+                className="animate-cascade absolute hidden -translate-x-1/2 -translate-y-1/2 lg:block"
                 style={{ ...polarPercent(assistant.radius, assistant.angle), animationDelay: `${1300 + i * 110}ms` }}
               >
-                <Image src={assistant.icon} alt="" width={24} height={24} className="h-6 w-6 rounded-full bg-surface" />
-                <span className="text-[13px] font-medium leading-none text-ink-2">{assistant.name}</span>
+                {/* Deux couches : l'entree en cascade et la reaction a l'onde animent chacune leur propre transform. */}
+                <span
+                  className="bubble-ping flex items-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/80 py-1.5 pl-1.5 pr-3.5 shadow-float backdrop-blur-md"
+                  style={{ ["--ping-delay" as string]: pingDelay(assistant.radius) }}
+                >
+                  <Image src={assistant.icon} alt="" width={24} height={24} className="h-6 w-6 rounded-full bg-surface" />
+                  <span className="text-[13px] font-medium leading-none text-ink-2">{assistant.name}</span>
+                </span>
               </span>
             ))}
           </div>
 
           {/* CONTENU CENTRAL */}
           <div className="relative z-20 mx-auto flex max-w-4xl flex-col items-center px-4 text-center">
-            {/* Ce que c'est et pour qui, avant le titre : les mots que les agences cherchent. */}
-            <p className="animate-cascade mb-6 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-white/70 px-4 py-1.5 text-sm font-medium text-brand backdrop-blur-md" style={{ animationDelay: "200ms" }}>
-              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand" />
-              Surveillance des robots IA pour agences web
-            </p>
             <h1
               id="hero-titre"
               className="font-display mb-7 text-[44px] font-bold leading-[0.98] tracking-[-0.04em] text-ink sm:text-[64px] md:text-[80px]"
