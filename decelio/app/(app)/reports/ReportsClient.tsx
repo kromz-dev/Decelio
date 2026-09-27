@@ -160,7 +160,7 @@ export function ReportsClient({
       <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-8">
         <div>
           <h1 className="text-[28px] leading-[34px] font-semibold tracking-[-0.02em] text-ink sm:text-[34px] sm:leading-[40px]">
-            Rapport mensuel de visibilité IA
+            Rapport mensuel d&apos;accès des robots IA
           </h1>
           <p className="mt-3 max-w-[58ch] text-sm leading-6 text-ink-2">
             À joindre au reporting de maintenance de chaque client. Généré automatiquement chaque mois, exportable en PDF.
