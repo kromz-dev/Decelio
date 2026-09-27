@@ -463,6 +463,85 @@ describe("scanSiteJob", () => {
     expect(sendRegressionAlert).not.toHaveBeenCalled();
   });
 
+  it("un site avec historique qui passe à À VÉRIFIER n'attend pas de confirmation et n'alerte jamais", async () => {
+    // À VÉRIFIER est un statut d'incertitude (indice, pas preuve) : il ne
+    // doit jamais, à lui seul, déclencher le circuit de confirmation ni une
+    // alerte de régression, même quand le site a déjà un historique.
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan).mockResolvedValue({
+      report: {},
+      results: [
+        {
+          agent: "GPTBot",
+          simpleStatus: "À VÉRIFIER",
+          reasons: ["general block (status:403) — no bot-specific evidence"],
+          httpStatus: 403,
+          durationMs: 10,
+          wordCount: 0,
+        },
+      ],
+    } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, { event: { data: { siteId: "site-1" } }, step });
+
+    expect(step.sleep).not.toHaveBeenCalled();
+    expect(step.run).toHaveBeenCalledTimes(1);
+    expect(db.monitoredSite.update).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: { status: "À VÉRIFIER" },
+    });
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
+  });
+
+  it("un second scan qui retombe à À VÉRIFIER ne confirme pas une régression BLOQUÉ en attente", async () => {
+    // Le second scan doit être « même statut, ou pire » pour confirmer :
+    // À VÉRIFIER (rang 1) est moins grave que BLOQUÉ (rang 3), donc il ne
+    // confirme rien, même si un blocage général demeure suspect.
+    vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
+      id: "site-1",
+      url: "https://exemple.fr",
+      status: "OK",
+      user: { email: "agence@exemple.fr" },
+    } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
+    vi.mocked(runCoreScan)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [{ agent: "GPTBot", simpleStatus: "BLOQUÉ", reasons: ["robots.txt disallows GPTBot"], httpStatus: 200, durationMs: 10, wordCount: 80 }],
+      } as unknown as CoreScanOutput)
+      .mockResolvedValueOnce({
+        report: {},
+        results: [
+          {
+            agent: "GPTBot",
+            simpleStatus: "À VÉRIFIER",
+            reasons: ["general block (status:403) — no bot-specific evidence"],
+            httpStatus: 403,
+            durationMs: 10,
+            wordCount: 0,
+          },
+        ],
+      } as unknown as CoreScanOutput);
+
+    const step = stepThatRuns();
+    await invokeHandler(scanSiteJob, { event: { data: { siteId: "site-1" } }, step });
+
+    expect(step.sleep).toHaveBeenCalledTimes(1);
+    expect(db.monitoredSite.update).not.toHaveBeenCalled();
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
+  });
+
   it("enregistre ERREUR pour un site injoignable et BLOQUÉ pour un robots.txt", async () => {
     vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
       id: "site-1",
