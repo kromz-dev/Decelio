@@ -16,10 +16,10 @@
 
 | Branche | Contenu | État |
 |---|---|---|
-| `fix/coquille-vide-page-courte` | Une page courte mais réelle n'est plus classée « COQUILLE VIDE » | Poussée, à relire, puis demande de fusion |
-| `fix/scanner-sans-auto-429` | Le scanner ne provoque plus lui-même de 429 | Poussée, à relire, puis demande de fusion |
-| `fix/ssrf-rebinding-dns` | Protection contre le rebinding DNS dans `crawler.ts` | En cours |
-| `fix/pdf-diagnostic-taille-corps` | Limite la taille du corps de `/api/pdf/diagnostic` | Pas commencée |
+| `fix/coquille-vide-page-courte` → #130 | Une page courte sans indice de rendu JS donne « À VÉRIFIER », plus « COQUILLE VIDE » | Demande de fusion ouverte, CI en cours |
+| `fix/scanner-sans-auto-429` → #131 | Au plus 2 requêtes simultanées par hôte, 300 ms entre les lots, une reprise sur 429 ; un 429 non confirmé donne « À VÉRIFIER » | Demande de fusion ouverte, CI en cours. Pas de conflit avec #130. |
+| `fix/ssrf-rebinding-dns` → #129 | Connexion épinglée sur l'IP validée (agent undici), nouvelle dépendance `undici` | Demande de fusion ouverte, CI en cours |
+| `fix/pdf-diagnostic-taille-corps` → #128 | 413 au-delà de 256 Kio sur `/api/pdf/diagnostic` | Demande de fusion ouverte, CI en cours |
 | `fix/posthog-proxy-domaine` | ADR-004 : `/ingest` sur notre domaine, CSP revenue à `'self'`. **Commit `wip`, non vérifié.** Le build passait. | Reste : 4 contrôles, vérification dans le navigateur (aucun appel à `*.posthog.com`), IP non transmise |
 | `feat/essai-gratuit-14-jours` | ADR-002 : essai avec carte dès le départ | Un commit poussé, à relire : e-mail `trial_will_end`, événements PostHog, prop `trialEndsAt` pour le Design |
 | `chore/avant-lancement` | `AUTH_TRUST_HOST` dans `.env.example`, `signup_completed` après une connexion Google, retrait du texte « visibilité IA », suppression du client Stripe à la purge. **Commit `wip`, non vérifié.** | À terminer et vérifier |
@@ -34,7 +34,7 @@ Branches déjà fusionnées, à supprimer : 17 branches de ce lot. La session cl
 ## 3. Reste à faire
 
 ### Code (Ingénierie), dans l'ordre
-1. Scanner : relire, puis fusionner les 4 branches `fix/` ci-dessus.
+1. Scanner : fusionner #128 à #131 quand la CI est verte. Le même biais reste dans l'ancienne route : `analyzeResponse` / `EMPTY_JS_REQUIRED` (`lib/scanner/analyzer.ts`, utilisé par `/api/audit`). Tâche à part.
 2. PostHog par notre domaine : terminer, puis vérifier dans un vrai navigateur.
 3. Essai gratuit de 14 jours, puis `chore/avant-lancement`.
 4. Mettre à jour `PROGRESS.md` et `tasks/mvp-tasks.md` depuis ce fichier.
@@ -56,8 +56,8 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 | Resend | Domaine `decelio.fr` **créé** (région eu-west-1, suivi désactivé). Ajouter chez OVH : TXT `resend._domainkey` (valeur dans le tableau de bord Resend), MX `send` → `feedback-smtp.eu-west-1.amazonses.com` (priorité 10), TXT `send` → `v=spf1 include:amazonses.com ~all`, CNAME `rsend` → `send.forge.rmta.net`. Ensuite, lancer la vérification. | Accès OVH |
 | Stripe (test) | Fait : prix, coupon `FONDATEUR50`, produits « Decelio », portail. Reste pour le fondateur, dans le tableau de bord : pied de page des factures (texte dans ADR-003), et renommer le compte « Cited » en « Decelio ». Le webhook est créé au déploiement. | — |
 | Stripe (réel) | Activer, puis recréer prix, coupon, portail et webhook | SIREN |
-| Neon `main` | Protéger la branche. Faire le « baseline » des migrations, puisque la table `_prisma_migrations` est absente. | Accord du fondateur |
-| Render | Root Directory `cited` → `decelio`. Variables de `.env.example`, dont `DIRECT_URL`, `AUTH_TRUST_HOST=true`, `TRUSTED_PROXY_HOPS=1`, `RESEND_API_KEY`. Domaine `decelio.fr`. | Accord du fondateur |
+| Neon `main` | **Protection impossible en offre gratuite** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render. **Baseline** : relevé en lecture seule, la base contient les migrations 1 et 2 sans historique, pas la 3. Avant le premier déploiement, lancer avec la chaîne de `main` : `npx prisma migrate resolve --applied 20260925000000_init`, puis `npx prisma migrate resolve --applied 20260926230000_add_updated_at_and_site_unique`. Le build Render appliquera ensuite la 3ᵉ (`migrate deploy`). Sans ce baseline, le build échoue. | Fondateur, au déploiement |
+| Render | Root Directory **déjà `decelio/`** (vérifié), région Francfort, `healthCheckPath` `/api/health`, déploiement automatique coupé. Le build lance `prisma migrate deploy` : faire le baseline Neon avant. Variables de `.env.example`, dont `DIRECT_URL`, `AUTH_TRUST_HOST=true`, `TRUSTED_PROXY_HOPS=1`, `RESEND_API_KEY`. Domaine `decelio.fr`. Les secrets sont collés par le fondateur dans le tableau de bord, jamais dans une conversation. | Fondateur |
 | Inngest | Déclarer l'application avec l'URL de production, puis ajouter les clés | Déploiement |
 | Google OAuth | Ajouter l'URL de retour de production | Déploiement |
 
@@ -65,7 +65,12 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 - Test complet en local sur Neon `local-dev`, après `npx prisma migrate deploy`. Le parcours est dans la liste de contrôle, section 4.
 - SIREN : ensuite, compléter les pages légales et activer Stripe en paiement réel.
 
-## 4. Pièges connus
+## 4. Façon de travailler (fin septembre)
+
+- Crédits limités : **un seul sous-agent à la fois**, sur un modèle économique. Ordre prévu après le scanner : PostHog (`fix/posthog-proxy-domaine`), puis l'essai et `chore/avant-lancement`, puis les docs et les tâches, puis Dependabot.
+- La session cloud ne peut pas supprimer de branche distante : le fondateur le fait depuis son clone.
+
+## 5. Pièges connus
 
 - Dans une session cloud, Node ignore le proxy sortant tant que `NODE_USE_ENV_PROXY=1` n'est pas défini.
 - Une IA qui travaille dans un worktree doit y lancer `npm ci`. Un lien symbolique vers `node_modules` casse le build Turbopack.
