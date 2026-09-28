@@ -633,17 +633,19 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Correction du libellé** : l'ancienne vérification annonçait « 10 échecs, le 11ᵉ bloqué ». Le code applique 5 par e-mail. C'était le libellé qui était faux, pas le code.
   - **Taille** : S
 
-- [ ] **T082** [FONDATEUR] Ajout de site, scan, fiche avec plateforme détectée - parcours manuel
+- [x] **T082** [FONDATEUR] Ajout de site, scan, fiche avec plateforme détectée - parcours manuel
   - **Dépendances** : T081, **puis T084** — voir l'ordre corrigé ci-dessous
   - **EF/ENF** : EF-001, EF-002, EF-018
   - **Vérification** : un site ajouté apparaît dans le portefeuille ; après scan, sa fiche affiche un verdict par assistant et la plateforme détectée (#168).
   - **Ordre corrigé (28/09)** : le plan `FREE` a `maxSites: 0` (`lib/billing/plans.ts`), donc un compte neuf ne peut ajouter aucun site avant d'avoir souscrit. L'ordre réel du parcours est T081, T084, T082, T083. Le refus « Domaine non ajouté — Abonnement requis » est le quota qui fonctionne, pas un défaut.
   - **Décochée le 28/09 (soir) : à rejouer.** Le scan réel sur `juliusmason.com` qui avait servi de preuve à cette tâche tournait sur un code où le scanner ne faisait en réalité plus aucune requête réseau (panne `undici`, voir #183 et `docs/REPRISE.md` section 0). Le verdict « COQUILLE VIDE » obtenu ce jour-là n'est donc pas fiable comme preuve : il faut refaire le scan avec le code corrigé avant de recocher cette tâche.
   - **Fait (puis invalidé) le 28/09** sur `juliusmason.com` : `MonitoredSite` créé, scan déclenché par l'événement `app/scan.site`. `ScanLog` écrit avec `simpleStatus` et `cause` renseignés, charge utile `platform` = `{cms:"customReactVue", firewall:"cloudflare"}` — à revérifier.
+  - **Rejouée et recochée le 28/09 (matin), code corrigé.** Run Inngest `Completed` sur `juliusmason.com`, dont **2,598 s dans l'étape réseau** — la durée d'un vrai aller-retour, ce qui prouve que la panne `undici` est bien morte : au plus fort du défaut, la même étape échouait instantanément en `httpStatus: 0`. Fiche du site, mot pour mot : verdict « Vide », code 200, « Plateforme détectée : application JavaScript (React ou Vue), derrière Cloudflare (d'après les indices de la page) », cause pour les trois robots « la page dépend probablement de JavaScript ». Formulation conforme à l'article I : « probablement », « d'après les indices », aucune prétention à voir ce que voit le robot.
   - **Taille** : S
 
-- [ ] **T083** [FONDATEUR] Alerte confirmée par le serveur Inngest local (délai de confirmation de 10 minutes) - `npx inngest-cli@latest dev` + parcours manuel
-  - **Dépendances** : T082, **et T068** (domaine Resend vérifié) — voir le blocage ci-dessous
+- [x] **T083** [FONDATEUR] Alerte confirmée par le serveur Inngest local (délai de confirmation de 10 minutes) - `npx inngest-cli@latest dev` + parcours manuel
+  - **Fait le 28/09 (matin), prouvé de bout en bout.** Régression fabriquée en forçant le statut mémorisé du site à `OK` dans `local-dev`, son vrai verdict étant `COQUILLE VIDE` — le site lui-même n'a pas été touché, seule la mémoire de l'application. Run `01M3KAQGZETWNTV87GCYDT5EA3` : scan initial 2,8 s, puis l'étape `wait-regression-confirmation` a duré **10 m 0 s exactement**, ce qui prouve que le délai est réellement observé et non contourné, puis rescan de confirmation 3,3 s. `INSERT INTO "AlertEvent"` visible dans les journaux, aucune erreur Resend. **E-mail reçu à 08:30 sur `krom.pro@outlook.com`.** La ligne `AlertEvent` n'étant écrite qu'après un envoi réussi, sa présence en base vaut preuve de l'envoi.
+  - **Dépendances** : T082. **T068 n'est plus bloquant** : l'expéditeur de repli `onboarding@resend.dev` fonctionne sans domaine vérifié, vers l'adresse du titulaire du compte Resend.
   - **Débloqué le 28/09 (soir) par #182** : `lib/email/from.ts` (`emailFrom()`) lit `ALERT_FROM_EMAIL` à chaque appel, avec repli sur `Decelio <bonjour@decelio.fr>`. `.env.local` du poste porte désormais `ALERT_FROM_EMAIL="Decelio <onboarding@resend.dev>"` : cet expéditeur fonctionne sans domaine Resend vérifié et écrit vers `krom.pro@outlook.com`. La tâche n'attend donc plus T068 pour être testée en local — reste à rejouer le parcours pour la cocher.
   - **Bloqué au 28/09 (avant #182)** : la chaîne Inngest fonctionne, mais l'envoi Resend était refusé en **HTTP 403** — « The decelio.fr domain is not verified ». `lib/alerting/sendAlert.ts:33` figeait l'expéditeur à `Decelio <bonjour@decelio.fr>` sans repli. Aucun `AlertEvent` n'était écrit, et **c'était le comportement correct** : `recordAlerts()` n'écrit qu'après un envoi réussi, pour ne jamais enregistrer un « client prévenu » qui serait faux.
   - **Piège (28/09)** : il faut `INNGEST_DEV=1` dans `.env.local`. Sans lui, `inngest/client.ts` transmet `INNGEST_SIGNING_KEY` au SDK, qui exige alors une signature sur chaque appel à `/api/inngest`, y compris les sondes du serveur local qui ne peuvent pas la fournir. Symptôme : `No x-inngest-signature provided`, `GET /api/inngest 401`, zéro application synchronisée. Avec la variable, les 8 fonctions se déclarent.
@@ -659,8 +661,10 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : un Checkout de test avec `stripe listen` actif crée un abonnement `trialing` de 14 jours ; le bandeau d'essai s'affiche dans l'application.
   - **Taille** : S
 
-- [ ] **T085** [FONDATEUR] Rapport mensuel PDF - parcours manuel
+- [x] **T085** [FONDATEUR] Rapport mensuel PDF - parcours manuel
   - **Dépendances** : T082
+  - **Fait le 28/09 (matin)** : événement `app/monthly-report.generate` déclenché depuis Inngest, run `Completed` en 1,3 s. Téléchargement `GET /api/reports/<id>/pdf` → HTTP 200, `content-type: application/pdf`, en-tête `%PDF-`, **8235 octets**. Un vrai fichier, pas une page d'erreur.
+  - **Piège** : la fonction exige un `Client` auquel le site est rattaché. Un site « Sans client » ne produit aucun rapport, sans message d'erreur explicite. À garder en tête pour l'onboarding d'une agence.
   - **EF/ENF** : EF-047 à EF-051
   - **Vérification** : un rapport généré à la demande produit un PDF téléchargeable avec de vraies données.
   - **Taille** : S
@@ -674,6 +678,7 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 - [ ] **T087** [FONDATEUR] Console du navigateur sans erreur CSP pendant tout le parcours - vérification manuelle continue
   - **Dépendances** : T081, T082, T083, T084, T085, T086
   - **Partiel au 28/09, aucun défaut trouvé** : zéro erreur console et **zéro violation CSP** sur `/`, `/register`, `/login`, `/onboarding`, `/dashboard`, `/dashboard?checkout=success`, `/sites/[siteId]`, `/alerts`, `/reports`, `/sources`, `/settings`, le Checkout et le portail de facturation Stripe. PostHog passe systématiquement par `/ingest/*`, **jamais** d'appel direct à `eu.i.posthog.com` — ADR-004 respecté. Reste à couvrir : les écrans de T085 et T086.
+  - **Mise à jour du 28/09 (matin)** : les écrans de T085 sont désormais couverts, toujours sans erreur ni violation. **Reste uniquement T086.** La tâche n'est volontairement pas cochée : sa liste de dépendances inclut T086, qui n'est pas terminée, et on ne coche que ce qui est prouvé.
   - **EF/ENF** : sécurité (constitution)
   - **Vérification** : aucune erreur « Content Security Policy » n'apparaît dans la console du navigateur pendant l'ensemble du parcours ci-dessus.
   - **Taille** : S
