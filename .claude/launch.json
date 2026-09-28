@@ -7,7 +7,7 @@
       "runtimeArgs": [
         "-NoProfile",
         "-Command",
-        "Set-Location -LiteralPath 'C:/Users/kkace/Desktop/business/saas/Cited/decelio'; npm run dev"
+        "Set-Location -LiteralPath 'C:/Users/kkace/Desktop/business/saas/decelio/decelio'; npm run dev"
       ],
       "port": 3000
     }
