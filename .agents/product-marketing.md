@@ -21,7 +21,7 @@
 **Business model :** abonnement mensuel — Freelance 39 € (10 sites), Agence 99 € (30 sites), Studio 249 € (100 sites). Essai gratuit 14 jours (en cours de livraison). Porte d'entrée : diagnostic gratuit.
 
 ## Target Audience
-**Target companies :** toute agence ou freelance qui maintient des sites clients ou fait leur SEO de façon récurrente, quel que soit l'outil (WordPress, Wix, Shopify, Webflow, PrestaShop, sur mesure). Segments : (A) agences de maintenance WordPress, 1–10 personnes, 20–150 sites sous contrat ; (B) agences SEO/GEO, 1–15 personnes, 15–60 clients en abonnement ; (C) agences web et SEO sur d'autres plateformes (Wix, Shopify, Webflow…). France d'abord, puis Belgique, Suisse, Québec.
+**Target companies :** toute agence ou freelance qui maintient des sites clients ou fait leur SEO de façon récurrente, quel que soit l'outil (WordPress, Wix, Shopify, Webflow, PrestaShop, sur mesure). Segments : (A) agences de maintenance WordPress, 1–10 personnes, 20–150 sites sous contrat ; (B) agences SEO/GEO, 1–15 personnes, 15–60 clients en abonnement ; (C) agences web et SEO sur d'autres plateformes (Wix, Shopify, Webflow…). Pays : France, Belgique, Suisse et Luxembourg francophones dès le lancement (mêmes textes) ; Québec ensuite ; autres langues après 20 à 30 clients en France.
 **Priorité de prospection :** là où le problème est le plus fréquent (WordPress d'abord). On n'écrit à une agence que si l'un de ses sites a un problème vérifié. Le baromètre v2 mesurera la fréquence par plateforme.
 **Decision-makers :** fondateur ou freelance senior.
 **Primary use case :** ne plus découvrir après coup qu'un site client est devenu illisible par les IA, et le prouver au client.
@@ -80,4 +80,4 @@ Aucun client ni témoignage à ce jour. Preuves autorisées : captures datées d
 
 ## Changelog
 - v1 (27/09/2026) : création depuis docs/05.
-- v2 (28/09/2026) : cible élargie à toutes les agences web et SEO quel que soit l'outil (décision du fondateur) ; BabyLoveGrowth ajouté aux concurrents ; identité publique au nom de Decelio.
+- v2 (28/09/2026) : Belgique, Suisse et Luxembourg dès le lancement ; cible élargie à toutes les agences web et SEO quel que soit l'outil (décision du fondateur) ; BabyLoveGrowth ajouté aux concurrents ; identité publique au nom de Decelio.

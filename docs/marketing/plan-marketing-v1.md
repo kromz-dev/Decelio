@@ -91,6 +91,8 @@ Decelio se présente comme **le complément technique** de ces outils, pas comme
 
 ### Pour qui (profil client, en bref)
 
+**Pays (décision du fondateur, 28/09) :** France, Belgique, Suisse et Luxembourg francophones **dès le lancement**, car les textes, rapports et e-mails sont les mêmes. Québec ensuite. Les autres langues européennes (ou l'anglais) seulement après 20 à 30 clients en France : traduire le produit, les rapports et la prospection avec un niveau de langue irréprochable est un chantier à part entière.
+
 **Décision du fondateur (28/09) : la cible est toute agence ou freelance qui maintient des sites clients ou fait leur SEO de façon récurrente, quel que soit l'outil** (WordPress, Wix, Shopify, Webflow, PrestaShop, sites sur mesure). L'analyse du 24/09 excluait Wix, Shopify et les agences no-code. Cette exclusion est levée.
 
 Ce qui change, et ce qui ne change pas :
@@ -1038,7 +1040,7 @@ Une croissance réelle ressemble à une suite de marches, pas à une courbe liss
 | 2. Canal | Référencement, contenus, annuaires, comparaisons | Rédigés dès la période 2, publiés au lancement ; effet attendu à partir du T2 | Trafic organique stable 2 mois de suite |
 | 3. Canal | Recommandation, partenaires, extension WordPress.org | T2 | — |
 | 4. Produit | **Intégration Cloudflare en lecture seule** : la seule mesure qui voit les vrais blocages (`docs/05` §3.3, contrôle n°6), et la fonction payante la plus défendable face aux concurrents | À décider (§13) | — |
-| 5. Marché | Belgique, Suisse, Québec (francophones, mêmes textes) | T4, si la France répond bien | — |
+| 5. Marché | **Belgique, Suisse et Luxembourg francophones dès le lancement** (mêmes textes, décision du fondateur du 28/09) ; Québec ensuite ; autres langues européennes ou anglais après 20 à 30 clients en France | Lancement, puis T4 pour les autres langues | — |
 
 **Répartition de l'effort :** 70 % sur la marche qui marche, 20 % sur la suivante, 10 % sur un essai.
 
@@ -1065,7 +1067,7 @@ Une croissance réelle ressemble à une suite de marches, pas à une courbe liss
 
 **T4 (juillet → septembre 2027) : élargir**
 - Premier contact avec un outil de maintenance WordPress (P5), preuves en main.
-- Marchés francophones hors de France.
+- Québec, puis décision sur une deuxième langue (anglais probablement avant l'allemand ou l'espagnol).
 - Préparer, avec un comptable, la sortie du régime micro-entreprise si le rythme le justifie.
 - Objectif indicatif : 50 agences, environ 5 000 € par mois.
 
@@ -1226,8 +1228,8 @@ Les 139 idées du catalogue `marketing-ideas` (numéros d'origine conservés), c
 | 116 | Subventions | Aides publiques à l'innovation, sans rapport direct avec le marketing |
 | 123 | Code ouvert | Analyseur de `robots.txt` pour les robots IA, en code ouvert |
 | 126 | Avis sur YouTube | Créateurs WordPress et SEO |
-| 131 | International | Belgique, Suisse, Québec |
-| 132 | Prix adaptés par pays | Franc suisse, dollar canadien |
+| 131 | International | Belgique, Suisse, Luxembourg dès le lancement (même langue) ; autres langues après 20 à 30 clients |
+| 132 | Prix adaptés par pays | Franc suisse, dollar canadien, si la demande le justifie (en attendant : euros partout) |
 
 ### Quand le revenu finance la publicité (17)
 
@@ -1317,7 +1319,8 @@ Ce plan n'est ni un avis juridique ni un avis comptable. À faire confirmer :
 - les mentions obligatoires dans les e-mails de prospection et la tenue du fichier de prospects (CNIL) ;
 - la facturation et la déclaration des commissions versées aux partenaires (§7, P4) ;
 - les seuils de TVA et de la micro-entreprise, et le moment de changer de statut (§8) ;
-- l'obligation d'un compte bancaire dédié à l'activité, selon le chiffre d'affaires.
+- l'obligation d'un compte bancaire dédié à l'activité, selon le chiffre d'affaires ;
+- la facturation de clients professionnels en Belgique et au Luxembourg (Union européenne : mention d'autoliquidation) et en Suisse (hors Union européenne), avec la franchise de TVA.
 
 ### Annexes : documents de référence
 

@@ -144,7 +144,7 @@ Notation de 1 à 5 sur cinq critères (5 = favorable), soit 25 au maximum.
 | Portefeuille | 20–150 sites sous contrat mensuel | Seulement des projets ponctuels |
 | Offre | Maintenance (mises à jour, sauvegardes, sécurité) facturée 30–500 €/site/mois | Aucun reporting client formalisé |
 | Outils | WP Umbrella, ManageWP, MainWP, Wordfence, Cloudflare, o2switch / Hostinger / SiteGround | E-commerce Shopify pur |
-| Géographie | France, puis Belgique, Suisse et Québec (francophones) | — |
+| Géographie | France, puis Belgique, Suisse et Québec (francophones). *Décision du 28/09/2026 : Belgique, Suisse et Luxembourg francophones dès le lancement.* | — |
 
 - **Déclencheurs :** migration d'hébergeur, activation de Cloudflare ou du mode « Under Attack », mise à jour de Wordfence, client qui demande « pourquoi ChatGPT ne parle pas de nous ? ».
 - **Douleurs, dans leurs mots :**
