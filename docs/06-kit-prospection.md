@@ -26,21 +26,26 @@
 
 > Bonjour [Prénom],
 >
-> En regardant vos réalisations, j'ai testé [site-client.fr] : [son `robots.txt` interdit OAI-SearchBot, le robot qui permet d'être cité dans ChatGPT / le site renvoie une page de challenge aux robots / la page d'accueil est vide sans JavaScript]. Le site reste normal dans un navigateur, donc ni vous ni le client ne le voyez.
+> En regardant vos réalisations, nous avons testé [site-client.fr] : [son `robots.txt` interdit OAI-SearchBot, le robot qui permet d'être cité dans ChatGPT / le site renvoie une page de challenge aux robots / la page d'accueil est vide sans JavaScript]. Le site reste normal dans un navigateur, donc ni vous ni le client ne le voyez.
 >
 > Cause probable : [réglage Yoast / `robots.txt` géré par Cloudflare / règle Wordfence / thème JS]. Correction : 5 minutes.
 >
-> Voici le rapport complet : [lien]. Je peux faire la même vérification sur tout votre parc de maintenance si ça vous intéresse.
+> Voici le rapport complet : [lien]. Nous pouvons faire la même vérification sur tout votre parc de maintenance si cela vous intéresse.
 >
-> [Prénom], fondateur de Decelio
+> L'équipe Decelio
+> Decelio · [lien vers les mentions légales] · Pour ne plus recevoir nos messages, répondez simplement « STOP ».
+
+*Toutes les séquences sont signées « L'équipe Decelio » (décision du fondateur, 28/09/2026) et portent la même ligne de pied (identification de l'expéditeur et droit d'opposition, exigés par la CNIL pour la prospection entre professionnels). Envoi à la main depuis `contact@decelio.fr`, 10 à 20 par jour, jamais par Resend ni par l'application : les conditions de Resend interdisent la prospection à froid.*
 
 **J+4 — Objet : `Une ligne de plus dans votre rapport de maintenance`**
 
-> Beaucoup de freelances WP ajoutent maintenant une ligne « lisibilité IA » à leur rapport mensuel et la facturent 10 à 20 € par site. Decelio la surveille chaque jour sur tous vos sites et génère le rapport à votre logo. Essai gratuit, sans carte, sur vos propres sites : [lien]. Exemple de rapport : [lien PDF].
+> Une idée pour votre contrat de maintenance : une ligne « lisibilité IA » dans votre rapport mensuel, refacturée 10 à 20 € par site. Decelio la vérifie chaque jour sur tous vos sites et génère le rapport à votre logo. Essai gratuit de 14 jours sur vos propres sites (carte demandée, aucun prélèvement avant la fin de l'essai, résiliable depuis votre espace) : [lien]. Exemple de rapport : [lien PDF].
+
+*Correction du 28/09/2026 : l'ancienne version disait « Beaucoup de freelances WP ajoutent maintenant cette ligne » (affirmation non vérifiée, interdite par la constitution) et « essai sans carte » (faux depuis l'ADR-002, qui demande la carte dès le départ).*
 
 **J+9 — Objet : `Je ferme le dossier`**
 
-> Je n'insiste pas. Le scan gratuit reste ouvert ici : [lien]. Si un client vous demande un jour pourquoi ChatGPT ne parle pas de lui, vous saurez où regarder.
+> Nous n'insistons pas. Le scan gratuit reste ouvert ici : [lien]. Si un client vous demande un jour pourquoi ChatGPT ne parle pas de lui, vous saurez où regarder.
 
 ## 3. Séquence e-mail — agences SEO/GEO
 
@@ -48,13 +53,13 @@
 
 > Bonjour [Prénom],
 >
-> Vous vendez du référencement IA. J'ai vérifié [site-client.fr], cité dans vos références : [constat vérifié, avec la cause]. Tant que ce blocage existe, aucun travail de contenu ne pourra être cité par [ChatGPT / Perplexity].
+> Vous vendez du référencement IA. Nous avons vérifié [site-client.fr], cité dans vos références : [constat vérifié, avec la cause]. Tant que ce blocage existe, aucun travail de contenu ne pourra être cité par [ChatGPT / Perplexity].
 >
 > Rapport : [lien]. Decelio surveille ce point chaque jour sur tout un portefeuille et produit un rapport mensuel à votre marque, à glisser dans votre reporting GEO.
 
 **J+4 — Objet : `Le livrable technique de votre offre GEO`**
 
-> Vos outils de visibilité (Semrush, Peec, Otterly…) disent si le client est cité. Aucun ne vous alerte le jour où un pare-feu ou un plugin l'empêche de l'être. C'est la brique technique qui manque au livrable GEO. Exemple de rapport à votre marque : [lien PDF]. Essai gratuit : [lien].
+> Vos outils de visibilité (Semrush, Peec, Otterly…) disent si le client est cité. À notre connaissance, aucun ne vous alerte le jour où un pare-feu ou un plugin l'empêche de l'être. C'est la brique technique qui manque au livrable GEO. Exemple de rapport à votre marque : [lien PDF]. Essai gratuit de 14 jours (carte demandée, aucun prélèvement avant la fin de l'essai) : [lien].
 
 **J+9 :** identique à la séquence WP.
 

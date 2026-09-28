@@ -144,7 +144,7 @@ Notation de 1 à 5 sur cinq critères (5 = favorable), soit 25 au maximum.
 | Portefeuille | 20–150 sites sous contrat mensuel | Seulement des projets ponctuels |
 | Offre | Maintenance (mises à jour, sauvegardes, sécurité) facturée 30–500 €/site/mois | Aucun reporting client formalisé |
 | Outils | WP Umbrella, ManageWP, MainWP, Wordfence, Cloudflare, o2switch / Hostinger / SiteGround | E-commerce Shopify pur |
-| Géographie | France, puis Belgique, Suisse et Québec (francophones) | — |
+| Géographie | France, puis Belgique, Suisse et Québec (francophones). *Décision du 28/09/2026 : Belgique, Suisse et Luxembourg francophones dès le lancement.* | — |
 
 - **Déclencheurs :** migration d'hébergeur, activation de Cloudflare ou du mode « Under Attack », mise à jour de Wordfence, client qui demande « pourquoi ChatGPT ne parle pas de nous ? ».
 - **Douleurs, dans leurs mots :**
@@ -187,6 +187,8 @@ Notation de 1 à 5 sur cinq critères (5 = favorable), soit 25 au maximum.
 - Grandes agences avec leur propre outillage (cycles longs).
 - Sites 100 % Shopify ou Wix : peu de risque technique.
 
+> **Décision du fondateur (28/09/2026) : la cible est élargie à toute agence ou freelance qui maintient des sites clients ou fait leur SEO de façon récurrente, quel que soit l'outil (WordPress, Wix, Shopify, Webflow, PrestaShop, sur mesure).** Les exclusions « agences no-code » et « sites 100 % Shopify ou Wix » ci-dessus sont levées pour le message et le site. Les autres exclusions restent. La prospection active garde sa règle : on n'écrit qu'avec un problème vérifié, et on commence là où il est le plus fréquent (WordPress). Le baromètre v2 inclut des sites Wix, Shopify et Webflow pour mesurer la fréquence réelle par plateforme ; le constat de rareté ci-dessus reste une hypothèse jusqu'à cette mesure.
+
 ---
 
 ## 7. Concurrence
@@ -204,8 +206,11 @@ Notation de 1 à 5 sur cinq critères (5 = favorable), soit 25 au maximum.
 | Otterly | Partiel (citations « bloquées ») | Oui (citations) | Non | Dès 29 $ |
 | Checkers gratuits (Swetrix, LLM Pulse, AI Crawl Test…) | Oui, en ponctuel | **Non** | Non | Gratuit |
 | Cloudflare AI Crawl Control | Oui (vrais bots vus dans les logs) | Tableau de bord | **Pas de vue multi-clients** | **Gratuit**, sites Cloudflare seulement |
+| BabyLoveGrowth.ai | Partiel : « audit GEO » technique (schéma, métadonnées) plutôt qu'un contrôle quotidien multi-bots dédié | À vérifier : suivi de citations (ChatGPT, Perplexity, Gemini), pas d'alerte de régression documentée | À vérifier (non confirmé dans les sources consultées) | 99 à 399 $/mois (plans « business ») ; **plan agence dès 99 $/site/mois** |
 
-Sources : [Conductor](https://www.conductor.com/platform/features/ai-crawler-activity/), [Profound](https://www.tryprofound.com/features/agent-analytics/crawlability), [Peec](https://docs.peec.ai/crawlability), [Cloudflare](https://developers.cloudflare.com/ai-crawl-control/), [Little Warden](https://littlewarden.com/pricing), [Screaming Frog](https://www.screamingfrog.co.uk/log-file-analyser/tutorials/monitor-ai-bots-in-the-log-file-analyser/), [Search Engine Land](https://searchengineland.com/managed-wordpress-blocking-ai-bots-476510).
+Sources : [Conductor](https://www.conductor.com/platform/features/ai-crawler-activity/), [Profound](https://www.tryprofound.com/features/agent-analytics/crawlability), [Peec](https://docs.peec.ai/crawlability), [Cloudflare](https://developers.cloudflare.com/ai-crawl-control/), [Little Warden](https://littlewarden.com/pricing), [Screaming Frog](https://www.screamingfrog.co.uk/log-file-analyser/tutorials/monitor-ai-bots-in-the-log-file-analyser/), [Search Engine Land](https://searchengineland.com/managed-wordpress-blocking-ai-bots-476510), [BabyLoveGrowth pricing](https://www.babylovegrowth.ai/en/pricing) (page officielle, consultée le 28/09/2026 via des revues tierces — à revérifier directement avant toute citation publique).
+
+*Note sur BabyLoveGrowth : produit surtout orienté génération de contenu automatisée (articles quotidiens, backlinks via un réseau de +4 000 sites partenaires) et suivi de citations IA, pas un moniteur quotidien d'accès des robots par `robots.txt`. Son « audit GEO » touche des facteurs techniques proches (schéma, métadonnées), d'où le chevauchement partiel. Sa tarification à l'agence (99 $/site/mois) est structurellement la plus proche de celle de Decelio parmi tous les concurrents listés ici — à surveiller en priorité si elle ajoute un contrôle `robots.txt` par bot.*
 
 **Espace libre :** aucun produit ne réunit à la fois (1) un contrôle quotidien multi-bots (`robots.txt`, pare-feu, page vide), (2) des alertes, (3) un rapport mensuel en marque blanche et (4) un tableau de bord multi-clients, **à un prix d'agence**.
 - Profound et Peec ont le moteur d'audit, mais l'enferment dans des suites chères de suivi de citations.
@@ -216,6 +221,7 @@ Sources : [Conductor](https://www.conductor.com/platform/features/ai-crawler-act
 1. **WP Umbrella et ManageWP.** Ils ont déjà le tableau de bord, les alertes et la marque blanche. Il leur suffit d'ajouter un module. *C'est la menace n°1 sur le segment WordPress.* Parade : aller vite, ou leur proposer un partenariat (API).
 2. **Peec AI et Profound.** Ils ont déjà le moteur. Il leur manque un planificateur et un PDF en marque blanche.
 3. **Little Warden.** Il surveille déjà `robots.txt` pour les agences. Il lui suffit d'étendre ses règles aux bots IA.
+4. **BabyLoveGrowth.ai.** Structure tarifaire agence (99 $/site/mois) la plus proche de Decelio de toute la liste. Vend déjà à des agences un « audit GEO » technique. Il lui manque un contrôle quotidien `robots.txt` par bot et des alertes de régression — mais son moteur de contenu et de citations est déjà en place, et l'ajout serait rapide pour une équipe outillée.
 
 **Conséquence :** l'avantage de Decelio ne tiendra pas sur la détection seule, qui sera copiée. Il tiendra sur **(a)** le diagnostic de la *cause* (quelle règle Cloudflare, quel plugin, quel hébergeur) avec la correction pas à pas, **(b)** le rapport client en français et en marque blanche, et **(c)** la distribution : baromètre, communautés WordPress et SEO françaises. Un partenariat ou un rachat par un outil de maintenance WP est une sortie crédible.
 
@@ -312,7 +318,7 @@ Classés par rapport effet / effort pour un fondateur solo.
 **Décisions prises (24 septembre 2026) :**
 0. **Budget : 0 €, autofinancement à 100 %.** Aucune dépense fixe avant le premier revenu. Toute la pile technique et marketing repose sur des offres gratuites qui autorisent un usage commercial. Une dépense n'est engagée qu'une fois couverte par le MRR.
 1. **Rendu headless : 0 €.** Le moteur mesure le HTML brut (texte utile, racine SPA vide, `noscript`). Le rendu Playwright reste optionnel, et ne tourne que s'il est hébergé gratuitement. Aucun service payant avant que le MRR ne le finance.
-2. **Vente 100 % écrite, sans appel.** L'essai est gratuit et sans carte, avec onboarding en autonomie. La découverte se fait par un questionnaire de 5 questions envoyé par e-mail (voir `06-kit-prospection.md` §5). Une démo écrite remplace la démo en direct : un exemple de rapport en marque blanche en PDF et une page « visite guidée ». Conséquence : le cycle de vente est plus long, la conversion plus faible. D'où l'objectif de 15 essais au lieu de 15 démos.
+2. **Vente 100 % écrite, sans appel.** L'essai est gratuit et sans carte, avec onboarding en autonomie. *(Remplacé le 27/09 par l'ADR-002 : essai de 14 jours avec carte demandée dès le départ. La vente reste 100 % écrite.)* La découverte se fait par un questionnaire de 5 questions envoyé par e-mail (voir `06-kit-prospection.md` §5). Une démo écrite remplace la démo en direct : un exemple de rapport en marque blanche en PDF et une page « visite guidée ». Conséquence : le cycle de vente est plus long, la conversion plus faible. D'où l'objectif de 15 essais au lieu de 15 démos.
 3. **Nom : on garde « Decelio ».** Il reste juste si le plan B (visibilité IA) arrive, et changer de nom coûte du temps. La promesse précise vient du slogan : « Decelio — la lisibilité IA de tout votre portefeuille client ».
 
 ---
