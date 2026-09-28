@@ -1,13 +1,66 @@
 # Decelio — Plan marketing v1
 
 **Préparé par :** session « lancement, business, marketing » (Claude Code, skill `marketing-plan`)
-**Pour :** le fondateur
+**Pour :** le fondateur, et les agents Design et Ingénierie
 **Date :** 28/09/2026
-**Statut :** en cours. Sections 2 à 5 validées par le fondateur. Sections 6 à 13 et le résumé (section 1) à venir.
+**Statut :** v1 validée par le fondateur, section par section, le 28/09/2026.
 
-Plan en 13 sections, structuré par étape du tunnel (acquisition, activation, rétention, recommandation, revenu). Les demandes qui en découlent pour les agents Ingénierie et Design sont dans `docs/marketing/demandes-aux-agents.md`.
+Plan en 13 sections, structuré par étape du tunnel : acquisition, activation, rétention, recommandation, revenu. Les demandes qui en découlent pour les agents sont dans `docs/marketing/demandes-aux-agents.md`.
 
 **À savoir avant de lire :** l'application n'est pas encore déployée, l'entreprise est en cours de création (SIREN attendu) et aucun compte de marque n'existe. Le plan suit trois temps : préparer et valider, puis créer les comptes quand `contact@decelio.fr` fonctionne, puis publier quand le site est en ligne.
+
+## Sommaire
+
+1. Résumé
+2. Cadre stratégique
+3. État des lieux
+4. Acquisition
+5. Activation
+6. Rétention
+7. Recommandation
+8. Revenu
+9. Plan de 90 jours
+10. Perspective sur 12 mois
+11. Outils et skills
+12. Banque d'idées
+13. Mesure, responsabilités, décisions ouvertes, annexes
+
+---
+
+## 1. Résumé
+
+*Statut : validé par le fondateur le 28/09/2026.*
+
+**Ce plan vise une seule chose pour les 90 prochains jours : prouver que les agences web ont vraiment le problème que Decelio détecte, puis en convaincre 10 de payer, sans dépenser un euro et sans que le fondateur devienne la voix publique de la marque.**
+
+### Trois paris, du plus au moins décisif
+
+**1. Le baromètre d'abord, comme preuve puis comme porte-voix.** Le baromètre v1 existe déjà : 250 grands sites français, 29 % bloquent PerplexityBot et 18 % OAI-SearchBot, surtout par une règle écrite. Mais il porte sur des médias et de l'e-commerce, pas sur la cible. Le baromètre v2, sur les sites clients d'agences WordPress, SEO/GEO, Wix, Shopify et Webflow, se lance tout de suite, sans domaine ni site en ligne. Il répond à la seule vraie inconnue : moins de 5 % de problèmes vérifiés, et on passe au plan B. S'il confirme, il devient le contenu de lancement (presse, LinkedIn, liens entrants) et la source des premiers prospects.
+
+**2. Une prospection écrite qui apporte une preuve, pas une promesse.** On n'écrit qu'aux agences dont un site a un problème vérifié, avec sa cause et son correctif. 10 à 20 e-mails par jour, envoyés à la main depuis `contact@decelio.fr` et signés « L'équipe Decelio ». Resend interdit la prospection à froid, et la CNIL l'autorise entre professionnels sous conditions. C'est le canal le plus sûr pour les 10 premiers clients, en attendant que le référencement et les annuaires prennent le relais.
+
+**3. Le rapport mensuel comme raison de rester.** Decelio est un produit « assurance » : quand rien ne casse, l'agence se demande pourquoi elle paie. Le rapport à sa marque répond à cette question chaque mois. Aujourd'hui, un client qui ne range pas ses sites par client n'en reçoit jamais, et un client en essai n'en voit presque jamais avant de payer. Corriger ces deux trous passe avant tout effort d'acquisition supplémentaire.
+
+### Ce que 12 mois peuvent donner, raisonnablement
+
+- 10 agences payantes et environ 1 000 € par mois à la fin du premier trimestre, si la mise en ligne arrive début novembre.
+- Un second canal (contenus, annuaires, recommandation, extension WordPress) qui rapporte à partir de janvier.
+- Une deuxième édition du baromètre, devenue une référence dans le milieu SEO et WordPress francophone.
+- Environ 50 agences et 5 000 € par mois à un an. C'est un ordre de grandeur, qui repose sur des hypothèses encore non vérifiées, et qui sera recalculé fin décembre.
+- Des paliers anticipés : TVA vers 28 agences, sortie de la micro-entreprise vers 60.
+
+### Les priorités des 90 jours
+
+1. **Baromètre v2** sur les sites clients d'agences, puis décision de continuer ou de passer au plan B (fin de la 2e semaine).
+2. **Tout valider avant de créer :** kit de marque, fiches de comptes, textes des pages et des e-mails.
+3. **Dès que le DNS passe :** boîte `contact@decelio.fr`, puis comptes au nom de Decelio (LinkedIn en premier).
+4. **Avant la mise en ligne :** corriger la page de prix (D-19), vérifier le rappel de fin d'essai (D-04) et le comportement en cas d'impayé (D-07).
+5. **Dès la mise en ligne :** baromètre publié, prospection lancée, annuaires, offre fondatrice avec date limite.
+6. **Pendant tout le trimestre :** garantir que chaque client payant reçoit son rapport mensuel (D-05, D-17), et tenir zéro fausse alerte confirmée.
+
+### Ce que ce plan ne fait pas
+
+Pas de publicité, pas d'appel, pas de démo en direct, pas de faux chiffre ni de faux avis, pas de promesse sur les citations dans les IA. Le budget reste à 0 € jusqu'à ce que le revenu couvre une dépense, et au plus 10 % du revenu mensuel ensuite.
 
 ---
 
@@ -490,6 +543,794 @@ Comme prévu dans `docs/06` §5 : quand au moins 3 réponses montrent un vrai be
 | A-3 e-mails d'essai | `emails`, `onboarding`, `resend-email-best-practices`, `resend-react-email` | Agent Ingénierie |
 | A-4 rapport d'exemple | `onboarding`, `copywriting` | Agent Design |
 | Mesure | `analytics` | PostHog (déjà branché) |
+
+---
+
+## 6. Rétention : garder les agences après l'essai
+
+*Statut : validé par le fondateur le 28/09/2026. Demandes D-05 à D-08 et D-17 transmises via `docs/marketing/demandes-aux-agents.md`.*
+
+### Le risque, dit simplement
+
+Decelio est un produit « assurance ». Quand rien ne casse pendant trois mois, l'agence se demande pourquoi elle paie (`docs/05` §12). La réponse prévue est le **rapport mensuel à la marque de l'agence** : de la valeur visible chaque mois, même sans incident. La rétention de Decelio repose donc sur une question : **chaque agence reçoit-elle vraiment ce rapport, et lui sert-il ?**
+
+Objectif fixé par le fondateur : résiliation **inférieure à 5 % par mois** (`docs/05` §11). Hypothèse de l'économie unitaire : 4 %.
+
+### Ce qui existe dans le code
+
+| Élément | État |
+|---|---|
+| Scan quotidien (3 h du matin) de tous les sites des comptes payants | En place |
+| Alerte seulement après confirmation par un second scan à 10 minutes | En place : c'est la protection contre les fausses alertes |
+| Journal des alertes | En place |
+| Rapport mensuel automatique, le 1er du mois à 6 h (heure de Paris), à la marque de l'agence à partir du plan Agence | En place, **mais seulement pour les sites rangés dans un « client »** |
+| Génération d'un rapport à la demande | En place |
+| E-mail « votre rapport est disponible » | En place (bloqué par le domaine) |
+| Résiliation par le portail client Stripe, effective en fin de période | En place (mode test) |
+| Purge RGPD des comptes résiliés | En place |
+| Paiement échoué | **Pas d'événement `invoice.payment_failed` traité par l'application.** Le comportement en cas d'impayé reste à vérifier. |
+
+### Deux trous qui touchent directement la rétention
+
+1. **Sites sans client = pas de rapport.** Le rapport mensuel automatique ne part que pour les « clients » qui ont au moins un site. L'import en masse de l'onboarding crée des sites **sans** client. Une agence qui ne range pas ses sites ne recevra jamais son rapport, et ne saura même pas qu'il existe.
+2. **Aucun rapport automatique pendant l'essai, dans la plupart des cas.** Le rapport part le 1er du mois, pour le mois précédent. Une agence inscrite le 10 finit son essai le 24 sans avoir reçu de rapport. Elle paie le premier mois sans avoir vu la moitié de ce qu'elle achète. Le rapport à la demande existe : il faut y amener l'agence (e-mail J+7 prévu en §5, demande D-02).
+
+### Les actions
+
+#### R1. Chaque agence reçoit son premier rapport — *priorité n°1*
+
+- **Pendant l'onboarding :** une étape « Regroupez vos sites par client », avec un exemple et la possibilité de passer. Si elle est passée, un rappel discret dans le tableau de bord : « 12 sites ne sont rattachés à aucun client : ils n'apparaîtront dans aucun rapport mensuel. »
+- **Côté produit :** pour les sites sans client, soit un rapport « portefeuille » regroupant tous ces sites, soit le rattachement automatique à un client par défaut. Choix technique laissé à l'agent Ingénierie, décision du fondateur (demande D-05).
+- **Pendant l'essai :** l'e-mail J+7 « Votre premier rapport client » (§5, D-02) pousse à générer le rapport à la demande.
+- **Indicateur :** part des comptes payants qui ont reçu au moins un rapport au cours du mois (objectif : 100 %). Mesuré par l'événement `report_generated` (D-03).
+- **Skills :** `onboarding`, `churn-prevention`.
+
+#### R2. Le rapport doit valoir quelque chose même quand tout va bien
+
+- Un mois sans incident n'est pas un mois vide : « 30 sites vérifiés chaque jour, 900 vérifications, aucun blocage ; 2 changements de `robots.txt` détectés et jugés sans risque. » Chaque chiffre vient des vrais scans (constitution I), rien n'est arrondi à la hausse.
+- L'e-mail « votre rapport est disponible » envoyé à l'agence reprend cette ligne en une phrase et rappelle l'usage : « À joindre à votre compte rendu de maintenance ce mois-ci. »
+- Textes à écrire dans cette session, puis intégration par l'agent Ingénierie (le gabarit d'e-mail et le moteur PDF sont dans son périmètre).
+- **Skills :** `emails`, `copywriting`.
+
+#### R3. Une alerte fausse coûte plus cher qu'une alerte manquée
+
+- La confiance est le produit. Le second scan de confirmation existe déjà ; il faut aussi **savoir** quand une alerte s'est révélée fausse.
+- Chaque alerte se termine par : « Cette alerte vous semble fausse ? Répondez simplement à cet e-mail, nous vérifions à la main. » Cela demande seulement que l'adresse de réponse soit `contact@decelio.fr` (D-06).
+- Tenir un registre simple des alertes contestées. Objectif : **zéro fausse alerte confirmée**. Chaque cas donne lieu à une correction ou à un passage en « à vérifier ».
+- **Skill :** `churn-prevention`.
+
+#### R4. Paiements échoués : récupérer sans relancer à la main
+
+- Environ un tiers des résiliations viennent d'échecs de paiement (ordre de grandeur donné par le skill `churn-prevention`, pas une mesure Decelio). Ce sont les plus faciles à récupérer.
+- **Réglages Stripe, gratuits et sans code**, à faire au passage en mode réel (T075) : relances automatiques intelligentes (Smart Retries) et e-mails automatiques de Stripe en cas d'échec de carte ou de carte bientôt expirée.
+- **Côté application (D-07) :** vérifier ce qui se passe quand un abonnement passe en impayé (`past_due`). L'agence doit garder ses scans pendant une période de grâce, et voir un bandeau clair avec un lien vers le portail pour mettre sa carte à jour. Couper la surveillance au premier échec serait la pire réponse pour un produit « assurance ».
+- **Skills :** `churn-prevention`, `stripe-stripe-best-practices`.
+
+#### R5. La résiliation : comprendre, proposer, laisser partir proprement
+
+La résiliation se fait dans le portail client Stripe. Sans rien développer :
+- **Activer la question « Pourquoi partez-vous ? »** dans le portail Stripe, avec 5 à 6 raisons : trop cher ; je ne l'utilise pas assez ; il manque une fonction ; je passe à un autre outil ; mon activité change ; autre.
+- **Proposer le plan inférieur** plutôt que la résiliation (le changement de plan est déjà ouvert dans le portail).
+- **Offre de maintien :** si le portail Stripe le permet (offre de réduction proposée au moment de résilier, *à vérifier dans les réglages*), 20 à 30 % pendant 2 mois, jamais davantage, pour ne pas apprendre aux clients à résilier pour obtenir une remise.
+- **Pause d'abonnement :** à vérifier dans le portail. Si elle n'existe pas sans développement, pas avant d'avoir des données.
+- **Lire chaque raison de départ.** À moins de 50 clients, chaque résiliation mérite un e-mail personnel de l'équipe : une seule question, sans insister.
+- **Skill :** `churn-prevention`.
+
+#### R6. Après la résiliation : un dernier e-mail honnête avant la purge
+
+- Les comptes résiliés sont purgés automatiquement (RGPD). Avant la purge, un e-mail : « Vos données et l'historique de vos sites seront supprimés le [date]. Vous pouvez les exporter ici, ou réactiver votre compte. » (D-08)
+- C'est à la fois une obligation de transparence et la seule relance de reconquête utile. Pas de séquence de relances au-delà.
+- **Skills :** `emails`, `churn-prevention`.
+
+#### R7. Les 10 agences fondatrices, une relation à part
+
+- En échange du −50 % à vie, un retour écrit chaque mois (5 questions par e-mail) et l'autorisation de citer l'agence (`docs/06` §5).
+- C'est le meilleur système d'alerte sur la résiliation (une agence qui ne répond plus est une agence qui part), et la source des premières études de cas (§7).
+- Envoi manuel depuis `contact@decelio.fr`, signé « L'équipe Decelio ».
+
+#### R8. Repérer les agences qui décrochent — *léger, à la main*
+
+À moins de 50 clients, pas d'outil de « score de santé ». Une revue hebdomadaire de 15 minutes, à partir de PostHog et du tableau de bord :
+- aucune connexion depuis 30 jours ;
+- sites retirés, ou nombre de sites en baisse ;
+- aucun rapport généré ce mois-ci ;
+- alerte contestée récemment.
+
+Pour chaque agence repérée : un e-mail court et utile (par exemple « Votre rapport de septembre est prêt, voulez-vous l'envoyer à vos clients ? »), jamais une relance commerciale.
+
+### Mesure
+
+| Indicateur | Objectif de départ |
+|---|---|
+| Résiliation mensuelle (en nombre d'agences) | < 5 % |
+| Comptes payants ayant reçu au moins un rapport ce mois | 100 % |
+| Fausses alertes confirmées | 0 |
+| Paiements échoués récupérés | À mesurer (le skill `churn-prevention` situe la moyenne entre 40 et 50 %) |
+| Raisons de départ | Toutes lues, classées chaque mois |
+
+**Skill :** `analytics`.
+
+### 90 jours
+
+| Semaines | Action |
+|---|---|
+| 1–2 | Textes R2, R3, R6 écrits ; demandes D-05 à D-08 transmises ; liste des réglages Stripe (R4, R5) remise à l'agent de déploiement |
+| Au passage en mode réel (T075) | Réglages Stripe : relances intelligentes, e-mails d'échec de carte, question de résiliation, plan inférieur |
+| Dès les premiers clients | Revue hebdomadaire (R8), registre des alertes contestées (R3), retours des agences fondatrices (R7) |
+| Fin du 3e mois | Première lecture de la résiliation réelle et des raisons de départ |
+
+### 12 mois
+
+- Si la résiliation dépasse 5 % : lire les raisons, puis décider (prix, fonction manquante, valeur du rapport perçue trop faible).
+- Facturation annuelle (2 mois offerts, `docs/05` §8), aujourd'hui marquée « en préparation » : c'est aussi un levier de rétention. À construire quand les premiers clients ont passé 3 mois.
+- Score de santé automatique : seulement au-delà de 50 clients.
+
+### Skills et outils
+
+| Action | Skills du dépôt | Qui |
+|---|---|---|
+| R1 premier rapport | `onboarding`, `churn-prevention` | Ingénierie (D-05), Design (étape d'onboarding, D-17) |
+| R2 rapport qui a de la valeur | `emails`, `copywriting` | Textes ici, intégration Ingénierie |
+| R3 alertes contestées | `churn-prevention` | Ingénierie (D-06), fondateur (registre) |
+| R4 paiements échoués | `churn-prevention`, `stripe-stripe-best-practices` | Réglages Stripe (déploiement), Ingénierie (D-07) |
+| R5 résiliation | `churn-prevention` | Réglages du portail Stripe |
+| R6 avant la purge | `emails`, `churn-prevention` | Ingénierie (D-08) |
+| R7, R8 suivi à la main | `customer-research`, `analytics` | Fondateur, avec `contact@decelio.fr` et PostHog |
+
+---
+
+## 7. Recommandation : quand des clients en amènent d'autres
+
+*Statut : validé par le fondateur le 28/09/2026. Demande D-18 transmise via `docs/marketing/demandes-aux-agents.md`.*
+
+### Le principe, et le bon moment
+
+On ne cherche pas à faire recommander un produit que personne n'a encore gardé trois mois. La recommandation vient **après** la rétention : une agence recommande Decelio quand le rapport lui a déjà servi auprès de ses clients. Tout ce qui suit démarre donc **après les 10 premières agences payantes**, sauf les deux actions sans effort (P1, P2) qui peuvent être prêtes dès le lancement.
+
+### Decelio se diffuse-t-il tout seul ?
+
+Un peu, mais pas assez pour compter dessus (le skill `referrals` le classe comme un produit à « potentiel viral limité ») :
+- **Le rapport en marque blanche cache Decelio**, c'est son but. Aucune diffusion par là, et c'est voulu.
+- **Le rapport du plan Freelance porte le logo Decelio** (pas de marque blanche). Il est vu par les clients finaux de l'agence, qui ne sont pas notre cible, mais qui ont parfois d'autres prestataires.
+- **Le PDF du diagnostic gratuit porte le logo Decelio** et il est fait pour être transmis (« à envoyer à mon client »). C'est la meilleure exposition naturelle.
+
+Conclusion : pas de badge « Propulsé par Decelio » imposé dans les rapports des plans payants. Ce serait contraire à la promesse de marque blanche. On investit plutôt dans un programme de recommandation simple et dans des partenaires.
+
+### Les actions
+
+#### P1. Le PDF du diagnostic comme vitrine — *dès le lancement, texte seulement*
+
+- Pied de page du PDF gratuit : « Diagnostic réalisé avec Decelio — la vérification quotidienne de la lisibilité IA de vos sites. decelio.fr ». Sobre, sans promesse, une seule ligne.
+- Au plan Freelance, même ligne discrète dans le rapport mensuel. Elle est aussi un argument pour passer au plan Agence (« rapport entièrement à votre marque »).
+- **Qui :** textes ici ; le moteur PDF relève de l'agent Ingénierie (D-18).
+- **Skills :** `referrals`, `copywriting`.
+
+#### P2. Les études de cas des agences fondatrices — *dès les premiers clients*
+
+- Contrepartie déjà prévue du −50 % à vie : l'autorisation de citer l'agence (`docs/06` §5).
+- Format : le problème trouvé, sa cause, le correctif, ce que l'agence en a fait auprès de son client. Chiffres réels uniquement, **accord écrit de l'agence avant toute publication**, et accord de son client s'il est nommé (constitution : aucun faux témoignage).
+- C'est la seule preuve sociale autorisée tant qu'il n'y a pas de clients, et la plus forte en B2B.
+- **Skills :** `customer-research`, `copywriting`.
+
+#### P3. Programme de recommandation entre agences — *après 10 clients payants et 3 mois de recul*
+
+- **Pourquoi entre agences :** les freelances et les petites agences se connaissent (sous-traitance, communautés WordPress et SEO). Une recommandation de pair vaut plus que n'importe quelle publicité.
+- **Récompense double :** **un mois offert** pour l'agence qui recommande, **un mois offert** pour la nouvelle agence après son premier paiement. On récompense un vrai client payant, jamais une simple inscription.
+- **Pourquoi un mois offert :** c'est du revenu en moins, pas une sortie d'argent. Compatible avec le budget 0 €, et parlant (« un mois offert » plutôt que « 8 % de remise »).
+- **Mécanique à 0 €, sans outil payant :** un code de recommandation par agence (code promotionnel Stripe), le crédit appliqué à la main sur le compte Stripe de l'agence qui recommande. Suffisant jusqu'à quelques dizaines de recommandations par mois. Au-delà, on l'automatise.
+- **Moments où le proposer :** juste après l'envoi du premier rapport mensuel à un client ; après une alerte suivie d'une correction réussie ; au renouvellement du 3e mois. Jamais dans les premiers jours de l'essai.
+- **Indicateur :** part des agences payantes qui recommandent au moins une fois ; part des nouvelles agences venues par recommandation.
+- **Skills :** `referrals`, `emails`.
+
+#### P4. Partenaires : formateurs et communautés — *après 10 clients payants*
+
+- Idée de `docs/05` §10.6 : **20 % récurrents** pour les formateurs WordPress et SEO, et les communautés qui recommandent Decelio à leur audience.
+- **Compatible avec le budget 0 €** : la commission n'est payée que sur un revenu déjà encaissé. Elle ne crée jamais de dépense sans recette.
+- **Mécanique :** un code promotionnel Stripe par partenaire (qui donne aussi un avantage à l'agence recommandée), un relevé mensuel, un paiement sur facture du partenaire. Pas de plateforme d'affiliation payante avant que le volume le justifie.
+- **Choix des partenaires :** peu, et bien choisis. Des formateurs et des créateurs de contenu WordPress et SEO francophones dont l'audience correspond à la cible, contactés un par un, par écrit, depuis `contact@decelio.fr`. Liste à constituer avec le skill `prospecting`.
+- **Règles :** le partenaire indique clairement qu'il est rémunéré (obligation légale de transparence sur les contenus sponsorisés) ; aucune promesse ni aucun chiffre non vérifié dans ses contenus. Un kit partenaire fournit les textes exacts.
+- **Point juridique à vérifier avant le lancement du programme :** les modalités de facturation et de déclaration des commissions pour une micro-entreprise. Ce plan n'est pas un avis comptable.
+- **Skills :** `referrals`, `prospecting`, `public-relations`.
+
+#### P5. Partenariats avec les outils de maintenance — *12 mois, piste stratégique*
+
+- `docs/05` §7 : WP Umbrella et ManageWP sont la menace n°1, mais aussi les partenaires les plus naturels : ils ont les agences, et Decelio a la vérification IA.
+- Une intégration (lien, API, « module Decelio ») ou un partenariat de distribution peut valoir plus que tout le reste de cette section. C'est aussi une sortie crédible (rachat).
+- **Condition :** avoir des clients, des études de cas et le baromètre, pour arriver avec des preuves. Pas avant le 2e semestre.
+
+### Ce qu'on ne fait pas
+
+| Idée | Raison |
+|---|---|
+| Badge « Propulsé par Decelio » dans les rapports payants | Contraire à la promesse de marque blanche |
+| Récompense à l'inscription | Attire des comptes vides, et l'essai demande déjà une carte : on récompense le paiement |
+| Plateforme d'affiliation payante | Budget 0 € ; inutile à faible volume |
+| Faux avis, avis contre récompense | Interdit par la constitution et par la loi |
+
+### Mesure
+
+| Indicateur | Objectif de départ |
+|---|---|
+| Études de cas publiées (avec accord écrit) | 2 à la fin du 3e mois (objectif de `docs/05` §11) |
+| Agences payantes ayant recommandé au moins une fois | À mesurer après le lancement de P3 |
+| Nouvelles agences venues par recommandation ou partenaire | À mesurer ; code promotionnel suivi dans Stripe et PostHog |
+
+**Skill :** `analytics`.
+
+### 90 jours
+
+| Semaines | Action |
+|---|---|
+| 1–2 | Textes P1 écrits, demande D-18 transmise |
+| Dès les premiers clients | P2 : accord écrit des agences fondatrices, première étude de cas |
+| Fin du 3e mois | Si 10 clients payants : lancer P3 ; constituer la liste de partenaires P4 |
+
+### 12 mois
+
+- **T2 :** P3 et P4 en place, premiers partenaires actifs.
+- **T3–T4 :** premier contact avec un outil de maintenance WordPress (P5), dossier de preuves en main.
+
+### Skills et outils
+
+| Action | Skills du dépôt | Outils (0 €) |
+|---|---|---|
+| P1 vitrine PDF | `referrals`, `copywriting` | Moteur PDF existant (Ingénierie, D-18) |
+| P2 études de cas | `customer-research`, `copywriting` | — |
+| P3 recommandation | `referrals`, `emails` | Codes promotionnels et crédits Stripe |
+| P4 partenaires | `referrals`, `prospecting`, `public-relations` | Codes Stripe, tableur de suivi |
+| P5 outils de maintenance | `competitor-profiling`, `public-relations` | — |
+
+---
+
+## 8. Revenu : prix, formules et montée en gamme
+
+*Statut : validé par le fondateur le 28/09/2026. Demande D-19 transmise.*
+
+### Les prix actuels (déjà en place)
+
+| Formule | Prix | Sites | Marque blanche | Pour qui |
+|---|---|---|---|---|
+| Freelance | 39 €/mois | 10 | Non (rapport au logo Decelio) | Freelance qui démarre |
+| **Agence** (recommandée) | **99 €/mois** | **30** | **Oui** | Cœur de cible |
+| Studio | 249 €/mois | 100 | Oui | Agences de 50 à 150 sites |
+| Au-delà de 100 sites | 2 € par site et par mois | — | — | Activé à la main |
+| Paiement annuel | 2 mois offerts | — | — | **En préparation** |
+
+- Essai gratuit de 14 jours sur les trois formules, carte demandée (ADR-002).
+- Offre fondatrice : −50 % à vie pour les 10 premières agences (coupon `FONDATEUR50`).
+- TVA non applicable (article 293 B du CGI) : le prix affiché est le prix payé.
+- La page de prix porte déjà l'argument central : **« Refacturez 10 à 20 € par site à vos clients »**. Au plan Agence, 30 sites refacturés 10 € rapportent 300 € par mois pour 99 € payés.
+
+**Recommandation : ne pas toucher aux prix avant d'avoir 20 clients.** Ils sont raisonnés face au marché (abonnements GEO de 800 à 5 000 € par mois, maintenance WordPress de 30 à 500 € par site). Les changer sans données reviendrait à deviner.
+
+### Ce que Decelio garde vraiment sur chaque paiement
+
+Frais Stripe vérifiés le 28/09/2026 : **1,5 % + 0,25 €** par paiement sur carte européenne, plus **0,7 %** pour la gestion des abonnements (Stripe Billing, sans abonnement mensuel). Les cartes hors d'Europe coûtent plus cher (3,25 % + 0,25 €).
+
+| Formule | Prix | Frais Stripe (carte UE) | Reste | Coût de service estimé | Marge |
+|---|---|---|---|---|---|
+| Freelance | 39 € | ≈ 1,11 € | ≈ 37,89 € | < 2 € | > 90 % |
+| Agence | 99 € | ≈ 2,43 € | ≈ 96,57 € | < 5 € | > 90 % |
+| Agence, offre fondatrice | 49,50 € | ≈ 1,34 € | ≈ 48,16 € | < 5 € | > 85 % |
+| Studio | 249 € | ≈ 5,73 € | ≈ 243,27 € | < 15 € | > 90 % |
+
+Le coût de service vient de l'estimation de `docs/05` §12 (moins de 5 € par agence de 30 sites). Tant que l'hébergement reste sur des offres gratuites, il est surtout théorique.
+
+### Les leviers de revenu
+
+#### V1. Faire passer du plan Freelance au plan Agence
+
+C'est le levier principal, et il est naturel :
+- **La limite de 10 sites.** Le message de refus au 11ᵉ site oriente déjà vers le palier supérieur (T019).
+- **Le rapport à la marque de l'agence.** Au plan Freelance, le rapport porte le logo Decelio, et un rapport d'exemple visible par tous (§5, D-11) montre la différence.
+- **Le calcul de refacturation.** Pour 60 € de plus par mois, 20 sites de plus refacturés à 10 € en rapportent 200.
+
+**Indicateur :** part des comptes Freelance qui passent au plan Agence dans les 3 premiers mois.
+
+#### V2. L'offre fondatrice, bornée
+
+- −50 % à vie, 10 places au maximum, **avec une date limite claire**. En échange : un retour écrit chaque mois et l'autorisation de citer l'agence.
+- Coût réel : environ 50 € de revenu en moins par mois et par agence au plan Agence, soit 500 € par mois si les 10 places sont prises au plan Agence. C'est le prix des études de cas (§7, P2) et des premiers retours produit. Il est accepté, mais il ne doit pas s'étendre.
+- **Règle :** pas d'autre remise permanente. Les remises de maintien au moment de la résiliation (§6, R5) restent limitées à 20–30 % pendant 2 mois.
+
+#### V3. Le paiement annuel — *après 3 mois de clients*
+
+- Deux mois offerts contre douze mois payés d'avance. Pour une entreprise sans financement, c'est de la trésorerie, et c'est aussi un levier de rétention.
+- Aujourd'hui marqué « en préparation » sur la page de prix, ce qui est correct. À construire (agent Ingénierie) quand les premiers clients ont passé 3 mois, pas avant : on veut d'abord savoir s'ils restent.
+
+#### V4. Au-delà de 100 sites
+
+- 2 € par site et par mois, activé à la main. Sans enjeu avant plusieurs mois.
+- **Correction nécessaire dès maintenant (D-19) :** la page de prix dit de « répondre à l'e-mail de bienvenue » pour le demander. Cet e-mail n'existe pas encore (§5, D-02). Tant qu'il n'existe pas, le texte doit dire « écrivez-nous à contact@decelio.fr ».
+
+#### V5. Le plan Studio doit valoir son prix sans fonction promise
+
+- Les fonctions annoncées dans l'analyse initiale pour Studio (plusieurs utilisateurs, API, domaine de rapport personnalisé) sont **en préparation**. Aujourd'hui, Studio vaut surtout pour le volume (100 sites) et la marque blanche.
+- À vérifier régulièrement : la page de prix ne doit présenter comme actif que ce qui l'est (T042, constitution II).
+- Quand l'une de ces fonctions sera construite, ce sera le levier de passage du plan Agence au plan Studio.
+
+### Les paliers qui changent la gestion de l'entreprise
+
+Seuils vérifiés pour 2026. À faire confirmer par un comptable avant d'agir : ce plan n'est pas un avis fiscal.
+
+| Palier | Revenu annuel | Revenu mensuel équivalent | Environ | Ce qui change |
+|---|---|---|---|---|
+| Objectif 90 jours | — | ≈ 1 000 € | 10 agences | Rien : preuve du modèle |
+| **Franchise de TVA, seuil de base** | **37 500 €** | ≈ 3 125 € | ≈ 28–30 agences | Au-delà du seuil de base mais sous 41 250 €, la franchise reste valable jusqu'à la fin de l'année ; au-delà de 41 250 €, TVA à facturer dès le jour du dépassement |
+| Plafond de la micro-entreprise (services) | 83 600 € | ≈ 7 000 € | ≈ 60–65 agences | Sortie du régime micro : changement de statut à préparer (comptable) |
+
+**Décision à prendre dès maintenant, sans effet immédiat :** comment afficher les prix le jour où la TVA s'appliquera.
+- Les agences qui récupèrent la TVA ne verront aucune différence si le prix reste le même hors taxe (99 € HT + TVA).
+- Les freelances eux-mêmes en franchise, qui ne récupèrent pas la TVA, verront leur coût augmenter de 20 %.
+- Recommandation : garder les prix actuels comme prix hors taxe, et prévenir les clients au moins un mois avant le passage. Décision ouverte, voir §13.
+
+### Ce qu'on ne fait pas
+
+| Idée | Raison |
+|---|---|
+| Baisser le prix d'entrée (9 ou 19 €) | Attire des clients qui partent vite et donnent de faux signaux (`docs/05` §8) |
+| Remises permanentes au-delà de l'offre fondatrice | Apprend aux clients à attendre une remise |
+| Tarif à l'usage par site (écarté par l'ADR-002) | À réévaluer sur les premiers abonnements, pas avant |
+| Changer de prestataire de paiement pour économiser des frais | Stripe est gardé pour la franchise de TVA (décision du fondateur, 28/09) |
+
+### Mesure
+
+| Indicateur | Objectif de départ |
+|---|---|
+| Revenu mensuel récurrent | 1 000 € à 90 jours |
+| Répartition par formule | À mesurer : on attend une majorité au plan Agence |
+| Passage Freelance → Agence dans les 3 mois | À mesurer |
+| Revenu moyen par agence | Hypothèse : 110 € (`docs/05` §12) |
+| Frais Stripe réels / revenu | ≈ 2,5 % attendu |
+
+**Skills :** `analytics`, `stripe-stripe-best-practices`.
+
+### 90 jours
+
+| Semaines | Action |
+|---|---|
+| 1–2 | D-19 transmise (texte de la page de prix) |
+| Au passage en mode réel (T075) | Prix, coupon fondateur et portail recréés à l'identique en mode réel (déjà prévu), avec une date limite pour l'offre fondatrice |
+| Dès les premiers clients | Suivi mensuel du revenu, de la répartition par formule et des passages Freelance → Agence |
+
+### 12 mois
+
+- **Après 3 mois de clients :** paiement annuel (V3).
+- **Après 20 clients :** premier réexamen des prix avec de vraies données, dont le tarif à l'usage écarté par l'ADR-002.
+- **Vers 25 agences :** préparer le passage à la TVA (affichage, e-mail aux clients, facturation Stripe).
+- **Vers 50 agences :** préparer, avec un comptable, la sortie du régime micro-entreprise.
+
+### Skills et outils
+
+| Action | Skills du dépôt | Outils |
+|---|---|---|
+| V1 montée en gamme | `cro`, `copywriting` | Messages de quota existants, rapport d'exemple (D-11) |
+| V2 offre fondatrice | `emails`, `marketing-psychology` | Coupon Stripe `FONDATEUR50` |
+| V3 paiement annuel | `stripe-stripe-best-practices` | Stripe (Ingénierie) |
+| V4 page de prix | `copywriting` | Agent Design (D-19) |
+| Mesure | `analytics` | Stripe, PostHog |
+
+---
+
+## 9. Plan de 90 jours
+
+*Statut : validé par le fondateur le 28/09/2026.*
+
+### Comment lire ce plan
+
+La date de mise en ligne n'est pas connue : elle dépend du test complet en local et du déploiement, menés par d'autres agents. Le plan est donc découpé en **périodes qui s'ouvrent quand leur condition est remplie**, pas seulement par dates.
+
+- **S1 = semaine du 28/09/2026.** Les semaines comptent à partir d'aujourd'hui.
+- **Porte DNS :** `decelio.fr` résout, la boîte `contact@decelio.fr` reçoit du courrier, le domaine est vérifié chez Resend.
+- **Porte mise en ligne :** l'application tourne sur `decelio.fr`, le diagnostic gratuit marche, Stripe est en mode réel avec le webhook, la page de prix est corrigée (D-19).
+
+Si la mise en ligne arrive plus tard que prévu, les périodes 3 et 4 glissent d'autant, mais les périodes 1 et 2 ne dépendent de rien : elles commencent tout de suite.
+
+**Qui fait quoi :**
+- **F** : le fondateur.
+- **M** : la session lancement / marketing (textes, listes, analyses).
+- **I** : l'agent Ingénierie.
+- **D** : l'agent Design.
+- **Dép.** : l'agent de déploiement.
+
+Étapes du tunnel : **Acq.** acquisition, **Act.** activation, **Rét.** rétention, **Rec.** recommandation, **Rev.** revenu.
+
+### Période 1 — Débloquer (S1–S2, 28/09 → 11/10) : sans domaine, sans site
+
+Le but : savoir si la cible a le problème, et avoir tout validé avant de créer quoi que ce soit.
+
+| # | Action | Étape | Qui | Livrable |
+|---|---|---|---|---|
+| 1 | **Baromètre v2 :** liste des sites clients de 40 à 60 agences (WordPress, SEO/GEO, Wix, Shopify, Webflow), puis scan en local | Acq. | M prépare, **F valide avant le scan** | Liste figée + résultats bruts |
+| 2 | Vérification à la main des cas « bloqué » (cause, capture datée) | Acq. | M, F | Taux de problèmes **vérifiés** par plateforme |
+| 3 | **Point de décision : critère d'arrêt.** Moins de 5 % de problèmes vérifiés → plan B | Toutes | **F décide** | Décision écrite |
+| 4 | Kit de marque : accroches, descriptions (60 caractères, 150 mots, variantes), bios de chaque réseau | Acq. | M écrit, F valide | `docs/marketing/kit-de-marque.md` |
+| 5 | Fiches de création des comptes (LinkedIn, X, Reddit, YouTube pour réserver l'identifiant) | Acq. | M écrit, F valide | Fiches prêtes à copier-coller |
+| 6 | Textes des e-mails d'essai (D-02), du rapport « rien n'a cassé » (R2), de l'e-mail avant la purge (D-08) | Act., Rét. | M écrit, F valide | `docs/marketing/emails-essai.md` |
+| 7 | Fusion de la PR du plan ; les agents examinent les demandes D-01 à D-19 | — | F fusionne, I et D examinent | Tâches T089 à T099 recopiées |
+| 8 | **D-19** : page de prix corrigée (plus d'« e-mail de bienvenue ») | Rev. | D | Avant la mise en ligne |
+
+**Temps du fondateur :** environ 4 à 6 heures (valider la liste, vérifier une partie des cas, relire les textes).
+
+### Période 2 — Fondations (S3–S4, 12/10 → 25/10) : dès que le DNS passe
+
+| # | Action | Étape | Qui | Livrable |
+|---|---|---|---|---|
+| 9 | Boîte `contact@decelio.fr` (MX Plan OVH), gestionnaire de mots de passe, double authentification | Acq. | **F** | Adresse de marque active |
+| 10 | Création des comptes avec les fiches validées : page LinkedIn (depuis le profil de F), X, Reddit ; réservation de l'identifiant YouTube | Acq. | **F** | Comptes remplis, rien de publié |
+| 11 | Textes des pages de destination (3 pages par cible, 3 comparaisons, `/barometre`) | Acq. | M écrit, F valide | Transmis à D (D-14) |
+| 12 | Rédaction des 5 premiers articles | Acq. | M écrit, F valide | Transmis à D (D-15) |
+| 13 | Kit de prospection mis à jour avec les résultats du baromètre v2 ; liste des 50 premiers prospects qualifiés (constat vérifié pour chacun) | Acq. | M | Tableur de prospection |
+| 14 | Liste des annuaires gratuits retenus, avec une description adaptée à chacun | Acq. | M | Tableur de suivi des inscriptions |
+| 15 | Réglages Stripe de rétention préparés (D-09), phrases rassurantes du paiement (D-10) | Rét., Act. | Dép., D | Prêt pour T075 |
+
+**Temps du fondateur :** environ 3 heures (création des comptes, relectures).
+
+### Période 3 — Lancement (S5–S8, 26/10 → 22/11) : dès la mise en ligne
+
+| # | Action | Étape | Qui | Indicateur |
+|---|---|---|---|---|
+| 16 | Page `/barometre` en ligne ; premier post sur la page LinkedIn | Acq. | D, F publie | Vues, diagnostics lancés |
+| 17 | Envoi du baromètre aux médias et communautés, un par un, depuis `contact@decelio.fr` | Acq. | M prépare, **F envoie** | Objectif : ≥ 5 liens entrants de qualité |
+| 18 | **Prospection :** 10 à 20 e-mails par jour, à la main, signés « L'équipe Decelio » | Acq. | M prépare chaque e-mail, **F envoie** | ≥ 3 % de réponses sur 100 envois |
+| 19 | Inscriptions dans les annuaires, par lots de 2 à 3 heures | Acq. | F (ou M prépare tout, F valide) | Liens obtenus |
+| 20 | Questionnaire J+3 lu, offre fondatrice envoyée quand ≥ 3 réponses montrent un vrai besoin | Act., Rev. | F | Premières agences fondatrices |
+| 21 | Revue hebdomadaire du tunnel d'activation (PostHog), 15 minutes | Act. | F, M analyse | Étape où l'on perd le plus |
+| 22 | **Point de décision, S6 :** WordPress, SEO/GEO ou autres plateformes ? On concentre la prospection sur le segment qui répond le mieux | Acq. | **F décide**, M analyse | Décision écrite |
+
+**Temps du fondateur :** environ 1 heure par jour ouvré (envois, réponses), plus 2 heures par semaine d'annuaires.
+
+### Période 4 — Faire fructifier (S9–S13, 23/11 → 27/12)
+
+| # | Action | Étape | Qui | Indicateur |
+|---|---|---|---|---|
+| 23 | Prospection poursuivie sur le segment choisi | Acq. | F, M | Essais démarrés |
+| 24 | 2 articles par mois publiés | Acq. | M écrit, D publie | Pages indexées |
+| 25 | Revue hebdomadaire des agences qui décrochent (R8) ; registre des alertes contestées (R3) | Rét. | F | 0 fausse alerte confirmée |
+| 26 | Première étude de cas avec l'accord écrit d'une agence fondatrice | Rec. | M écrit, F obtient l'accord | 1 publiée, 2 visées |
+| 27 | Premier rapport mensuel reçu par **tous** les clients payants (D-05, D-17 en place) | Rét. | I, D | 100 % |
+| 28 | **Bilan à 90 jours** : revenu, résiliation, sources des clients ; lancement de la recommandation (P3) si 10 clients | Toutes | **F décide**, M prépare | Objectif ~1 000 € de revenu mensuel |
+
+### Les trois points de décision du fondateur
+
+| Quand | Décision | Sur quelle base |
+|---|---|---|
+| Fin S2 | On continue ou on passe au plan B ? | Taux de problèmes vérifiés sur la cible (seuil : 5 %) |
+| S6 après la mise en ligne | Quel segment prioritaire ? | Taux de réponse et d'essai par segment |
+| Fin S13 | Lancer la recommandation, le paiement annuel, la vidéo courte ? | Nombre de clients, résiliation, revenu |
+
+### Objectifs à 90 jours (repris de `docs/05` §11, adaptés au retard de la mise en ligne)
+
+- **10 agences payantes, soit environ 1 000 € de revenu mensuel.** Si la mise en ligne arrive après S5, l'objectif se mesure 8 semaines après la mise en ligne.
+- Résiliation < 5 % par mois.
+- Au moins 5 liens entrants de qualité grâce au baromètre.
+- 2 études de cas en cours, dont au moins 1 publiée.
+- 0 fausse alerte confirmée.
+
+---
+
+## 10. Perspective sur 12 mois
+
+*Statut : validé par le fondateur le 28/09/2026.*
+
+### Pas de levée de fonds : c'est le revenu qui débloque les moyens
+
+Decelio est autofinancé. Il n'y a donc pas de « tour de financement » qui débloque un budget. La règle du fondateur tient lieu de palier : **une dépense n'est engagée qu'une fois couverte par le revenu mensuel.** Le plan propose de la rendre concrète :
+
+**Règle proposée : le marketing peut dépenser au plus 10 % du revenu mensuel encaissé, et chaque dépense est signalée avant d'être engagée.**
+
+| Revenu mensuel | Budget marketing possible | Ce que ça permet | Ce que ça ne permet pas |
+|---|---|---|---|
+| 0 € (aujourd'hui) | 0 € | Tout le plan de 90 jours | Toute dépense |
+| ≈ 1 000 € (10 agences) | ≤ 100 €/mois | Extension Chrome (5 € une fois) ; outil de montage vidéo si l'offre gratuite ne suffit pas ; un second domaine dédié à la prospection si la délivrabilité le demande | Publicité |
+| ≈ 3 000 € (≈ 28 agences) | ≤ 300 €/mois | Premier test de publicité limité, avec un critère d'arrêt (par exemple Google Ads sur des requêtes comme « GPTBot bloqué ») ; adhésion à une communauté professionnelle | Recrutement |
+| ≈ 7 000 € (≈ 60 agences) | ≤ 700 €/mois | Un freelance contenu et croissance à temps partiel, quelques heures par semaine | Salarié |
+
+À chaque palier franchi, le fondateur décide. Rien ne se déclenche automatiquement.
+
+### Les courbes de croissance
+
+Une croissance réelle ressemble à une suite de marches, pas à une courbe lisse. On lance la marche suivante **pendant** que la précédente monte encore :
+
+| Marche | Levier | Quand elle démarre | Signe qu'elle plafonne |
+|---|---|---|---|
+| 1. Canal | Baromètre + prospection écrite appuyée sur des constats vérifiés | Lancement | Taux de réponse en baisse sur 3 semaines |
+| 2. Canal | Référencement, contenus, annuaires, comparaisons | Rédigés dès la période 2, publiés au lancement ; effet attendu à partir du T2 | Trafic organique stable 2 mois de suite |
+| 3. Canal | Recommandation, partenaires, extension WordPress.org | T2 | — |
+| 4. Produit | **Intégration Cloudflare en lecture seule** : la seule mesure qui voit les vrais blocages (`docs/05` §3.3, contrôle n°6), et la fonction payante la plus défendable face aux concurrents | À décider (§13) | — |
+| 5. Marché | Belgique, Suisse, Québec (francophones, mêmes textes) | T4, si la France répond bien | — |
+
+**Répartition de l'effort :** 70 % sur la marche qui marche, 20 % sur la suivante, 10 % sur un essai.
+
+### Trimestre par trimestre
+
+**T1 (octobre → décembre 2026) : preuve**
+- Baromètre v2 sur la cible, décision de continuer ou de passer au plan B.
+- Comptes créés, mise en ligne, baromètre publié, prospection lancée.
+- Objectif : 10 agences payantes, environ 1 000 € par mois.
+
+**T2 (janvier → mars 2027) : second canal**
+- Contenus et annuaires qui commencent à rapporter ; 2 articles par mois.
+- Recommandation entre agences (P3) et premiers partenaires (P4).
+- Extension WordPress.org ; vidéos courtes sans visage (YouTube, puis Instagram et TikTok).
+- Paiement annuel.
+- Objectif indicatif : 20 à 25 agences.
+
+**T3 (avril → juin 2027) : approfondir**
+- Deuxième édition du baromètre (semestrielle).
+- Décision sur l'intégration Cloudflare.
+- Préparer le passage à la TVA (vers 28 agences).
+- Premier test de publicité si le revenu le couvre.
+- Objectif indicatif : 30 à 40 agences.
+
+**T4 (juillet → septembre 2027) : élargir**
+- Premier contact avec un outil de maintenance WordPress (P5), preuves en main.
+- Marchés francophones hors de France.
+- Préparer, avec un comptable, la sortie du régime micro-entreprise si le rythme le justifie.
+- Objectif indicatif : 50 agences, environ 5 000 € par mois.
+
+**Honnêteté des objectifs :** au-delà du T1, les chiffres sont des ordres de grandeur, pas des prévisions. Ils reposent sur des hypothèses (revenu moyen de 110 € par agence, 4 % de résiliation par mois) qu'aucune donnée ne confirme encore. Ils seront recalculés à la fin du T1, avec les vrais chiffres.
+
+### Premier recrutement
+
+Pas avant 7 000 € par mois environ. Le premier profil utile est un **freelance à temps partiel qui sait à la fois écrire du contenu et faire de la croissance** (les deux compétences, pas une seule). Pas de titre de « directeur marketing » : trop tôt, et ça enferme pour la suite.
+
+---
+
+## 11. Outils et skills du marketing
+
+*Statut : validé par le fondateur le 28/09/2026.*
+
+Un fondateur seul, avec des agents et les skills du dépôt, peut produire le travail d'une petite équipe marketing. Ce tableau dit qui fait quoi avec quoi, étape par étape. Les skills cités sont tous dans `.claude/skills/` (copiés dans `.agents/skills/`).
+
+### Par étape du tunnel
+
+| Étape | Travail | Skills du dépôt | Outils (tous à 0 €) |
+|---|---|---|---|
+| **Cadre** | Positionnement, voix, langage client | `product-marketing`, `customer-research`, `marketing-psychology`, `copywriting`, `copy-editing` | `.claude/product-marketing.md` (lu par tous les skills) |
+| **Acquisition** | Baromètre, prospection, contenus, pages, comptes, annuaires, presse | `prospecting`, `cold-email`, `content-strategy`, `content-research-writer`, `seo-audit`, `ai-seo`, `programmatic-seo`, `schema`, `lead-magnets`, `public-relations`, `directory-submissions`, `social`, `community-marketing`, `competitors`, `competitor-profiling`, `launch` | Scanner Decelio en local, boîte `contact@decelio.fr` (MX Plan OVH), Google Search Console, tableurs |
+| **Activation** | Inscription, onboarding, e-mails d'essai | `signup`, `onboarding`, `cro`, `emails` | PostHog, Resend |
+| **Rétention** | Rapport mensuel, alertes, impayés, résiliation | `emails`, `churn-prevention`, `resend-email-best-practices`, `resend-react-email` | Resend, portail client Stripe |
+| **Recommandation** | Études de cas, recommandation, partenaires | `referrals`, `customer-research` | Codes promotionnels Stripe |
+| **Revenu** | Prix, formules, facturation | `stripe-stripe-best-practices` | Stripe |
+| **Mesure** | Tunnel, revenu, sources | `analytics` | PostHog (déjà branché), Stripe |
+| **Lancement** | Préparation et exécution des lancements | `launch`, `shipping-and-launch` | — |
+| **Pilotage** | Ce plan, feuille de route | `marketing-plan`, `pm-roadmap-update`, `planning-and-task-breakdown` | `docs/marketing/` |
+
+### Les connecteurs disponibles
+
+Dans l'environnement de travail du fondateur, plusieurs services sont déjà connectables à Claude. Ils évitent les copier-coller de chiffres :
+- **PostHog** : lire le tunnel d'activation chaque semaine.
+- **Stripe** : revenu, répartition par formule, codes promotionnels.
+- **Resend** : état du domaine, journaux d'envoi, taux de rebond.
+- **Google Drive** : partage éventuel du plan et des tableurs.
+- **Canva** (connexion à autoriser) : visuels des comptes et du baromètre, sur l'offre gratuite si elle autorise l'usage commercial (à vérifier).
+
+**Garde-fou :** aucun connecteur n'envoie d'e-mail de prospection. Les envois restent manuels, depuis `contact@decelio.fr` (§4, A7).
+
+### Qui intègre quoi
+
+| Qui | Périmètre marketing |
+|---|---|
+| Session lancement / marketing | Textes, listes, analyses, plan, demandes aux agents (`docs/marketing/`) |
+| Agent Design | Pages publiques, formulaires, textes à l'écran (`app/(marketing)/`, `components/`) |
+| Agent Ingénierie | E-mails automatiques, PDF, événements PostHog, API (`lib/`, `app/api/`, `inngest/`) |
+| Agent de déploiement | Réglages Stripe, domaine, variables d'environnement |
+| Fondateur | Décisions, validations, création des comptes, envois, fusions |
+
+### Ce que les paliers de revenu ajoutent (§10)
+
+| Palier | Ajout possible |
+|---|---|
+| ≈ 1 000 €/mois | Outil de montage vidéo si nécessaire ; second domaine de prospection si nécessaire |
+| ≈ 3 000 €/mois | Premier test de publicité ; outil de suivi de position des mots-clés |
+| ≈ 7 000 €/mois | Freelance contenu et croissance à temps partiel ; plateforme d'affiliation si le programme partenaires le justifie |
+
+---
+
+## 12. Banque d'idées (139 tactiques)
+
+*Statut : validé par le fondateur le 28/09/2026.*
+
+Les 139 idées du catalogue `marketing-ideas` (numéros d'origine conservés), chacune classée une seule fois : **maintenant** (dans les 90 jours), **T2**, **T3 et plus**, **quand le revenu finance la publicité**, ou **écartée** (avec la raison). Les idées retenues ont une note propre à Decelio.
+
+### Maintenant : dans le plan de 90 jours (26)
+
+| # | Idée | Étape | Pour Decelio |
+|---|---|---|---|
+| 6 | Contenu à partir de données propres | Acq. | **Le baromètre** : c'est l'atout central du lancement |
+| 105 | Rapport annuel | Acq. | Le baromètre, publié et daté, repris chaque semestre |
+| 21 | Scanner gratuit | Acq. | Le diagnostic gratuit, puis le diagnostic de 5 sites (D-01) |
+| 74 | Couverture presse | Acq. | Baromètre envoyé un par un aux médias (§4, A6) |
+| 1 | Mots-clés faciles à positionner | Acq. | Les 5 premiers articles (« Cloudflare bloque-t-il ChatGPT ? »…) |
+| 2 | Audit SEO | Acq. | Audit du site à la mise en ligne (skill `seo-audit`) |
+| 7 | Maillage interne | Acq. | Articles ↔ pages par cible ↔ diagnostic |
+| 11 | Pages de comparaison | Acq. | Cloudflare AI Crawl Control, WP Umbrella, outils de citation (D-14) |
+| 12 | Jiu-jitsu marketing | Acq. | « Vos outils disent si le client est cité ; nous, pourquoi il ne peut pas l'être » |
+| 5 | Réutilisation des contenus | Acq. | Un baromètre → page, post, articles, e-mails de prospection, vidéos |
+| 37 | Recherche de mots-clés sur Reddit | Acq. | Questions réelles sur les robots IA, pour les articles |
+| 39 | Audience LinkedIn | Acq. | Page entreprise Decelio (canal principal), sans voix personnelle |
+| 109 | Démo publique | Acq. | Démo écrite : rapport d'exemple + visite guidée en captures |
+| 81 | Prix de lancement | Rev. | Offre fondatrice, 10 places, date limite |
+| 139 | Langage client | Transversal | Les mots des personas dans tous les textes (`product-marketing.md`) |
+| 114 | Marketing « Moneyball » | Transversal | Aller là où le problème vérifié est le plus fréquent, pas là où c'est à la mode |
+| 51 | E-mails d'onboarding | Act. | E-mails d'essai (D-02) |
+| 47 | E-mail de bienvenue | Act. | Signé « L'équipe Decelio », pas le fondateur (D-02) |
+| 96 | Optimisation de l'onboarding | Act. | Étape « regroupez par client » (D-17), rapport d'exemple (D-11) |
+| 91 | Montée en gamme dans l'application | Act., Rev. | Message de quota, rapport à la marque au plan Agence |
+| 50 | Arrivée en boîte de réception | Rét. | SPF et DKIM via Resend ; ajouter un enregistrement DMARC sur `decelio.fr` |
+| 52 | E-mails de reconquête | Rét. | Un seul e-mail avant la purge RGPD (D-08) |
+| 94 | Parcours de départ | Rét. | Question de résiliation et plan inférieur dans le portail Stripe (D-09) |
+| 135 | Le support comme marketing | Rét. | Réponse sous 24 h aux alertes contestées (D-06) |
+| 45 | E-mail d'erreur | Rét. | Si un e-mail part avec une erreur : correction honnête et immédiate |
+| 87 | « Propulsé par » | Rec. | Seulement dans les PDF non marqués (D-18), jamais en marque blanche |
+
+### T2 : janvier → mars 2027 (34)
+
+| # | Idée | Pour Decelio |
+|---|---|---|
+| 3 | Glossaire | Glossaire des robots IA : GPTBot, OAI-SearchBot, ChatGPT-User… Très adapté à la recherche et aux IA |
+| 8 | Mise à jour des contenus | Articles actualisés à chaque changement des robots IA |
+| 9 | Référencement de la documentation | Correctifs pas à pas publiés (WordPress, Cloudflare, Wordfence) |
+| 10 | Publier sur d'autres plateformes | Articles repris sur la page LinkedIn Decelio |
+| 15 | Outil gratuit comme marketing | Générateur de `robots.txt` pour les robots IA |
+| 18 | Calculateur | Calculateur de refacturation : « combien Decelio vous rapporte » |
+| 19 | Extension Chrome | 5 € d'inscription : après le premier revenu |
+| 38 | Marketing sur Reddit | Après une longue participation utile, jamais d'autopromotion |
+| 40 | Audience Instagram | Reprise des vidéos courtes (A9) |
+| 41 | Audience X | Réponses utiles aux questions sur les robots IA |
+| 42 | Vidéo courte | Shorts sans visage à partir de vrais scans (A9) |
+| 44 | Commentaires utiles | Commentaires de la page Decelio sur les posts SEO et WordPress |
+| 46 | E-mails de réactivation | Agences inactives depuis 30 jours (R8) |
+| 49 | Lettre d'information mensuelle | Changements des robots IA + chiffres du baromètre |
+| 53 | Relance après essai | Agences dont l'essai s'est terminé sans paiement |
+| 54 | Trouver des affiliés par leurs liens | Sites qui parlent déjà des robots IA |
+| 58 | Échange entre lettres d'information | Avec des lettres d'information WordPress et SEO francophones |
+| 59 | Citations dans la presse | Répondre aux journalistes qui cherchent des données sur les robots IA |
+| 62 | Programme d'affiliation | Partenaires à 20 % (P4) |
+| 78 | Product Hunt | Après le baromètre ; demande un profil « maker » personnel (§13) |
+| 82 | Alternatives à Product Hunt | Annuaires de lancement du skill `directory-submissions` |
+| 90 | Inscription en un clic | Remettre le bouton « Continuer avec Google » |
+| 95 | Mise en place accompagnée | Par écrit : « Envoyez-nous votre liste de sites, nous l'importons » |
+| 98 | Modèles | Modèles de `robots.txt` pour WordPress, Cloudflare, Wix |
+| 100 | Vidéo de présentation | Démo de 60 à 90 secondes, sans visage |
+| 101 | Entretiens avec le secteur | Entretiens écrits avec des agences sur leurs pratiques |
+| 102 | Captures pour les réseaux | Extraits du baromètre, avec dénominateur et date |
+| 108 | Journal des nouveautés | Page publique des évolutions du produit |
+| 115 | Veille comme marketing | Veille mensuelle des changements des robots IA |
+| 125 | Places de marché | Extension WordPress.org (A8) |
+| 127 | Chaîne YouTube | Vidéos courtes (A9) |
+| 128 | Plateformes de recherche de logiciels | Fiches sur les sites comparateurs de logiciels |
+| 129 | Sites d'avis | Après les premiers clients, avis réels uniquement |
+| 137 | Recommandation double | Un mois offert à chacun (P3) |
+
+### T3 et plus : à partir d'avril 2027 (20)
+
+| # | Idée | Pour Decelio |
+|---|---|---|
+| 4 | Pages générées à grande échelle | Pages par hébergeur ou extension (« Hostinger et GPTBot »), une fois les données assez riches |
+| 14 | Projet parallèle | — |
+| 16 | Import comme marketing | Import de la liste de sites depuis ManageWP ou MainWP |
+| 17 | Quiz | « Votre agence est-elle prête pour les IA ? » |
+| 20 | Mini-sites | — |
+| 22 | API publique | Liée au plan Studio (API en préparation) |
+| 35 | Animer une communauté | Trop lourd pour un fondateur seul avant T3 |
+| 48 | Capture d'e-mail dynamique | Quand le trafic des articles le justifie |
+| 56 | Revendeurs | Via les outils de maintenance (P5) |
+| 57 | Réseaux d'experts | — |
+| 61 | Canaux Slack partagés | Avec les plus gros clients |
+| 63 | Marketing d'intégration | Intégration Cloudflare, WP Umbrella (P5) |
+| 92 | Recommandation par la lettre d'information | Si la lettre existe |
+| 103 | Formation en ligne | Formation écrite « GEO technique pour agences » |
+| 106 | Bilan de fin d'année | Bilan annuel des robots IA (décembre 2027) |
+| 116 | Subventions | Aides publiques à l'innovation, sans rapport direct avec le marketing |
+| 123 | Code ouvert | Analyseur de `robots.txt` pour les robots IA, en code ouvert |
+| 126 | Avis sur YouTube | Créateurs WordPress et SEO |
+| 131 | International | Belgique, Suisse, Québec |
+| 132 | Prix adaptés par pays | Franc suisse, dollar canadien |
+
+### Quand le revenu finance la publicité (17)
+
+#13 veille des publicités concurrentes ; #23 publicité dans les podcasts ; #24 ciblage préalable ; #25 Facebook ; #26 Instagram ; #27 X ; #28 LinkedIn (la plus adaptée au B2B, mais chère) ; #29 Reddit ; #30 Quora ; #31 Google (la plus probable en premier : requêtes à forte intention, comme « GPTBot bloqué ») ; #32 YouTube ; #33 reciblage ; #55 publicité via des créateurs ; #60 partage d'audiences publicitaires ; #64 parrainage de communautés ; #69 parrainage de rencontres ; #72 parrainage de conférences.
+
+Aucune avant le palier de 3 000 € par mois (§10).
+
+### Écartées, avec la raison (42)
+
+| Raison | Idées |
+|---|---|
+| **Identité publique** : demandent la voix, le visage ou la présence du fondateur | #65 webinaires en direct, #66 sommets virtuels, #67 tournées, #68 rencontres locales, #70 conférences, #71 conférences organisées, #107 podcast, #130 audio en direct, #138 tournée de podcasts |
+| **Constitution** : honnêteté, pas de nom cité, pas de fausse popularité | #43 groupes d'engagement, #113 controverse (citer des sites « fautifs » est interdit), #83 concours sur X, #84 concours, #85 concours de voyages |
+| **Économie** : abîment la valeur vie client ou apprennent à attendre une remise | #86 offres à vie, #77 Black Friday, #80 promotions du Nouvel An |
+| **Ton de marque** : voix sobre et factuelle | #99 bande dessinée, #112 télé-réalité, #118 vidéos de célébrités, #120 coups d'éclat, #121 guérilla, #122 humour |
+| **Hors de portée** (coût ou stade) | #73 rachat de médias, #75 communication de levée de fonds (pas de levée), #76 documentaires, #104 livre, #110 prix et trophées, #119 affichage, #133 marketing auprès d'investisseurs |
+| **Ne s'applique pas à Decelio** | #34 publicités vers messagerie, #36 Quora (peu utilisé par la cible française), #79 recommandation en accès anticipé (pas de liste d'attente), #88 migration gratuite, #89 rachat de contrats, #93 boucle virale (produit à potentiel viral limité), #97 listes de lecture, #111 défis, #117 concours de produits, #124 optimisation pour les magasins d'applications, #134 certifications, #136 relations développeurs |
+
+### Bilan
+
+- **26 idées maintenant**, 34 au T2, 20 au T3 et plus, 17 quand le revenu finance la publicité, **42 écartées** avec leur raison.
+- Le plan de 90 jours utilise **moins d'un cinquième** des tactiques disponibles. C'est voulu : un fondateur seul, sans budget, doit faire peu de choses et les faire jusqu'au bout. Les autres restent en réserve, classées, pour quand le revenu et le temps le permettront.
+
+---
+
+## 13. Mesure, responsabilités, décisions ouvertes, annexes
+
+*Statut : validé par le fondateur le 28/09/2026.*
+
+### L'indicateur principal
+
+**Nombre d'agences payantes qui ont reçu leur rapport mensuel ce mois-ci.**
+
+Pourquoi celui-là plutôt que le revenu seul : il réunit le paiement (revenu) et la valeur reçue (rétention). Une agence qui paie sans recevoir de rapport est une résiliation à venir (§6). Le revenu mensuel reste suivi à côté.
+
+### Les indicateurs avancés, par étape
+
+| Étape | Indicateur | Objectif de départ | Où le lire |
+|---|---|---|---|
+| Acquisition | Diagnostics gratuits par semaine | ≥ 20 après 6 semaines (`docs/05` §10) | PostHog `scan_completed` |
+| Acquisition | Taux de réponse à la prospection | ≥ 3 % sur 100 envois | Tableur de prospection |
+| Acquisition | Liens entrants de qualité grâce au baromètre | ≥ 5 | Search Console |
+| Activation | Diagnostic → inscription | ≥ 10 % (PRD) | PostHog |
+| Activation | Inscription → essai démarré | ≥ 50 % (hypothèse) | PostHog `trial_started` |
+| Activation | Essai → agence activée (≥ 5 sites, premier scan en 48 h) | ≥ 60 % (hypothèse) | PostHog |
+| Activation | Essai → payant | À mesurer | PostHog `trial_converted` |
+| Rétention | Résiliation mensuelle | < 5 % | Stripe |
+| Rétention | Clients payants ayant reçu un rapport | 100 % | PostHog `report_generated` (D-03) |
+| Rétention | Fausses alertes confirmées | 0 | Registre des alertes contestées |
+| Recommandation | Études de cas publiées | 2 à 90 jours | — |
+| Revenu | Revenu mensuel récurrent | ≈ 1 000 € à 90 jours | Stripe |
+
+**Rythme :** revue de 15 minutes chaque semaine (tunnel, prospection, agences qui décrochent), bilan d'une heure chaque mois, bilan complet à 90 jours.
+
+### Qui fait quoi (R : réalise, A : décide, C : consulté, I : informé)
+
+| Chantier | Fondateur | Session marketing | Agent Design | Agent Ingénierie | Agent déploiement |
+|---|---|---|---|---|---|
+| Baromètre v2 et décision de continuer | A | R | — | C | — |
+| Kit de marque, fiches de comptes | A | R | I | — | — |
+| Création des comptes | A, R | C | — | — | — |
+| Pages publiques, blog, formulaires | A | R (textes) | R (intégration) | C | — |
+| E-mails automatiques, PDF, événements | A | R (textes) | — | R (code) | — |
+| Réglages Stripe | A | C | — | C | R |
+| Envoi de la prospection et de la presse | A, R | R (préparation) | — | — | — |
+| Suivi hebdomadaire | A, R | R (analyse) | — | — | — |
+| Fusion des demandes de fusion | A, R | — | I | I | I |
+
+### Décisions ouvertes, par ordre d'impact
+
+| # | Décision | Pourquoi elle compte | Quand |
+|---|---|---|---|
+| 1 | **Continuer ou passer au plan B**, selon le taux de problèmes vérifiés sur la cible (seuil 5 %) | Tout le plan en dépend | Fin S2 (≈ 11/10) |
+| 2 | **Coût d'acquisition réel inconnu.** En argent, il est proche de 0 € ; en temps, il ne l'est pas. Mesurer les heures passées par client gagné. | Toutes les projections du §10 en dépendent | Dès les premiers clients |
+| 3 | **Participation aux communautés WordPress et SEO**, personnelle par nature (groupes Facebook, WebRankInfo, SEOCamp) : un prénom, ou pas de participation au début ? | C'est là que sont les personas (§2) | Avant la période 3 |
+| 4 | **Option pour les sites sans client** : rapport « portefeuille » ou client par défaut (D-05) | Sans elle, des clients ne reçoivent jamais de rapport | Quand l'agent Ingénierie la propose |
+| 5 | **Contenu de la page « Qui est derrière Decelio »** face au choix d'identité publique (D-13) | Cohérence et confiance | Avant la mise en ligne |
+| 6 | **Date limite de l'offre fondatrice** | Sans date, l'offre ne pousse pas à décider | Avant le passage en mode réel |
+| 7 | **Intégration Cloudflare en lecture seule** : la construire, et quand ? | Seule mesure qui voit les vrais blocages ; meilleure défense face aux concurrents | T2–T3 |
+| 8 | **Affichage des prix au passage à la TVA** (recommandé : prix actuels comme prix hors taxe) | 20 % de plus pour les freelances qui ne récupèrent pas la TVA | Vers 25 agences |
+| 9 | **Product Hunt** : il demande un profil « maker » personnel | Conflit avec le choix d'identité | T2 |
+| 10 | **Segment prioritaire** : WordPress, SEO/GEO ou autres plateformes | Où concentrer la prospection | S6 après la mise en ligne |
+
+### Points à vérifier par un professionnel (hors marketing)
+
+Ce plan n'est ni un avis juridique ni un avis comptable. À faire confirmer :
+- les mentions obligatoires dans les e-mails de prospection et la tenue du fichier de prospects (CNIL) ;
+- la facturation et la déclaration des commissions versées aux partenaires (§7, P4) ;
+- les seuils de TVA et de la micro-entreprise, et le moment de changer de statut (§8) ;
+- l'obligation d'un compte bancaire dédié à l'activité, selon le chiffre d'affaires.
+
+### Annexes : documents de référence
+
+| Document | Contenu |
+|---|---|
+| `docs/05-analyse-strategique.md` | Cible, concurrence (avec BabyLoveGrowth), prix, positionnement, critère d'arrêt |
+| `docs/06-kit-prospection.md` | Séquences d'e-mails, objections, questionnaire de découverte |
+| `docs/08-constitution.md` | Règles non négociables |
+| `docs/09-prd-mvp.md` | Exigences du produit |
+| `docs/13-barometre-ia.md`, `docs/barometre/` | Méthode et résultats du baromètre |
+| `docs/decisions/ADR-002-essai-gratuit-14-jours.md` | Essai de 14 jours avec carte |
+| `.claude/product-marketing.md` | Contexte marketing lu par les skills |
+| `docs/marketing/demandes-aux-agents.md` | Demandes D-01 à D-19 |
 
 ---
 

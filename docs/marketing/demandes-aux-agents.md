@@ -14,6 +14,12 @@ Rappels valables pour toutes les demandes : quatre portes au vert (`tsc`, `lint`
 | D-02 | Ingénierie | E-mails d'essai (bienvenue, relance carte, premier scan, premier rapport) | Haute | Textes à venir (`docs/marketing/emails-essai.md`), domaine Resend vérifié |
 | D-03 | Ingénierie | Événement PostHog quand un rapport est généré ou téléchargé | Moyenne | — |
 | D-04 | Ingénierie | Confirmer que le rappel de fin d'essai (J-3) part vraiment | Haute, avant la mise en ligne | Webhook Stripe (T074) |
+| D-05 | Ingénierie | Rapport mensuel aussi pour les sites rattachés à aucun client | Haute | Décision du fondateur sur l'option |
+| D-06 | Ingénierie | Les réponses aux alertes arrivent sur `contact@decelio.fr` | Moyenne | Boîte mail créée |
+| D-07 | Ingénierie | Comportement en cas d'impayé : délai de grâce et bandeau | Haute, avant Stripe réel | — |
+| D-08 | Ingénierie | E-mail avant la purge RGPD d'un compte résilié | Moyenne | Textes à venir |
+| D-09 | Déploiement | Réglages Stripe de rétention au passage en mode réel | Haute, avec T075 | T075 |
+| D-18 | Ingénierie | Ligne « Diagnostic réalisé avec Decelio » dans le PDF gratuit et le rapport Freelance | Basse | — |
 | D-10 | Design | Phrases rassurantes au moment du paiement | Haute | D-04 pour la 2e phrase |
 | D-11 | Design | Rapport d'exemple visible par tous les comptes | Moyenne | — |
 | D-12 | Design | Vérifier que le site ne se limite pas aux agences WordPress | Haute | — |
@@ -21,6 +27,8 @@ Rappels valables pour toutes les demandes : quatre portes au vert (`tsc`, `lint`
 | D-14 | Design | Pages de destination (par cible, comparaisons, baromètre) | Moyenne | Textes à venir |
 | D-15 | Design | Section blog | Moyenne | Textes à venir |
 | D-16 | Design | Formulaire du diagnostic de portefeuille | Après D-01 | D-01 fusionnée |
+| D-17 | Design | Étape « Regroupez vos sites par client » et rappel dans le tableau de bord | Haute | Coordination avec D-05 |
+| D-19 | Design | Page de prix : ne plus renvoyer vers un « e-mail de bienvenue » qui n'existe pas | **Haute, avant la mise en ligne** | — |
 
 ---
 
@@ -75,6 +83,56 @@ Rappels valables pour toutes les demandes : quatre portes au vert (`tsc`, `lint`
 
 **Attendu :** au moment du déploiement, confirmer par un test réel (Stripe CLI ou mode test) que cet e-mail part. Dire au fondateur et à l'agent Design si c'est le cas : la phrase « Nous vous prévenons par e-mail 3 jours avant » (D-10) n'est affichée qu'à cette condition.
 
+### D-05. Rapport mensuel pour les sites sans client
+
+**Pourquoi.** Le répartiteur `monthlyReportDispatcher` (`inngest/functions/monthly-report.ts`) ne génère un rapport que pour les `Client` ayant au moins un site. L'import en masse de l'onboarding crée des sites **sans** client. Une agence qui ne range pas ses sites ne reçoit donc jamais son rapport mensuel, la fonction anti-résiliation n°1 du produit (plan §6).
+
+**Attendu :** proposer au fondateur l'une de ces options, avec ses conséquences, avant de coder :
+- un rapport « portefeuille » regroupant tous les sites sans client ;
+- ou un client par défaut créé et rattaché automatiquement.
+
+Contraintes : ne pas casser la clé unique `(clientId, period)` de `MonthlyReport` ; ne générer aucun rapport vide ; respecter la marque blanche selon le plan. Tests sur le cas « aucun client » et le cas mixte.
+
+### D-06. Réponses aux alertes vers `contact@decelio.fr`
+
+**Pourquoi.** Chaque alerte se terminera par « Cette alerte vous semble fausse ? Répondez simplement à cet e-mail, nous vérifions à la main » (plan §6, R3). Il faut que la réponse arrive dans une boîte lue.
+
+**Attendu :** en-tête `Reply-To: contact@decelio.fr` sur les alertes (et sur les autres e-mails transactionnels, si c'est cohérent), et ajout de cette phrase au gabarit d'alerte. À activer seulement quand la boîte existe.
+
+### D-07. Comportement en cas d'impayé
+
+**Pourquoi.** Le webhook Stripe ne traite pas `invoice.payment_failed`, et le comportement de l'application quand un abonnement passe en `past_due` n'est pas documenté. Couper la surveillance au premier échec de carte serait la pire réponse pour un produit « assurance » (plan §6, R4).
+
+**Attendu :**
+- Documenter ce qui se passe aujourd'hui (accès, scans quotidiens, quota) quand l'abonnement est `past_due`.
+- Proposer puis coder : scans maintenus pendant une période de grâce (durée alignée sur les relances Stripe), et bandeau clair dans l'application avec un lien vers le portail client pour mettre la carte à jour.
+- Tests sur les transitions `active → past_due → active` et `past_due → canceled`.
+
+### D-08. E-mail avant la purge RGPD
+
+**Pourquoi.** Les comptes résiliés sont purgés automatiquement (`purge-cancelled-accounts`). Un dernier e-mail avant la purge est à la fois une obligation de transparence et la seule relance de reconquête utile (plan §6, R6).
+
+**Attendu :** un e-mail quelques jours avant la purge : date de suppression, lien d'export des données, lien de réactivation. Textes fournis dans `docs/marketing/` (à venir). Tests : envoyé une seule fois, jamais après la purge, jamais à un compte réactivé.
+
+### D-18. Ligne de signature dans les PDF non marqués
+
+**Pourquoi.** Le PDF du diagnostic gratuit porte déjà le logo Decelio et il est fait pour être transmis au client de l'agence. C'est la meilleure exposition naturelle de Decelio (plan §7, P1).
+
+**Attendu :** une seule ligne sobre en pied de page du PDF du diagnostic gratuit et du rapport mensuel **du plan Freelance uniquement** : « Diagnostic réalisé avec Decelio — la vérification quotidienne de la lisibilité IA de vos sites. decelio.fr ». **Jamais dans un rapport en marque blanche** (plans Agence et Studio) : ce serait contraire à la promesse faite au client. Test : la ligne est absente de tout rapport en marque blanche.
+
+---
+
+## Déploiement (agent qui passe Stripe en mode réel)
+
+### D-09. Réglages Stripe de rétention
+
+À faire au moment de T075 (Stripe en mode réel), sans code, dans le tableau de bord Stripe :
+- **Relances intelligentes** des paiements échoués (Smart Retries).
+- **E-mails automatiques de Stripe** en cas d'échec de carte et de carte bientôt expirée, avec le lien vers le portail.
+- **Portail client :** activer la question sur la raison de la résiliation (trop cher ; je ne l'utilise pas assez ; il manque une fonction ; je passe à un autre outil ; mon activité change ; autre) ; laisser ouvert le passage au plan inférieur ; résiliation en fin de période (déjà le cas en test).
+- **À vérifier dans le portail**, et à signaler au fondateur sans l'activer : l'offre de réduction proposée au moment de résilier (si elle existe : 20 à 30 % pendant 2 mois au maximum), et la pause d'abonnement.
+- Vérifier que ces réglages n'ajoutent **aucun coût** Stripe. Sinon, le signaler avant de les activer.
+
 ---
 
 ## Agent Design
@@ -126,6 +184,21 @@ Les **textes** seront fournis dans `docs/marketing/` (à venir). En attendant, l
 **Pourquoi.** Cinq articles de départ sont prévus (plan §4, A5). Il n'existe pas de section blog aujourd'hui.
 
 **Attendu :** une section blog dans `app/(marketing)/`, compatible avec le référencement et la lecture par les IA (rendu côté serveur, un `h1`, date, données structurées `Article`), sans dépendance à un service payant ni appel à un CDN tiers. Si une configuration relève de l'Ingénierie (`next.config.ts`), la demander.
+
+### D-17. « Regroupez vos sites par client »
+
+**Pourquoi.** Voir D-05 : sans client, pas de rapport mensuel.
+
+**Attendu :**
+- Une étape facultative dans l'onboarding, après l'ajout des sites : « Regroupez vos sites par client : chaque client recevra son propre rapport mensuel », avec un exemple et un bouton « Plus tard ».
+- Dans le tableau de bord, tant que des sites ne sont rattachés à aucun client, un rappel sobre, par exemple : « 12 sites ne sont rattachés à aucun client : ils n'apparaîtront dans aucun rapport mensuel. » Ce texte est à adapter si D-05 change ce comportement.
+- Se coordonner avec l'agent Ingénierie sur D-05, pour que le texte dise ce qui se passe vraiment.
+
+### D-19. Page de prix : pas d'« e-mail de bienvenue » qui n'existe pas
+
+**Pourquoi.** `app/(marketing)/pricing/page.tsx` dit, à deux endroits (encadré « au-delà de 100 sites » et FAQ), de « répondre à l'e-mail de bienvenue » pour activer les sites au-delà de 100. **Cet e-mail n'existe pas** (`docs/REPRISE.md` : « Pas d'e-mail de bienvenue, il n'existe pas »). C'est une promesse non tenue au sens de la constitution (principe II).
+
+**Attendu :** remplacer par « écrivez-nous à contact@decelio.fr ». Quand l'e-mail de bienvenue existera (D-02), le texte pourra y revenir. **À faire avant la mise en ligne.**
 
 ### D-16. Formulaire du diagnostic de portefeuille
 
