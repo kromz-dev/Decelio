@@ -1,7 +1,7 @@
 # Product Marketing Context — Decelio
 
-**Document version:** v1
-**Last updated:** 2026-09-27
+**Document version:** v2
+**Last updated:** 2026-09-28
 **Sources :** docs/05-analyse-strategique.md (§6 ICP, §7 concurrence, §9 positionnement), docs/08-constitution.md, instructions du projet. Rien ici n'est inventé : tout point non sourcé est marqué « hypothèse ».
 
 ## Règles absolues (priment sur tout conseil d'un skill)
@@ -21,7 +21,8 @@
 **Business model :** abonnement mensuel — Freelance 39 € (10 sites), Agence 99 € (30 sites), Studio 249 € (100 sites). Essai gratuit 14 jours (en cours de livraison). Porte d'entrée : diagnostic gratuit.
 
 ## Target Audience
-**Target companies :** (A) agences de maintenance WordPress, 1–10 personnes, 20–150 sites sous contrat ; (B) agences SEO/GEO, 1–15 personnes, 15–60 clients en abonnement. France d'abord, puis Belgique, Suisse, Québec.
+**Target companies :** toute agence ou freelance qui maintient des sites clients ou fait leur SEO de façon récurrente, quel que soit l'outil (WordPress, Wix, Shopify, Webflow, PrestaShop, sur mesure). Segments : (A) agences de maintenance WordPress, 1–10 personnes, 20–150 sites sous contrat ; (B) agences SEO/GEO, 1–15 personnes, 15–60 clients en abonnement ; (C) agences web et SEO sur d'autres plateformes (Wix, Shopify, Webflow…). France d'abord, puis Belgique, Suisse, Québec.
+**Priorité de prospection :** là où le problème est le plus fréquent (WordPress d'abord). On n'écrit à une agence que si l'un de ses sites a un problème vérifié. Le baromètre v2 mesurera la fréquence par plateforme.
 **Decision-makers :** fondateur ou freelance senior.
 **Primary use case :** ne plus découvrir après coup qu'un site client est devenu illisible par les IA, et le prouver au client.
 
@@ -43,6 +44,7 @@
 ## Competitive Landscape
 - Maintenance WP (WP Umbrella, ManageWP, MainWP) : tableau de bord et marque blanche, aucune logique IA. Menace n°1 s'ils ajoutent un module.
 - Suites GEO (Profound, Peec AI, Otterly) : moteur d'audit mais chères, centrées citations.
+- BabyLoveGrowth.ai : rédaction automatique d'articles, liens entrants et suivi de citations, « audit GEO » technique. Plan agence dès 99 $/site/mois, la tarification la plus proche de la nôtre. Pas de contrôle quotidien `robots.txt` par robot ni d'alerte de régression documentés (à vérifier).
 - Little Warden : surveille robots.txt pour agences, pas les bots IA.
 - Checkers gratuits : scan ponctuel sans suivi. Cloudflare AI Crawl Control : gratuit mais sans vue multi-clients.
 
@@ -57,7 +59,10 @@
 - « Le GEO est une mode. » → le blocage technique est binaire et vérifiable.
 
 ## Anti-Personas
-Agences no-code (Webflow, Framer), freelances sans récurrent, sites qui veulent bloquer les IA (presse), grandes agences outillées, sites 100 % Shopify ou Wix.
+Freelances sans récurrent, sites qui veulent bloquer les IA (presse), grandes agences outillées. (Les agences Wix, Shopify, Webflow et no-code ne sont plus exclues depuis le 28/09.)
+
+## Identité publique
+Les comptes publics et les signatures sont au nom de Decelio (« L'équipe Decelio »). Le nom du fondateur n'apparaît que là où la loi l'impose : mentions légales, CGV, Stripe, registre du domaine.
 
 ## Customer Language
 **Utiliser :** lisible, bloqué, robots IA, pare-feu, rapport client, portefeuille de sites, correctif.
@@ -75,3 +80,4 @@ Aucun client ni témoignage à ce jour. Preuves autorisées : captures datées d
 
 ## Changelog
 - v1 (27/09/2026) : création depuis docs/05.
+- v2 (28/09/2026) : cible élargie à toutes les agences web et SEO quel que soit l'outil (décision du fondateur) ; BabyLoveGrowth ajouté aux concurrents ; identité publique au nom de Decelio.
