@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { getMonitoredSites, addMonitoredSite, addMonitoredSitesBulk, deleteMonitoredSite } from "./sites";
 
 vi.mock('@/auth', () => ({
@@ -34,11 +34,18 @@ vi.mock('@/lib/posthog-server', () => ({
   captureServerEvent: vi.fn(async () => undefined),
 }));
 
+vi.mock('@/inngest/client', () => ({
+  inngest: {
+    send: vi.fn(),
+  },
+}));
+
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { assertSafeUrl } from '@/lib/scanner/crawler';
 import { captureServerEvent } from '@/lib/posthog-server';
+import { inngest } from '@/inngest/client';
 import type { Session } from 'next-auth';
 
 // `auth` is exported by NextAuth v5 as an intersection of several call
@@ -65,6 +72,10 @@ describe('sites actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(assertSafeUrl).mockImplementation(async (url: string) => url);
+  });
+
+  afterEach(() => {
+    vi.mocked(inngest.send).mockReset();
   });
 
   describe('getMonitoredSites', () => {
@@ -134,8 +145,8 @@ describe('sites actions', () => {
       vi.mocked(db.monitoredSite.create).mockResolvedValueOnce({ id: 'site-1', name: 'Test' } as unknown as CreatedSite);
 
       const res = await addMonitoredSite({ name: 'Test', url: 'http://test.com' });
-      
-      expect(res).toEqual({ data: { id: 'site-1', name: 'Test' } });
+
+      expect(res).toEqual({ data: { id: 'site-1', name: 'Test' }, scanTriggered: true });
       expect(db.monitoredSite.create).toHaveBeenCalledWith({
         data: {
           name: 'Test',
@@ -150,6 +161,39 @@ describe('sites actions', () => {
         total_sites: 1,
         is_first_site: true,
       });
+    });
+
+    it("envoie app/scan.site avec l'identifiant déterministe scan-site-<id> (T091)", async () => {
+      mockedAuth.mockResolvedValueOnce(fakeSession('user-1'));
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      vi.mocked(db.user.findUnique).mockResolvedValueOnce({ plan: 'PRO', stripeCurrentPeriodEnd: futureDate } as unknown as MaybeUser);
+      vi.mocked(db.monitoredSite.count).mockResolvedValueOnce(0);
+      vi.mocked(db.monitoredSite.create).mockResolvedValueOnce({ id: 'site-1', name: 'Test' } as unknown as CreatedSite);
+      vi.mocked(inngest.send).mockResolvedValueOnce(undefined as never);
+
+      const res = await addMonitoredSite({ name: 'Test', url: 'http://test.com' });
+
+      expect(inngest.send).toHaveBeenCalledTimes(1);
+      expect(inngest.send).toHaveBeenCalledWith([
+        { name: 'app/scan.site', id: 'scan-site-site-1', data: { siteId: 'site-1' } },
+      ]);
+      expect(res).toMatchObject({ scanTriggered: true });
+    });
+
+    it("crée le site meme si l'envoi Inngest rejette, et le dit honnêtement (scanTriggered: false)", async () => {
+      mockedAuth.mockResolvedValueOnce(fakeSession('user-1'));
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      vi.mocked(db.user.findUnique).mockResolvedValueOnce({ plan: 'PRO', stripeCurrentPeriodEnd: futureDate } as unknown as MaybeUser);
+      vi.mocked(db.monitoredSite.count).mockResolvedValueOnce(0);
+      vi.mocked(db.monitoredSite.create).mockResolvedValueOnce({ id: 'site-1', name: 'Test' } as unknown as CreatedSite);
+      vi.mocked(inngest.send).mockRejectedValueOnce(new Error('INNGEST_SIGNING_KEY absente'));
+
+      const res = await addMonitoredSite({ name: 'Test', url: 'http://test.com' });
+
+      expect(res).toEqual({ data: { id: 'site-1', name: 'Test' }, scanTriggered: false });
+      expect(db.monitoredSite.create).toHaveBeenCalledTimes(1);
     });
 
     it("n'émet pas site_added quand le quota est atteint", async () => {
@@ -302,12 +346,14 @@ describe('sites actions', () => {
         'notaurl',
       ];
 
+      vi.mocked(inngest.send).mockResolvedValueOnce(undefined as never);
+
       const res = await addMonitoredSitesBulk(lines.join('\n'));
 
       expect(db.monitoredSite.create).not.toHaveBeenCalled();
       expect(db.monitoredSite.createManyAndReturn).toHaveBeenCalledTimes(1);
       expect(vi.mocked(db.monitoredSite.createManyAndReturn).mock.calls[0]?.[0]?.data).toHaveLength(10);
-      expect(res).toMatchObject({ data: { skipped: expect.any(Array) } });
+      expect(res).toMatchObject({ data: { skipped: expect.any(Array), scanTriggered: true } });
       if (!('data' in res) || !res.data) throw new Error('expected data');
       expect(res.data.created).toHaveLength(10);
       expect(res.data.skipped).toHaveLength(15);
@@ -319,6 +365,24 @@ describe('sites actions', () => {
         total_sites: 10,
         is_first_site: true,
       });
+      // Un événement app/scan.site par site créé, aucun pour les 3 doublons ignorés.
+      expect(inngest.send).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(inngest.send).mock.calls[0]?.[0]).toHaveLength(10);
+    });
+
+    it("n'envoie aucun événement Inngest quand triggerScan vaut false (appelé depuis l'onboarding)", async () => {
+      mockedAuth.mockResolvedValueOnce(fakeSession('user-1'));
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      vi.mocked(db.user.findUnique).mockResolvedValueOnce({ plan: 'SOLO', stripeCurrentPeriodEnd: futureDate } as unknown as MaybeUser);
+      vi.mocked(db.monitoredSite.findMany).mockResolvedValueOnce([] as unknown as MonitoredSites);
+      vi.mocked(db.monitoredSite.createManyAndReturn).mockImplementation(((args: { data: { url: string }[] }) =>
+        Promise.resolve(args.data.map((row) => ({ id: row.url })))) as unknown as typeof db.monitoredSite.createManyAndReturn);
+
+      const res = await addMonitoredSitesBulk('https://ok1.example', { triggerScan: false });
+
+      expect(inngest.send).not.toHaveBeenCalled();
+      expect(res).toMatchObject({ data: { scanTriggered: false } });
     });
 
     it('ne crée aucun site quand la liste est vide (T051 : le champ onboarding démarre vide, jamais pré-rempli)', async () => {

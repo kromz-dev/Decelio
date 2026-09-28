@@ -53,7 +53,12 @@ type BulkSitesResult =
 export async function importOnboardingDomains(
   raw: string,
 ): Promise<{ error: string } | { data: OnboardingImportResult }> {
-  const result: BulkSitesResult = await addMonitoredSitesBulk(raw);
+  // `triggerScan: false` : cette fonction envoie déjà ses propres événements
+  // `app/scan.site` juste après (id `onboarding-scan-<id>`). Sans ce
+  // garde-fou, `addMonitoredSitesBulk` enverrait un second événement par
+  // site sous l'id `scan-site-<id>` (T091) — deux identifiants différents,
+  // donc deux scans que la déduplication Inngest ne peut pas rattraper.
+  const result: BulkSitesResult = await addMonitoredSitesBulk(raw, { triggerScan: false });
 
   if ("error" in result) {
     return result;

@@ -5,7 +5,32 @@ import { PLAN_LIMITS, maxSitesFor } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { assertSafeUrl } from "@/lib/scanner/crawler";
+import { inngest } from "@/inngest/client";
 import { revalidatePath } from "next/cache";
+
+/**
+ * T091 : déclenche un premier scan pour chaque site donné, en envoyant
+ * `app/scan.site` avec l'identifiant déterministe `scan-site-<id>` —
+ * Inngest déduplique ainsi un double envoi (retente réseau, cron du jour
+ * qui recouperait) sur sa fenêtre de 24 h. Ne lève jamais : clés Inngest
+ * absentes en local, service injoignable, le site reste créé, mais on ne
+ * prétend jamais qu'un scan a démarré (constitution, article I).
+ */
+async function triggerSiteScans(sites: { id: string }[]): Promise<boolean> {
+  if (sites.length === 0) return false;
+  try {
+    await inngest.send(
+      sites.map((site) => ({
+        name: "app/scan.site" as const,
+        id: `scan-site-${site.id}`,
+        data: { siteId: site.id },
+      })),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function getMonitoredSites() {
   try {
@@ -68,7 +93,14 @@ export async function addMonitoredSite(data: { name: string; url: string }) {
     // Postgres est en READ COMMITTED : deux ajouts simultanés peuvent lire
     // le même count et insérer tous les deux. Le verrou de la ligne User
     // sérialise les ajouts d'un même compte avant le décompte.
-    const result = await db.$transaction(async (tx) => {
+    // Annotation explicite : sans elle, TypeScript infère cette union avec
+    // un `error?: undefined` fantôme sur la branche `{ data }`, ce qui
+    // empêche `"error" in result` de rétrécir proprement plus bas (même
+    // piège que documenté dans `app/(app)/onboarding/actions.ts`).
+    type AddSiteTxResult =
+      | { error: string }
+      | { data: Awaited<ReturnType<typeof db.monitoredSite.create>> };
+    const result: AddSiteTxResult = await db.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT 1 FROM "User" WHERE id = ${userId} FOR UPDATE`;
 
       const user = await tx.user.findUnique({
@@ -114,7 +146,8 @@ export async function addMonitoredSite(data: { name: string; url: string }) {
       total_sites: sitesBeforeAdd + 1,
       is_first_site: sitesBeforeAdd === 0,
     });
-    return result;
+    const scanTriggered = await triggerSiteScans([result.data]);
+    return { data: result.data, scanTriggered };
   } catch (error) {
     return { error: "Internal server error" };
   }
@@ -163,7 +196,11 @@ function parseBulkLine(line: string): { name: string; url: string } {
   return { name: name || rawUrl, url: withProtocol(rawUrl) };
 }
 
-export async function addMonitoredSitesBulk(raw: string) {
+export async function addMonitoredSitesBulk(
+  raw: string,
+  options: { triggerScan?: boolean } = {},
+) {
+  const triggerScan = options.triggerScan ?? true;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -210,7 +247,7 @@ export async function addMonitoredSitesBulk(raw: string) {
     }
 
     if (candidates.length === 0) {
-      return { data: { created: [], skipped } };
+      return { data: { created: [], skipped, scanTriggered: false } };
     }
 
     // Capturé depuis l'intérieur de la transaction, pour la même raison que
@@ -218,7 +255,18 @@ export async function addMonitoredSitesBulk(raw: string) {
     // l'ajout, pas une relecture après coup.
     let sitesBeforeAdd = 0;
 
-    const result = await db.$transaction(async (tx) => {
+    // Même annotation explicite que dans `addMonitoredSite`, pour la même
+    // raison : sans elle, `"error" in result` plus bas ne rétrécit pas
+    // proprement l'union.
+    type BulkSiteTxResult =
+      | { error: string }
+      | {
+          data: {
+            created: Awaited<ReturnType<typeof db.monitoredSite.createManyAndReturn>>;
+            skipped: { line: string; reason: string }[];
+          };
+        };
+    const result: BulkSiteTxResult = await db.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
         select: { stripeCurrentPeriodEnd: true, plan: true },
@@ -280,10 +328,15 @@ export async function addMonitoredSitesBulk(raw: string) {
         is_first_site: sitesBeforeAdd === 0,
       });
     }
+    const scanTriggered =
+      triggerScan && result.data.created.length > 0
+        ? await triggerSiteScans(result.data.created)
+        : false;
     return {
       data: {
         created: result.data.created,
         skipped: [...skipped, ...result.data.skipped],
+        scanTriggered,
       },
     };
   } catch (error) {
