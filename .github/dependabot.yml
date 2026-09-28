@@ -34,6 +34,17 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@prisma/client"
         update-types: ["version-update:semver-major"]
+      # undici majeur : le dispatcher épinglé (lib/scanner/crawler.ts,
+      # createPinnedDispatcher) doit rester compatible avec l'undici embarqué
+      # dans le fetch global de Node (branche 7.x sur Node 22 comme sur
+      # Node 24). La demande #174 est passée en undici 8 sans que rien ne
+      # le détecte (les tests simulent fetch) et a cassé toute requête
+      # sortante du scanner : `fetch` refuse un dispatcher venant d'un undici
+      # majeur different du sien, avec `UND_ERR_INVALID_ARG`. A lever
+      # seulement quand Node embarquera undici 8, ou quand le scanner
+      # utilisera le fetch du paquet undici au lieu du fetch global.
+      - dependency-name: "undici"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
