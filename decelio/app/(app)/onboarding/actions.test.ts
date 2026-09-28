@@ -28,6 +28,16 @@ describe("importOnboardingDomains (T043)", () => {
     expect(inngest.send).not.toHaveBeenCalled();
   });
 
+  it("appelle addMonitoredSitesBulk avec triggerScan: false, pour ne pas doubler le scan déjà envoyé ici (T091)", async () => {
+    vi.mocked(addMonitoredSitesBulk).mockResolvedValueOnce({
+      data: { created: [], skipped: [] },
+    } as unknown as Awaited<ReturnType<typeof addMonitoredSitesBulk>>);
+
+    await importOnboardingDomains("exemple.com");
+
+    expect(addMonitoredSitesBulk).toHaveBeenCalledWith("exemple.com", { triggerScan: false });
+  });
+
   it("envoie un événement app/scan.site par site créé et le rapporte comme déclenché", async () => {
     vi.mocked(addMonitoredSitesBulk).mockResolvedValueOnce({
       data: {

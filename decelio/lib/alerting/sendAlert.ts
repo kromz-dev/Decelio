@@ -5,6 +5,7 @@ import type { BotAgent } from "@/lib/scanner/agents";
 import { escapeHtml } from "../email/escapeHtml";
 import { renderEmailLayout, renderVerdict, type EmailVerdictValue } from "../email/layout";
 import { verdictForSiteStatus } from "../sites/site-status";
+import { emailFrom } from "../email/from";
 
 export type AlertKind = "REGRESSION" | "RESOLUTION";
 
@@ -29,8 +30,6 @@ export interface AlertSiteChange {
    */
   status?: string;
 }
-
-const FROM = "Decelio <bonjour@decelio.fr>";
 
 /** Nom grand public de l'assistant derrière chaque robot de recherche. */
 const SEARCH_ASSISTANT_LABEL: Partial<Record<BotAgent, string>> = {
@@ -155,7 +154,7 @@ async function deliver(
   }
   try {
     const response = await new Resend(apiKey).emails.send({
-      from: FROM,
+      from: emailFrom(),
       to,
       subject: email.subject,
       html: email.html,

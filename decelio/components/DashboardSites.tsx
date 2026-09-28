@@ -44,6 +44,7 @@ export function DashboardSites({
   const [url, setUrl] = useState("");
   const [bulk, setBulk] = useState("");
   const [bulkReport, setBulkReport] = useState("");
+  const [addReport, setAddReport] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -53,6 +54,7 @@ export function DashboardSites({
   const handleAddSite = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setAddReport("");
 
     startTransition(async () => {
       const response = await addMonitoredSite({ name, url });
@@ -68,6 +70,14 @@ export function DashboardSites({
         setName("");
         setUrl("");
         setShowAddForm(false);
+        // Message honnête (constitution, article I) : on n'annonce un scan
+        // que lorsqu'il a réellement démarré ; sinon on dit qu'il partira au
+        // prochain passage quotidien.
+        setAddReport(
+          response.scanTriggered
+            ? "Domaine ajouté, premier scan lancé."
+            : "Domaine ajouté, le scan partira au prochain passage quotidien.",
+        );
       }
     });
   };
@@ -85,11 +95,19 @@ export function DashboardSites({
       if (!("data" in response) || !response.data) return;
       setSites((prev) => [...(response.data.created as MonitoredSite[]), ...prev]);
       const ignored = response.data.skipped.length;
-      setBulkReport(
+      const base =
         ignored === 0
           ? `${response.data.created.length} domaines ajoutés.`
-          : `${response.data.created.length} domaines ajoutés, ${ignored} lignes ignorées.`,
-      );
+          : `${response.data.created.length} domaines ajoutés, ${ignored} lignes ignorées.`;
+      // Même règle qu'un ajout unique : on n'annonce un scan que lorsqu'il a
+      // réellement démarré (constitution, article I).
+      const scanNote =
+        response.data.created.length === 0
+          ? ""
+          : response.data.scanTriggered
+            ? " Premier scan lancé."
+            : " Le scan partira au prochain passage quotidien.";
+      setBulkReport(base + scanNote);
       setBulk("");
     });
   };
@@ -243,6 +261,7 @@ export function DashboardSites({
       </div>
 
       {/* Formulaire d'ajout */}
+      {addReport && !showAddForm && <p className="text-sm text-ink-2">{addReport}</p>}
       {error && !showAddForm && (
         <div className="flex items-start gap-3 rounded-sm border border-stop/30 bg-stop-soft px-4 py-3 text-stop" role="alert" id="sites-form-error">
           <ShieldAlert className="mt-0.5 h-[18px] w-[18px] shrink-0" />

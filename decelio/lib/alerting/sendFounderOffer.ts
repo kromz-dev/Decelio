@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { escapeHtml } from "../email/escapeHtml";
 import { renderEmailLayout, renderButton } from "../email/layout";
+import { emailFrom } from "../email/from";
 
 function getResend(): Resend {
   const apiKey = process.env.RESEND_API_KEY;
@@ -97,7 +98,7 @@ export async function sendFounderOffer({
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
+      from: emailFrom(), // Domaine a verifier chez Resend (tache T068) : repli configurable via ALERT_FROM_EMAIL (T092).
       to: email,
       subject: "Votre offre fondatrice Decelio : -50 % à vie",
       html,
