@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { escapeHtml } from "./escapeHtml";
 import { renderEmailLayout, renderButton } from "./layout";
+import { emailFrom } from "./from";
 
 function getResend(): Resend {
   const apiKey = process.env.RESEND_API_KEY;
@@ -38,7 +39,7 @@ export async function sendPasswordResetEmail(to: string, token: string) {
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
+      from: emailFrom(), // Domaine a verifier chez Resend (tache T068) : repli configurable via ALERT_FROM_EMAIL (T092).
       to,
       subject: "Réinitialisation de votre mot de passe Decelio",
       html,
@@ -85,7 +86,7 @@ export async function sendDiscoveryEmail(to: string, name?: string | null) {
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
+      from: emailFrom(), // Domaine a verifier chez Resend (tache T068) : repli configurable via ALERT_FROM_EMAIL (T092).
       to,
       subject: "5 questions pour régler Decelio sur votre parc",
       html,
@@ -221,7 +222,7 @@ export async function sendMonthlyReportReadyEmail({
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
+      from: emailFrom(), // Domaine a verifier chez Resend (tache T068) : repli configurable via ALERT_FROM_EMAIL (T092).
       to,
       subject,
       html,
@@ -305,7 +306,7 @@ export async function sendTrialEndingEmail({
 
   try {
     const response = await getResend().emails.send({
-      from: "Decelio <bonjour@decelio.fr>", // Domaine a verifier chez Resend (tache T068) : sans cela, aucun envoi ne part.
+      from: emailFrom(), // Domaine a verifier chez Resend (tache T068) : repli configurable via ALERT_FROM_EMAIL (T092).
       to,
       subject: "Votre essai Decelio se termine dans 3 jours",
       html,
