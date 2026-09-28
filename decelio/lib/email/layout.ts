@@ -63,10 +63,10 @@ function renderHeader(brand?: string): string {
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td style="vertical-align: middle;">
-              <img src="${SITE_URL}/logo-decelio.png" alt="D" height="28" style="height: 28px; width: auto; display: block; border: 0;" />
+              <img src="${SITE_URL}/logo-decelio.png" alt="" height="28" style="height: 28px; width: auto; display: block; border: 0;" />
             </td>
             <td style="vertical-align: middle; padding-left: 4px;">
-              <span style="font-family: ${FONT_STACK}; font-size: 20px; font-weight: 700; color: ${EMAIL_COLORS.text}; letter-spacing: -0.02em;">ecelio</span>
+              <span style="font-family: ${FONT_STACK}; font-size: 20px; font-weight: 700; color: ${EMAIL_COLORS.text}; letter-spacing: -0.02em;">Decelio</span>
             </td>
           </tr>
         </table>
