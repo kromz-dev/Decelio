@@ -36,6 +36,25 @@ describe("buildSubscriptionSummary", () => {
     expect(summary.showPricingLink).toBe(false);
   });
 
+  it("shows a scheduled cancellation date instead of the next billing date when one is pending", () => {
+    // Stripe garde l'abonnement actif jusqu'à la fin de la période payée
+    // après une résiliation programmée depuis le portail : sans ce champ,
+    // l'écran affichait "Prochain prélèvement..." comme un abonnement
+    // normal, sans aucun moyen de vérifier que la résiliation avait bien
+    // été prise en compte.
+    const summary = buildSubscriptionSummary({
+      plan: "PRO",
+      siteCount: 5,
+      maxSites: 30,
+      stripeCustomerId: "cus_789",
+      stripeCurrentPeriodEnd: new Date(Date.UTC(2026, 9, 12)),
+      cancelledAt: null,
+      scheduledCancelAt: new Date(Date.UTC(2026, 9, 12)),
+    });
+
+    expect(summary.billingLabel).toBe("Résiliation programmée pour le 12 octobre 2026");
+  });
+
   it("shows the Studio plan as cancelled and still allows managing the customer portal", () => {
     const summary = buildSubscriptionSummary({
       plan: "SCALE",

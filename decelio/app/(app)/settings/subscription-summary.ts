@@ -32,6 +32,16 @@ const billingDateFormatter = new Intl.DateTimeFormat("fr-FR", {
 export interface BillingLabelInput {
   cancelledAt: Date | null;
   stripeCurrentPeriodEnd: Date | null;
+  /**
+   * Date de fin lue en direct chez Stripe (`cancel_at`/`cancel_at_period_end`,
+   * voir `lib/billing/subscriptionStatus.ts`) quand une résiliation a été
+   * programmée depuis le portail client mais n'a pas encore pris effet :
+   * Stripe garde l'abonnement actif jusqu'à la fin de la période payée et
+   * n'envoie `customer.subscription.deleted` (qui pose `cancelledAt`) qu'à
+   * ce moment-là. `undefined` quand l'appelant n'a pas vérifié (traité comme
+   * `null`), à distinguer de `null` qui signifie "vérifié, rien de prévu".
+   */
+  scheduledCancelAt?: Date | null;
 }
 
 /**
@@ -39,11 +49,18 @@ export interface BillingLabelInput {
  *
  * Un abonnement résilié prime sur toute date de fin de période encore
  * présente en base (Stripe peut conserver `stripeCurrentPeriodEnd` jusqu'à la
- * fin de la période déjà payée). `null` signifie qu'il n'y a rien à afficher
- * (aucun abonnement, jamais souscrit).
+ * fin de la période déjà payée). Une résiliation programmée mais pas encore
+ * effective prime à son tour sur la date de facturation normale : sans ça,
+ * l'écran affiche "Prochain prélèvement..." comme si de rien n'était, sans
+ * aucun moyen de vérifier que la résiliation a bien été prise en compte.
+ * `null` signifie qu'il n'y a rien à afficher (aucun abonnement, jamais
+ * souscrit).
  */
 export function formatBillingLabel(input: BillingLabelInput): string | null {
   if (input.cancelledAt) return "Abonnement résilié";
+  if (input.scheduledCancelAt) {
+    return `Résiliation programmée pour le ${billingDateFormatter.format(input.scheduledCancelAt)}`;
+  }
   if (input.stripeCurrentPeriodEnd) {
     return `Prochain prélèvement le ${billingDateFormatter.format(input.stripeCurrentPeriodEnd)}`;
   }
@@ -57,6 +74,7 @@ export interface SubscriptionSummaryInput {
   stripeCustomerId: string | null;
   stripeCurrentPeriodEnd: Date | null;
   cancelledAt: Date | null;
+  scheduledCancelAt?: Date | null;
 }
 
 export interface SubscriptionSummary {
@@ -73,7 +91,11 @@ export function buildSubscriptionSummary(input: SubscriptionSummaryInput): Subsc
   return {
     planName: planDisplayName(input.plan),
     quotaLabel: formatQuotaLabel(input.siteCount, input.maxSites),
-    billingLabel: formatBillingLabel(input),
+    billingLabel: formatBillingLabel({
+      cancelledAt: input.cancelledAt,
+      stripeCurrentPeriodEnd: input.stripeCurrentPeriodEnd,
+      scheduledCancelAt: input.scheduledCancelAt,
+    }),
     showManageButton: Boolean(input.stripeCustomerId),
     showPricingLink: input.plan === "FREE",
   };

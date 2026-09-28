@@ -5,6 +5,10 @@ import { PersonalDataSection } from "./PersonalDataSection";
 import { WhiteLabelSection } from "./WhiteLabelSection";
 import { SettingsClient } from "./SettingsClient";
 
+export const metadata = {
+  title: "Paramètres | Decelio",
+};
+
 /**
  * Route Paramètres : lit la session pour transmettre à `SettingsClient` les
  * quelques données réelles dont ses sections encore sommaires ont besoin
