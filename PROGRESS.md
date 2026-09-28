@@ -3,7 +3,33 @@
 L'état actuel est dans `docs/REPRISE.md` ; ce fichier est le journal historique.
 
 Source de vérité pour reprendre le travail, avec un humain ou un agent.
-**Dernière mise à jour :** 27 septembre 2026.
+**Dernière mise à jour :** 28 septembre 2026.
+
+---
+
+## 28/09 — rangement, test local du MVP, défauts trouvés
+
+**Espace de travail consolidé.** Le dépôt vit désormais dans un seul dossier, `business/saas/decelio`, avec le `.git` dedans — c'est l'ancien `Cited` renommé. Le worktree lié `decelio-ing` a été supprimé après récupération de ses trois fichiers de suivi non commités, qui étaient plus récents que ceux de `main`. Les dossiers inertes (`Cited-backups`, `_archives`, `exemplesaasdesign`, `prompts-gemini-v4.md`) sont regroupés dans `business/saas/_archive/`. Une sauvegarde complète de l'état d'avant existe dans `business/saas-backup-2026-09-28/` — à conserver jusqu'à ce que le fondateur soit certain que rien n'est perdu. Fusionné par #178. Les deux stash antérieurs (`feat/t021-bulk`, PostHog T005) sont intacts.
+
+**Cause du `build_failed` de Render trouvée.** Les quatre déploiements échoués depuis le 25/09 avaient deux causes. Le plus ancien clonait encore `kromz-dev/Cited` avec un `package-lock.json` incompatible. Les trois suivants échouaient tous sur `Environment variable not found: DIRECT_URL` (Prisma P1012, `prisma/schema.prisma:8`) : `prisma migrate deploy` tourne dans le `buildCommand`, et `DIRECT_URL` est déclarée `sync: false` dans `render.yaml`, donc jamais remplie automatiquement. Le fondateur a collé `DATABASE_URL` (poolée) et `DIRECT_URL` (directe) dans le tableau de bord Render le 28/09. Aucun déploiement n'a encore été relancé.
+
+**Le code n'était pas en cause** : reproduction locale intégrale au vert — `tsc --noEmit`, `eslint` (0 erreur, 14 avertissements de variables inutilisées), **733 tests sur 89 fichiers**, `next build` avec les 35 routes générées.
+
+**Test local du MVP (phase 12), résultats.** T080, T081, T082 et T084 cochés. Le parcours a été mené sur Neon `local-dev` et Stripe en mode test, jamais sur la production.
+- **T084** : Checkout de test avec `FONDATEUR50` — 99,00 € de sous-total, -49,50 € de remise à vie, 0,00 € dû aujourd'hui, 14 jours d'essai. Les 13 événements relayés répondent tous en HTTP 200, 13 `ProcessedWebhook` écrits, abonnement complet en base.
+- **T082** : `juliusmason.com` scanné en 3,1 s — verdict « COQUILLE VIDE », plateforme « application JavaScript (React ou Vue), derrière Cloudflare ».
+- **T087, partiel** : zéro erreur console et zéro violation CSP sur les treize écrans parcourus. PostHog passe toujours par `/ingest`, jamais d'appel direct à un tiers — ADR-004 respecté en local.
+- **T083 bloqué** : la chaîne Inngest fonctionne, mais Resend refuse l'envoi en 403 (« The decelio.fr domain is not verified »). Aucun `AlertEvent` n'est écrit, et c'est le bon comportement : on n'enregistre pas une alerte qui n'est pas partie. Débloqué par T068.
+
+**Ordre du parcours corrigé.** Le plan `FREE` a `maxSites: 0`, donc aucun site ne peut être ajouté avant d'avoir souscrit : l'ordre réel est T081, T084, T082, T083, et non l'ordre numérique.
+
+**Deux pièges de configuration locale, désormais documentés dans les tâches.** `INNGEST_DEV=1` est indispensable dans `.env.local`, sinon le SDK exige une signature sur `/api/inngest` et le serveur local ne peut pas se synchroniser. Et `STRIPE_WEBHOOK_SECRET` doit contenir la valeur du `stripe listen` en cours : sans elle, tous les webhooks repartent en 400 et rien ne s'enregistre. À noter aussi : `npx prisma` ne lit pas `.env.local`, il faut lui passer l'environnement explicitement.
+
+**Quatre défauts trouvés, ouverts en phase 13.** T089 : le bouton « Relancer un scan » émet un événement Inngest que personne n'écoute, il ne fait rien. T090 : ce même bouton affiche « Scan terminé » quoi qu'il arrive — c'est le plus grave, il ment à l'utilisateur sur un produit dont l'argument est l'honnêteté de la mesure. T091 : ajouter un domaine depuis le tableau de bord ne déclenche aucun scan. T092 : l'expéditeur des alertes est figé, sans repli en développement. T089 et T090 bloquent le lancement.
+
+**Vérifié, à ne plus rechercher.** `GEMINI_API_KEY` et `GROQ_API_KEY` ne servent pas au scan : `lib/scanner/core.ts` ne les importe pas, elles ne sont lues que par `llm-judge` et `query-generator`, injoignables depuis une requête de scan. Le texte affiché après un scan respecte la constitution : « probablement », « d'après les indices de la page », jamais de prétention à voir ce que voit un robot, et les canaux d'alerte non construits sont bien marqués « En préparation ».
+
+**Reste à faire.** T085 (rapport PDF), T086 (purge RGPD), T088 (étiquette `v0.1-mvp`), puis le déploiement Render et T074 (webhook Stripe de production). Le renommage de la base Neon `cited` → `decelio` est reporté en dernier ; il a été refusé par le classifieur de permissions de la session et devra être fait depuis la console Neon.
 
 ---
 

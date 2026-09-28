@@ -617,32 +617,42 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 **But** : appliquer la décision du fondateur — aucun déploiement tant que le MVP n'est pas entièrement vérifié en local, sur Neon `local-dev` et Stripe en mode test. Le détail du parcours est dans `docs/runbooks/checklist-mise-en-production.md` §4.
 
-- [ ] **T080** [FONDATEUR] Installer Stripe CLI - poste du fondateur
+- [x] **T080** [FONDATEUR] Installer Stripe CLI - poste du fondateur
   - **Dépendances** : Aucune
-  - **Note** : nécessaire pour relayer les webhooks Stripe vers l'application locale (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`). Absent du poste au 27/09.
+  - **Fait le 28/09** : `winget install Stripe.StripeCli`, version 1.52.0, autorisé sur le compte `environnement de test decelio · sandbox`.
+  - **Deux pièges** : le PATH n'est pas rechargé dans les terminaux déjà ouverts, il faut en rouvrir un. Et cette version exige de préciser les événements : la commande est `stripe listen --all-snapshot --forward-to localhost:3000/api/webhooks/stripe`.
   - **Vérification** : `stripe --version` répond dans un terminal.
   - **Taille** : S
 
-- [ ] **T081** [FONDATEUR] Inscription, acceptation des CGV, connexion et limite de 10 essais - parcours manuel sur `http://localhost:3000`
+- [x] **T081** [FONDATEUR] Inscription, acceptation des CGV, connexion et limite de tentatives - parcours manuel sur `http://localhost:3000`
   - **Dépendances** : T080 non requise pour cette étape
   - **EF/ENF** : constitution (honnêteté), EF-014
-  - **Vérification** : un compte se crée avec la case CGV cochée et refuse la création sans elle ; après 10 échecs de connexion consécutifs, le 11ᵉ essai est bloqué.
+  - **Vérification** : un compte se crée avec la case CGV cochée et refuse la création sans elle ; la limite de tentatives bloque au seuil prévu par le code.
+  - **Fait le 28/09** : inscription refusée sans la case CGV, bloquée côté client et exigée aussi côté serveur par `registerSchema.acceptTerms` — double barrière. Inscription acceptée ensuite (`201 Created`), `termsAcceptedAt` et `termsVersion = "2026-09-27-2"` écrits en base. Limite conforme à `lib/auth-login-policy.ts` : 5 échecs par e-mail, 10 par IP, sur 15 minutes, lignes `RateLimit` créées. Le message d'erreur reste identique qu'on se trompe de mot de passe ou qu'on soit bloqué, ce qui est voulu et ne révèle rien à un attaquant.
+  - **Correction du libellé** : l'ancienne vérification annonçait « 10 échecs, le 11ᵉ bloqué ». Le code applique 5 par e-mail. C'était le libellé qui était faux, pas le code.
   - **Taille** : S
 
-- [ ] **T082** [FONDATEUR] Ajout de site, scan, fiche avec plateforme détectée - parcours manuel
-  - **Dépendances** : T081
+- [x] **T082** [FONDATEUR] Ajout de site, scan, fiche avec plateforme détectée - parcours manuel
+  - **Dépendances** : T081, **puis T084** — voir l'ordre corrigé ci-dessous
   - **EF/ENF** : EF-001, EF-002, EF-018
-  - **Vérification** : un site ajouté déclenche un scan réel ; sa fiche affiche un verdict par assistant et la plateforme détectée (#168).
+  - **Vérification** : un site ajouté apparaît dans le portefeuille ; après scan, sa fiche affiche un verdict par assistant et la plateforme détectée (#168).
+  - **Ordre corrigé (28/09)** : le plan `FREE` a `maxSites: 0` (`lib/billing/plans.ts`), donc un compte neuf ne peut ajouter aucun site avant d'avoir souscrit. L'ordre réel du parcours est T081, T084, T082, T083. Le refus « Domaine non ajouté — Abonnement requis » est le quota qui fonctionne, pas un défaut.
+  - **Fait le 28/09** sur `juliusmason.com` : `MonitoredSite` créé, scan déclenché par l'événement `app/scan.site`, exécuté en **3,1 s**. Verdict « COQUILLE VIDE », HTTP 200, plateforme « application JavaScript (React ou Vue), derrière Cloudflare (d'après les indices de la page) ». `ScanLog` écrit avec `simpleStatus` et `cause` renseignés, charge utile `platform` = `{cms:"customReactVue", firewall:"cloudflare"}`.
+  - **Réserve** : l'ajout depuis le tableau de bord ne déclenche **aucun** scan automatique, contrairement au libellé d'origine de cette tâche. Seul le parcours d'onboarding émet `app/scan.site`. Voir T091.
   - **Taille** : S
 
 - [ ] **T083** [FONDATEUR] Alerte confirmée par le serveur Inngest local (délai de confirmation de 10 minutes) - `npx inngest-cli@latest dev` + parcours manuel
-  - **Dépendances** : T082
+  - **Dépendances** : T082, **et T068** (domaine Resend vérifié) — voir le blocage ci-dessous
+  - **Bloqué au 28/09** : la chaîne Inngest fonctionne, mais l'envoi Resend est refusé en **HTTP 403** — « The decelio.fr domain is not verified ». `lib/alerting/sendAlert.ts:33` fige l'expéditeur à `Decelio <bonjour@decelio.fr>` sans repli vers un expéditeur de test. Aucun `AlertEvent` n'est écrit, et **c'est le comportement correct** : `recordAlerts()` n'écrit qu'après un envoi réussi, pour ne jamais enregistrer un « client prévenu » qui serait faux. La tâche ne pourra être cochée qu'après T068.
+  - **Piège (28/09)** : il faut `INNGEST_DEV=1` dans `.env.local`. Sans lui, `inngest/client.ts` transmet `INNGEST_SIGNING_KEY` au SDK, qui exige alors une signature sur chaque appel à `/api/inngest`, y compris les sondes du serveur local qui ne peuvent pas la fournir. Symptôme : `No x-inngest-signature provided`, `GET /api/inngest 401`, zéro application synchronisée. Avec la variable, les 8 fonctions se déclarent.
   - **EF/ENF** : EF-035, EF-036, EF-037
   - **Vérification** : une régression provoquée déclenche une alerte seulement après confirmation par un second scan à 10 minutes ; l'alerte apparaît dans le journal (`AlertEvent`).
   - **Taille** : S
 
-- [ ] **T084** [FONDATEUR] Essai gratuit et paiement test Stripe avec Stripe CLI, bandeau d'essai visible - parcours manuel
-  - **Dépendances** : T080, T083
+- [x] **T084** [FONDATEUR] Essai gratuit et paiement test Stripe avec Stripe CLI, bandeau d'essai visible - parcours manuel
+  - **Dépendances** : T080, T081. **À faire avant T082**, bloqué par le quota du plan gratuit.
+  - **Fait le 28/09** : Checkout de test avec `FONDATEUR50` — sous-total 99,00 €, « Offre fondatrice -50% à vie » -49,50 €, **0,00 € dû aujourd'hui**, 14 jours d'essai. Carte de test `4242 4242 4242 4242`. Les **13 événements** relayés par `stripe listen` répondent tous **HTTP 200**, 13 lignes `ProcessedWebhook` écrites. En base : `plan` FREE → PRO, `stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `stripeCurrentPeriodEnd` et `stripeTrialEnd` (12/10/2026) tous renseignés. Le portail de facturation confirme : Decelio Agence 49,50 €/mois, remise -50% à vie, Visa •••• 4242.
+  - **Piège (28/09)** : `STRIPE_WEBHOOK_SECRET` doit contenir la valeur `whsec_...` affichée par le `stripe listen` **en cours d'exécution**. Tant qu'elle est absente ou fausse, tous les événements repartent en HTTP 400 (« No signatures found matching the expected signature for payload », `app/api/webhooks/stripe/route.ts:75`), aucun abonnement n'est enregistré et toute la suite du parcours est bloquée. Le secret change à chaque relance de `stripe listen`.
   - **EF/ENF** : EF-063, ADR-002
   - **Vérification** : un Checkout de test avec `stripe listen` actif crée un abonnement `trialing` de 14 jours ; le bandeau d'essai s'affiche dans l'application.
   - **Taille** : S
@@ -661,6 +671,7 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 - [ ] **T087** [FONDATEUR] Console du navigateur sans erreur CSP pendant tout le parcours - vérification manuelle continue
   - **Dépendances** : T081, T082, T083, T084, T085, T086
+  - **Partiel au 28/09, aucun défaut trouvé** : zéro erreur console et **zéro violation CSP** sur `/`, `/register`, `/login`, `/onboarding`, `/dashboard`, `/dashboard?checkout=success`, `/sites/[siteId]`, `/alerts`, `/reports`, `/sources`, `/settings`, le Checkout et le portail de facturation Stripe. PostHog passe systématiquement par `/ingest/*`, **jamais** d'appel direct à `eu.i.posthog.com` — ADR-004 respecté. Reste à couvrir : les écrans de T085 et T086.
   - **EF/ENF** : sécurité (constitution)
   - **Vérification** : aucune erreur « Content Security Policy » n'apparaît dans la console du navigateur pendant l'ensemble du parcours ci-dessus.
   - **Taille** : S
@@ -669,4 +680,36 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Dépendances** : T080, T081, T082, T083, T084, T085, T086, T087
   - **Note** : les e-mails du parcours (alerte, rapport) ne partiront pas tant que le domaine Resend n'est pas vérifié (T068, DNS OVH) — à noter comme limite connue si le test local est fait avant.
   - **Vérification** : `git tag v0.1-mvp` posé sur le commit de `main` correspondant au test local réussi, poussé sur GitHub.
+  - **Taille** : S
+
+## Phase 13 : Défauts trouvés au test local (28/09)
+
+**But** : corriger ce que le parcours de la phase 12 a mis au jour. Les deux premiers bloquent le lancement.
+
+- [ ] **T089** [ING] Le bouton « Relancer un scan » ne fait rien - `decelio/app/(app)/sites/[siteId]/actions.ts:34`, `decelio/inngest/functions.ts`
+  - **Dépendances** : Aucune
+  - **EF/ENF** : EF-002
+  - **Défaut** : `launchAuditCampaign` émet l'événement Inngest `campaign.run`. Aucune fonction ne s'abonne à cet événement — seul `app/scan.site` est enregistré. Reproduction : ouvrir la fiche d'un site, cliquer « Relancer un scan » ; la requête renvoie 200, l'interface annonce « Scan lancé. », aucun `ScanLog` n'est écrit et aucune exécution n'apparaît dans Inngest.
+  - **Vérification** : le bouton déclenche un scan réel, une nouvelle ligne `ScanLog` apparaît, et l'exécution est visible dans le tableau de bord Inngest.
+  - **Taille** : S
+
+- [ ] **T090** [ING] Faux message de succès sur la fiche d'un site - `decelio/app/(app)/sites/[siteId]/SiteActions.tsx:19-24`
+  - **Dépendances** : Aucune
+  - **EF/ENF** : constitution, article I (honnêteté de la mesure)
+  - **Défaut** : le bloc `catch` affiche « Scan terminé, données actualisées. » quelle que soit l'erreur, avec un commentaire assumé dans le code (« simulate success for UI feedback »). Combiné à T089, l'utilisateur ne peut jamais apprendre que son scan a échoué. C'est exactement ce que la constitution interdit : ne jamais afficher un scan comme lancé s'il ne l'est pas réellement.
+  - **Vérification** : une erreur de relance affiche un message d'échec explicite, avec la cause.
+  - **Taille** : S
+
+- [ ] **T091** [ING] Ajouter un domaine depuis le tableau de bord ne déclenche aucun scan - `decelio/app/actions/sites.ts`
+  - **Dépendances** : Aucune
+  - **Défaut** : `addMonitoredSite` et `addMonitoredSitesBulk` n'appellent jamais `inngest.send`. Seul `app/(app)/onboarding/actions.ts` émet `app/scan.site`. Un site ajouté depuis le tableau de bord reste sans aucun scan jusqu'au passage du cron quotidien.
+  - **Décision attendue du fondateur** : comportement voulu ou à corriger. Si c'est voulu, le dire à l'écran plutôt que de laisser croire au contraire.
+  - **Vérification** : un site ajouté depuis le tableau de bord est scanné, ou l'interface annonce clairement quand il le sera.
+  - **Taille** : S
+
+- [ ] **T092** [ING] Aucun repli d'expéditeur pour les e-mails d'alerte hors production - `decelio/lib/alerting/sendAlert.ts:33`
+  - **Dépendances** : Aucune
+  - **Défaut** : l'expéditeur est figé à `Decelio <bonjour@decelio.fr>`. Tant que le domaine n'est pas vérifié chez Resend, tout envoi d'alerte échoue en 403 et la fonctionnalité ne peut être vérifiée de bout en bout, même en local. Le refus lui-même est sain — on n'enregistre pas d'alerte non envoyée — mais il rend le test impossible.
+  - **Décision attendue du fondateur** : ajouter un expéditeur de repli en développement, ou accepter d'attendre T068.
+  - **Vérification** : en local, une alerte part vers l'adresse du compte Resend et `AlertEvent` est écrit.
   - **Taille** : S

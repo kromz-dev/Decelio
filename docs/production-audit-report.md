@@ -1,3 +1,10 @@
+> **Document périmé — ne pas s'y fier (note du 28/09/2026).**
+> Ce rapport date du 26/09. Il annonce « 392 tests » et un « déploiement immédiat autorisé ».
+> Les deux affirmations sont fausses aujourd'hui : `main` porte **733 tests sur 89 fichiers**, et le fondateur a décidé de
+> **ne pas déployer** avant la fin du test local complet (phase 12 de `tasks/mvp-tasks.md`).
+> Le test local du 28/09 a par ailleurs mis au jour quatre défauts, dont deux bloquants, ouverts en phase 13.
+> L'état réel du projet est dans `docs/REPRISE.md`. Ce fichier est conservé pour mémoire.
+
 # Production Audit & QA Validation Report
 
 **Project:** Decelio (formerly Cited)
