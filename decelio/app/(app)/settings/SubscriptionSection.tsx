@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { maxSitesFor } from "@/lib/billing/plans";
 import { createCustomerPortalSession } from "@/lib/billing/actions";
+import { getScheduledCancellation } from "@/lib/billing/subscriptionStatus";
 import { Button } from "@/components/ui/button";
 import { buildSubscriptionSummary } from "./subscription-summary";
 
@@ -24,6 +25,7 @@ export async function SubscriptionSection() {
       select: {
         plan: true,
         stripeCustomerId: true,
+        stripeSubscriptionId: true,
         stripeCurrentPeriodEnd: true,
         cancelledAt: true,
       },
@@ -33,6 +35,16 @@ export async function SubscriptionSection() {
 
   if (!user) return null;
 
+  // Une résiliation programmée depuis le portail Stripe ne déclenche aucun
+  // webhook avant la fin de la période déjà payée (Stripe garde l'abonnement
+  // actif jusque-là) : rien en base ne la reflète, donc on la vérifie en
+  // direct, seulement quand un abonnement existe encore et n'est pas déjà
+  // résilié pour de bon (voir lib/billing/subscriptionStatus.ts).
+  const scheduledCancelAt =
+    !user.cancelledAt && user.stripeSubscriptionId
+      ? await getScheduledCancellation(user.stripeSubscriptionId)
+      : null;
+
   const summary = buildSubscriptionSummary({
     plan: user.plan,
     siteCount,
@@ -40,6 +52,7 @@ export async function SubscriptionSection() {
     stripeCustomerId: user.stripeCustomerId,
     stripeCurrentPeriodEnd: user.stripeCurrentPeriodEnd,
     cancelledAt: user.cancelledAt,
+    scheduledCancelAt,
   });
 
   return (
