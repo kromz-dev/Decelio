@@ -58,6 +58,23 @@ describe("renderEmailLayout", () => {
     expect(html).toContain("mailto:contact@decelio.fr");
     expect(html).toContain(`${SITE_URL}/confidentialite`);
   });
+
+  it("affiche le nom complet « Decelio » en texte, meme si le client mail bloque les images distantes (cas reel : Outlook)", () => {
+    const html = renderEmailLayout({ bodyHtml: "<p>Bonjour</p>" });
+    // Simule un client qui bloque les images distantes par defaut (Outlook, Gmail
+    // en desktop, etc.) : il ne rend plus jamais la balise <img>, seulement le
+    // texte qui l'entoure. Le nom de la marque ne doit jamais en dependre.
+    const bodyOnly = html.slice(html.indexOf("<body"));
+    const withoutImages = bodyOnly.replace(/<img[^>]*>/gi, "");
+    expect(withoutImages).toContain(">Decelio<");
+  });
+
+  it("l'image du logo est decorative (alt vide) pour ne pas afficher une lettre isolee quand elle est bloquee", () => {
+    const html = renderEmailLayout({ bodyHtml: "<p>Bonjour</p>" });
+    const imgMatch = html.match(/<img[^>]*logo-decelio\.png[^>]*>/);
+    expect(imgMatch).not.toBeNull();
+    expect(imgMatch?.[0]).toContain('alt=""');
+  });
 });
 
 describe("renderButton", () => {
