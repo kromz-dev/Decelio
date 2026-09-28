@@ -4,7 +4,40 @@
 
 Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` le prouve.
 
-## 0. Session du 28/09 (soir) — à lire en premier
+## 0. Session du 28/09 (matin) — à lire en premier
+
+**Le parcours de bout en bout local est terminé, sauf la purge.** Mené par sous-agents, sur Neon `local-dev` et Stripe en mode test, jamais sur la production.
+
+| Tâche | Verdict | Preuve |
+|---|---|---|
+| T081 inscription/connexion | réussi | `POST /api/auth/register` → 201, console propre |
+| T084 abonnement | réussi | Checkout carte de test, 11 webhooks tous en 200 |
+| **T082 scan réel** | **réussi, rejoué** | Run Inngest `Completed`, **2,598 s dans l'étape réseau** — durée d'un vrai aller-retour. Verdict « Vide », plateforme « application JavaScript (React ou Vue), derrière Cloudflare ». La panne `undici` est bien morte. |
+| T085 rapport PDF | réussi | `MonthlyReport` de **8235 octets**, `content-type: application/pdf`. Exige un `Client` rattaché au site, sinon la fonction ne produit rien. |
+| **T083 alerte** | **réussi** | Voir ci-dessous. |
+| T086 purge RGPD | **partiel** | Voir ci-dessous. |
+| T087 console/CSP | réussi | 9 écrans, zéro erreur, zéro violation, aucune requête vers `*.posthog.com` |
+
+**T083, prouvée de bout en bout.** La régression a été fabriquée en forçant le statut mémorisé du site à `OK` dans `local-dev`, le vrai verdict étant `COQUILLE VIDE`. Run `01M3KAQGZETWNTV87GCYDT5EA3` : scan initial 2,8 s, puis l'étape `wait-regression-confirmation` a duré **10 m 0 s exactement** — preuve directe que le délai de confirmation est réellement observé, sans raccourci —, puis rescan de confirmation, `INSERT INTO "AlertEvent"`, et **e-mail reçu à 08:30 sur `krom.pro@outlook.com`**. La ligne `AlertEvent` n'est écrite que si l'envoi réussit : elle vaut preuve.
+
+**T086, partiel.** Le portail Stripe programme l'arrêt en fin de période et n'émet pas `customer.subscription.deleted` : `cancelledAt` restait donc `null`. En résiliant **immédiatement** l'abonnement du compte de test par l'API Stripe, le vrai webhook est parti et l'application a réagi correctement — `cancelledAt` posé, plan revenu à `FREE`, `purgeAt` calculé à **+60 jours** (27/11/2026). La purge elle-même reste non exercée : il faut avancer `purgeAt` dans le passé, donc écrire en base, puis déclencher `purge-cancelled-accounts` et vérifier que le client Stripe est bien supprimé.
+
+**Quatre défauts trouvés, corrigés dans #186** (ouverte, non fusionnée) :
+1. **Bloquant** — un site fraîchement ajouté affichait « Lu » en vert avant tout scan, parce qu'il était créé avec `status: "ACTIVE"`. Il porte désormais `"À VÉRIFIER"`, que les deux fonctions de correspondance traduisent déjà en « Inconnu — pas encore vérifié ». Aucun changement d'affichage nécessaire.
+2. **Découvert en corrigeant le premier** — un site **sans aucun historique de scan** pouvait déclencher une alerte de régression dès son premier scan : on alertait sur la dégradation d'un état jamais mesuré. Ce chemin ne déclenche plus jamais d'alerte ; la régression réelle, avec son délai de dix minutes, est inchangée.
+3. `app/(app)/settings/page.tsx` était la seule page de l'espace connecté sans `metadata`.
+4. Une résiliation programmée depuis le portail Stripe restait invisible dans l'application. Lue en direct chez Stripe à l'affichage, sans migration.
+
+**Un cinquième défaut, corrigé dans #187** (ouverte) : un e-mail d'alerte réellement reçu dans Outlook affichait « **ecelio** ». Le nom de la marque était coupé en deux, le « D » étant une image. Les clients de messagerie bloquent les images par défaut. Le mot est désormais écrit en entier en texte, le logo devient décoratif.
+
+**Pièges rencontrés, à connaître.**
+- Le classifieur de permissions du mode auto **refuse les écritures en base**, même sur `local-dev`. Il refuse aussi qu'un agent s'écrive une règle de permission puis s'en serve. Les écritures de test passent donc par la console Neon, à la main.
+- **La console Neon s'ouvre sur la branche `main`, la production.** Une première tentative d'écriture y a été lancée par erreur ; elle n'a touché aucune ligne, la production ne contenant aucun site. Vérifier la branche avant chaque instruction, et préférer un `RETURNING` pour voir ce qui a réellement changé.
+- Un **abonnement Stripe orphelin** existe en mode test (`sub_1UKTDK…`, `cus_VL9W8dInYAxYFi`), qu'aucun compte en base ne référence. Sans conséquence en test ; à ne pas reproduire en réel.
+
+**État de `main`** : inchangé depuis la veille, #185 en tête. **Trois demandes ouvertes** : #186, #187, et #180 (plan marketing).
+
+## 0 bis. Session du 28/09 (soir de la veille)
 
 **Quatre demandes fusionnées ce soir.** T089 à T092 sont réglées :
 - **#181** (T089, T090) : le bouton « Relancer un scan » émettait un événement (`campaign.run`) qu'aucune fonction n'écoutait. Il émet maintenant `app/scan.site`, sur un `MonitoredSite` réel de l'utilisateur. Le faux message « Scan terminé » en cas d'échec est supprimé : un échec affiche la cause en rouge, un succès dit « Scan lancé » (le scan est asynchrone, il n'est pas déjà « terminé »).
