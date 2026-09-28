@@ -129,7 +129,11 @@ export async function addMonitoredSite(data: { name: string; url: string }) {
           name: data.name,
           url: safeUrl,
           userId,
-          status: "ACTIVE",
+          // Le scan est asynchrone (Inngest) : rien ne prouve encore que ce
+          // site est lisible. "À VÉRIFIER" retombe sur le verdict "Inconnu"
+          // (lib/sites/site-status.ts), jamais "Lu" avant preuve (constitution,
+          // article I : aucun faux positif toléré).
+          status: "À VÉRIFIER",
         },
       });
 
@@ -309,7 +313,9 @@ export async function addMonitoredSitesBulk(
                 name: candidate.name,
                 url: candidate.url,
                 userId,
-                status: "ACTIVE",
+                // Même raison que dans addMonitoredSite : aucun scan n'a
+                // encore tourné pour ces sites importés en masse.
+                status: "À VÉRIFIER",
               })),
             });
 

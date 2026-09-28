@@ -233,7 +233,15 @@ async function runInitialScan(siteId: string): Promise<PendingConfirmation | Set
     return { siteId: site.id, oldStatus, newStatus, pendingConfirmation: true };
   }
 
-  await applyStatusChange(site, oldStatus, newStatus, cause, isCandidate, decidingBot);
+  // Ce chemin n'est atteint que quand `hasHistory` est faux (aucun ScanLog
+  // antérieur, donc aucune preuve que le site ait un jour été lisible) ou
+  // `isCandidate` est faux (pas une dégradation OK/ACTIVE → BLOQUÉ/COQUILLE
+  // VIDE). Dans les deux cas, alerter d'une "régression" serait un faux
+  // positif (constitution principe I) : sans historique, on n'a rien à
+  // confirmer, mais on n'a rien à affirmer non plus. Toute régression
+  // réellement prouvée (site avec historique) passe par la branche
+  // ci-dessus, avec son délai de confirmation de 10 minutes.
+  await applyStatusChange(site, oldStatus, newStatus, cause, false, decidingBot);
 
   return { siteId: site.id, oldStatus, newStatus, pendingConfirmation: false };
 }

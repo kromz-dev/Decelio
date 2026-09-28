@@ -210,10 +210,13 @@ describe("scanSiteJob", () => {
     ]);
   });
 
-  it("prévient une fois si le pire verdict régresse (site sans historique : comportement actuel)", async () => {
-    // db.scanLog.findMany renvoie [] (beforeEach) : site tout juste ajouté,
-    // aucun ScanLog antérieur. EF-034 : premier verdict dégradé signalé
-    // immédiatement, sans confirmation à attendre.
+  it("n'alerte jamais au premier scan d'un site sans historique, même si le statut enregistré était OK/ACTIVE", async () => {
+    // db.scanLog.findMany renvoie [] (beforeEach) : aucun ScanLog antérieur,
+    // donc aucune preuve que ce site ait jamais été lisible. Un site qu'on
+    // n'a jamais su lisible ne doit pas déclencher une alerte de
+    // "régression" à son premier scan (constitution principe I : zéro faux
+    // positif). Le statut met bien à jour immédiatement (pas de confirmation
+    // à attendre sans historique), mais sans jamais alerter.
     vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
       id: "site-1",
       url: "https://exemple.fr",
@@ -235,7 +238,7 @@ describe("scanSiteJob", () => {
       where: { id: "site-1" },
       data: { status: "BLOQUÉ" },
     });
-    expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
     expect(step.sleep).not.toHaveBeenCalled();
   });
 
@@ -379,12 +382,18 @@ describe("scanSiteJob", () => {
   });
 
   it("nomme dans l'alerte le robot de recherche qui a fait régresser le site", async () => {
+    // Un historique (au moins un ScanLog "OK" antérieur) est nécessaire pour
+    // qu'une alerte parte : sans lui, la dégradation n'est jamais confirmée
+    // ni alertée (voir "n'alerte jamais au premier scan...").
     vi.mocked(db.monitoredSite.findUnique).mockResolvedValue({
       id: "site-1",
       url: "https://exemple.fr",
       status: "OK",
       user: { email: "agence@exemple.fr" },
     } as unknown as MonitoredSiteWithUser);
+    vi.mocked(db.scanLog.findMany).mockResolvedValue([
+      { simpleStatus: "OK", cause: "GPTBot : aucune restriction détectée" },
+    ] as unknown as ScanLogRows);
     vi.mocked(runCoreScan).mockResolvedValue({
       report: {},
       results: [
@@ -408,7 +417,7 @@ describe("scanSiteJob", () => {
     );
   });
 
-  it("parcours P2 complet : ajout, scan, changement de statut, une seule alerte même après un second scan identique", async () => {
+  it("parcours P2 complet : ajout, scan, changement de statut, jamais d'alerte sans historique confirmé", async () => {
     const blockedResults = [
       {
         agent: "GPTBot",
@@ -421,6 +430,9 @@ describe("scanSiteJob", () => {
     ] as const;
 
     // Site ajouté, encore au statut OK : premier scan, verdict qui régresse.
+    // Aucun ScanLog antérieur (beforeEach) : aucune preuve que ce site ait
+    // jamais été lisible, donc aucune alerte de "régression" ne doit partir
+    // (constitution principe I), même si le statut enregistré était OK.
     vi.mocked(db.monitoredSite.findUnique).mockResolvedValueOnce({
       id: "site-1",
       url: "https://exemple.fr",
@@ -441,7 +453,7 @@ describe("scanSiteJob", () => {
       where: { id: "site-1" },
       data: { status: "BLOQUÉ" },
     });
-    expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
 
     // Second scan, identique : le site est désormais persisté BLOQUÉ (T023),
     // donc oldStatus === newStatus et aucune nouvelle alerte ne doit partir.
@@ -462,7 +474,7 @@ describe("scanSiteJob", () => {
     });
 
     expect(db.monitoredSite.update).toHaveBeenCalledTimes(1);
-    expect(sendRegressionAlert).toHaveBeenCalledTimes(1);
+    expect(sendRegressionAlert).not.toHaveBeenCalled();
   });
 
   it("enregistre À VÉRIFIER sans jamais envoyer d'alerte de régression (blocage général sans preuve)", async () => {

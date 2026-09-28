@@ -147,12 +147,17 @@ describe('sites actions', () => {
       const res = await addMonitoredSite({ name: 'Test', url: 'http://test.com' });
 
       expect(res).toEqual({ data: { id: 'site-1', name: 'Test' }, scanTriggered: true });
+      // Le scan est asynchrone (Inngest, 2-3 s) : tant qu'il n'a pas tourné,
+      // le site n'a jamais été vérifié. "ACTIVE" est traduit en verdict "Lu"
+      // (lib/sites/site-status.ts), ce qui affichait un site lisible avant
+      // toute preuve — faux positif interdit par la constitution (article I).
+      // "À VÉRIFIER" retombe sur le verdict "Inconnu" par défaut.
       expect(db.monitoredSite.create).toHaveBeenCalledWith({
         data: {
           name: 'Test',
           url: 'http://test.com',
           userId: 'user-1',
-          status: 'ACTIVE',
+          status: 'À VÉRIFIER',
         },
       });
       expect(revalidatePath).toHaveBeenCalledWith('/dashboard');
@@ -352,7 +357,12 @@ describe('sites actions', () => {
 
       expect(db.monitoredSite.create).not.toHaveBeenCalled();
       expect(db.monitoredSite.createManyAndReturn).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(db.monitoredSite.createManyAndReturn).mock.calls[0]?.[0]?.data).toHaveLength(10);
+      const bulkData = vi.mocked(db.monitoredSite.createManyAndReturn).mock.calls[0]?.[0]?.data ?? [];
+      const bulkRows = Array.isArray(bulkData) ? bulkData : [bulkData];
+      expect(bulkRows).toHaveLength(10);
+      // Même raison que pour addMonitoredSite : un site importé en masse n'a
+      // pas non plus été scanné avant son premier passage Inngest.
+      expect(bulkRows.every((row) => row.status === 'À VÉRIFIER')).toBe(true);
       expect(res).toMatchObject({ data: { skipped: expect.any(Array), scanTriggered: true } });
       if (!('data' in res) || !res.data) throw new Error('expected data');
       expect(res.data.created).toHaveLength(10);
