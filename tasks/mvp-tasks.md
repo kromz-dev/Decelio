@@ -574,6 +574,7 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 - [x] **T073** [ING] Baseline des migrations Prisma sur Neon `main` (production) - `docs/runbooks/deploiement-render-neon.md`
   - **Dépendances** : Aucune
   - **Note** : les tables existent sur `main` mais aucune table `_prisma_migrations` — la base a été peuplée par `db push`. `npx prisma migrate deploy` échouera tel quel. **Protection de branche impossible en offre gratuite Neon** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render.
+  - **Fait, vérifié le 28/09** : les 5 migrations (`20260925000000_init`, `20260926230000_add_updated_at_and_site_unique`, `20260927000000_audit_lead_brand_name_optional`, `20260927120000_add_user_trial_fields`, `20260927180000_add_user_terms_acceptance`) sont enregistrées sur Neon `main`.
   - **Vérification** : `npx prisma migrate resolve --applied <dernière migration>` exécuté sur `main`, puis `npx prisma migrate status` ne signale plus aucune migration en attente.
   - **Taille** : S
 
@@ -632,18 +633,19 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Correction du libellé** : l'ancienne vérification annonçait « 10 échecs, le 11ᵉ bloqué ». Le code applique 5 par e-mail. C'était le libellé qui était faux, pas le code.
   - **Taille** : S
 
-- [x] **T082** [FONDATEUR] Ajout de site, scan, fiche avec plateforme détectée - parcours manuel
+- [ ] **T082** [FONDATEUR] Ajout de site, scan, fiche avec plateforme détectée - parcours manuel
   - **Dépendances** : T081, **puis T084** — voir l'ordre corrigé ci-dessous
   - **EF/ENF** : EF-001, EF-002, EF-018
   - **Vérification** : un site ajouté apparaît dans le portefeuille ; après scan, sa fiche affiche un verdict par assistant et la plateforme détectée (#168).
   - **Ordre corrigé (28/09)** : le plan `FREE` a `maxSites: 0` (`lib/billing/plans.ts`), donc un compte neuf ne peut ajouter aucun site avant d'avoir souscrit. L'ordre réel du parcours est T081, T084, T082, T083. Le refus « Domaine non ajouté — Abonnement requis » est le quota qui fonctionne, pas un défaut.
-  - **Fait le 28/09** sur `juliusmason.com` : `MonitoredSite` créé, scan déclenché par l'événement `app/scan.site`, exécuté en **3,1 s**. Verdict « COQUILLE VIDE », HTTP 200, plateforme « application JavaScript (React ou Vue), derrière Cloudflare (d'après les indices de la page) ». `ScanLog` écrit avec `simpleStatus` et `cause` renseignés, charge utile `platform` = `{cms:"customReactVue", firewall:"cloudflare"}`.
-  - **Réserve** : l'ajout depuis le tableau de bord ne déclenche **aucun** scan automatique, contrairement au libellé d'origine de cette tâche. Seul le parcours d'onboarding émet `app/scan.site`. Voir T091.
+  - **Décochée le 28/09 (soir) : à rejouer.** Le scan réel sur `juliusmason.com` qui avait servi de preuve à cette tâche tournait sur un code où le scanner ne faisait en réalité plus aucune requête réseau (panne `undici`, voir #183 et `docs/REPRISE.md` section 0). Le verdict « COQUILLE VIDE » obtenu ce jour-là n'est donc pas fiable comme preuve : il faut refaire le scan avec le code corrigé avant de recocher cette tâche.
+  - **Fait (puis invalidé) le 28/09** sur `juliusmason.com` : `MonitoredSite` créé, scan déclenché par l'événement `app/scan.site`. `ScanLog` écrit avec `simpleStatus` et `cause` renseignés, charge utile `platform` = `{cms:"customReactVue", firewall:"cloudflare"}` — à revérifier.
   - **Taille** : S
 
 - [ ] **T083** [FONDATEUR] Alerte confirmée par le serveur Inngest local (délai de confirmation de 10 minutes) - `npx inngest-cli@latest dev` + parcours manuel
   - **Dépendances** : T082, **et T068** (domaine Resend vérifié) — voir le blocage ci-dessous
-  - **Bloqué au 28/09** : la chaîne Inngest fonctionne, mais l'envoi Resend est refusé en **HTTP 403** — « The decelio.fr domain is not verified ». `lib/alerting/sendAlert.ts:33` fige l'expéditeur à `Decelio <bonjour@decelio.fr>` sans repli vers un expéditeur de test. Aucun `AlertEvent` n'est écrit, et **c'est le comportement correct** : `recordAlerts()` n'écrit qu'après un envoi réussi, pour ne jamais enregistrer un « client prévenu » qui serait faux. La tâche ne pourra être cochée qu'après T068.
+  - **Débloqué le 28/09 (soir) par #182** : `lib/email/from.ts` (`emailFrom()`) lit `ALERT_FROM_EMAIL` à chaque appel, avec repli sur `Decelio <bonjour@decelio.fr>`. `.env.local` du poste porte désormais `ALERT_FROM_EMAIL="Decelio <onboarding@resend.dev>"` : cet expéditeur fonctionne sans domaine Resend vérifié et écrit vers `krom.pro@outlook.com`. La tâche n'attend donc plus T068 pour être testée en local — reste à rejouer le parcours pour la cocher.
+  - **Bloqué au 28/09 (avant #182)** : la chaîne Inngest fonctionne, mais l'envoi Resend était refusé en **HTTP 403** — « The decelio.fr domain is not verified ». `lib/alerting/sendAlert.ts:33` figeait l'expéditeur à `Decelio <bonjour@decelio.fr>` sans repli. Aucun `AlertEvent` n'était écrit, et **c'était le comportement correct** : `recordAlerts()` n'écrit qu'après un envoi réussi, pour ne jamais enregistrer un « client prévenu » qui serait faux.
   - **Piège (28/09)** : il faut `INNGEST_DEV=1` dans `.env.local`. Sans lui, `inngest/client.ts` transmet `INNGEST_SIGNING_KEY` au SDK, qui exige alors une signature sur chaque appel à `/api/inngest`, y compris les sondes du serveur local qui ne peuvent pas la fournir. Symptôme : `No x-inngest-signature provided`, `GET /api/inngest 401`, zéro application synchronisée. Avec la variable, les 8 fonctions se déclarent.
   - **EF/ENF** : EF-035, EF-036, EF-037
   - **Vérification** : une régression provoquée déclenche une alerte seulement après confirmation par un second scan à 10 minutes ; l'alerte apparaît dans le journal (`AlertEvent`).
@@ -686,44 +688,49 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 **But** : corriger ce que le parcours de la phase 12 a mis au jour. Les deux premiers bloquent le lancement.
 
-- [ ] **T089** [ING] Le bouton « Relancer un scan » ne fait rien - `decelio/app/(app)/sites/[siteId]/actions.ts:34`, `decelio/inngest/functions.ts`
+- [x] **T089** [ING] Le bouton « Relancer un scan » ne fait rien - `decelio/app/(app)/sites/[siteId]/actions.ts:34`, `decelio/inngest/functions.ts`
   - **Dépendances** : Aucune
   - **EF/ENF** : EF-002
   - **Défaut** : `launchAuditCampaign` émet l'événement Inngest `campaign.run`. Aucune fonction ne s'abonne à cet événement — seul `app/scan.site` est enregistré. Reproduction : ouvrir la fiche d'un site, cliquer « Relancer un scan » ; la requête renvoie 200, l'interface annonce « Scan lancé. », aucun `ScanLog` n'est écrit et aucune exécution n'apparaît dans Inngest.
+  - **Preuve : #181.** Le bouton émet désormais `app/scan.site` sur un `MonitoredSite` réel de l'utilisateur (le modèle hérité `Site` est refusé explicitement). Pas d'identifiant de déduplication, pour qu'une relance manuelle répétée fonctionne. Nouveau fichier de tests `app/(app)/sites/[siteId]/actions.test.ts`.
   - **Vérification** : le bouton déclenche un scan réel, une nouvelle ligne `ScanLog` apparaît, et l'exécution est visible dans le tableau de bord Inngest.
   - **Taille** : S
 
-- [ ] **T090** [ING] Faux message de succès sur la fiche d'un site - `decelio/app/(app)/sites/[siteId]/SiteActions.tsx:19-24`
+- [x] **T090** [ING] Faux message de succès sur la fiche d'un site - `decelio/app/(app)/sites/[siteId]/SiteActions.tsx:19-24`
   - **Dépendances** : Aucune
   - **EF/ENF** : constitution, article I (honnêteté de la mesure)
   - **Défaut** : le bloc `catch` affiche « Scan terminé, données actualisées. » quelle que soit l'erreur, avec un commentaire assumé dans le code (« simulate success for UI feedback »). Combiné à T089, l'utilisateur ne peut jamais apprendre que son scan a échoué. C'est exactement ce que la constitution interdit : ne jamais afficher un scan comme lancé s'il ne l'est pas réellement.
+  - **Preuve : #181.** Le faux message est supprimé : un échec affiche la cause en rouge et reste à l'écran, un succès dit « Scan lancé » (jamais « terminé », le scan est asynchrone). Messages annoncés aux lecteurs d'écran.
   - **Vérification** : une erreur de relance affiche un message d'échec explicite, avec la cause.
   - **Taille** : S
 
-- [ ] **T091** [ING] Ajouter un domaine depuis le tableau de bord ne déclenche aucun scan - `decelio/app/actions/sites.ts`
+- [x] **T091** [ING] Ajouter un domaine depuis le tableau de bord ne déclenche aucun scan - `decelio/app/actions/sites.ts`
   - **Dépendances** : Aucune
   - **Défaut** : `addMonitoredSite` et `addMonitoredSitesBulk` n'appellent jamais `inngest.send`. Seul `app/(app)/onboarding/actions.ts` émet `app/scan.site`. Un site ajouté depuis le tableau de bord reste sans aucun scan jusqu'au passage du cron quotidien.
   - **Décision du fondateur (28/09) : à corriger.** Un domaine ajouté depuis le tableau de bord doit déclencher un scan, comme dans l'onboarding.
-  - **Plan d'implémentation** (établi le 28/09, non écrit) :
-    1. Dans `app/actions/sites.ts`, ajouter un helper `triggerSiteScans(sites)` qui envoie `app/scan.site` pour chaque site, avec l'identifiant déterministe `scan-site-${site.id}` — Inngest déduplique ainsi un double envoi sur sa fenêtre de 24 h. Le helper ne lève jamais : en cas d'échec il renvoie `false`.
-    2. `addMonitoredSite` renvoie `{ data, scanTriggered }`.
-    3. `addMonitoredSitesBulk(raw, options)` accepte `{ triggerScan = true }` et renvoie `scanTriggered` dans `data`.
-    4. `app/(app)/onboarding/actions.ts` appelle le bulk avec `{ triggerScan: false }` — il envoie déjà ses propres événements ; sans ce garde-fou, deux scans partiraient par site sous deux identifiants différents.
-    5. `components/DashboardSites.tsx` affiche un message **honnête** selon `scanTriggered` : « premier scan lancé » seulement si c'est vrai, sinon « il partira au prochain passage quotidien ». Même règle pour l'ajout en lot.
-    6. Ajouter `vi.mock('@/inngest/client', …)` en tête de `app/actions/sites.test.ts` : sans lui, l'import du client Inngest casse la suite existante.
+  - **Preuve : #182.** Helper `triggerSiteScans`, identifiant déterministe `scan-site-<id>`, ne lève jamais. `addMonitoredSite` et `addMonitoredSitesBulk` renvoient `scanTriggered` ; le tableau de bord n'annonce un scan que s'il a réellement démarré. L'onboarding appelle le lot avec `{ triggerScan: false }` pour éviter un double scan.
   - **Vérification** : un site ajouté depuis le tableau de bord est scanné, une ligne `ScanLog` apparaît, et l'interface n'annonce un scan que lorsqu'il a réellement démarré.
   - **Taille** : S
 
-- [ ] **T092** [ING] Aucun repli d'expéditeur pour les e-mails d'alerte hors production - `decelio/lib/alerting/sendAlert.ts:33`
+- [x] **T092** [ING] Aucun repli d'expéditeur pour les e-mails d'alerte hors production - `decelio/lib/alerting/sendAlert.ts:33`
   - **Dépendances** : Aucune
   - **Défaut** : l'expéditeur est figé à `Decelio <bonjour@decelio.fr>`. Tant que le domaine n'est pas vérifié chez Resend, tout envoi d'alerte échoue en 403 et la fonctionnalité ne peut être vérifiée de bout en bout, même en local. Le refus lui-même est sain — on n'enregistre pas d'alerte non envoyée — mais il rend le test impossible.
   - **Décision du fondateur (28/09) : ajouter un expéditeur de repli**, pour rendre T083 testable sans attendre le DNS.
-  - **Plan d'implémentation** (établi le 28/09, non écrit) :
-    1. Créer `lib/email/from.ts` exportant `DEFAULT_EMAIL_FROM = "Decelio <bonjour@decelio.fr>"` et `emailFrom()`, qui renvoie `process.env.ALERT_FROM_EMAIL` s'il est non vide après `trim()`, sinon l'adresse par défaut. Lecture **à chaque appel**, jamais au chargement du module, pour qu'un test puisse faire varier la variable.
-    2. Remplacer les **six** expéditeurs figés : `lib/alerting/sendAlert.ts:33` (const `FROM`) et sa seule utilisation ligne 158, `lib/alerting/sendFounderOffer.ts:100`, et quatre occurrences dans `lib/email/resend.ts` (lignes 41, 88, 224, 308).
-    3. Documenter `ALERT_FROM_EMAIL` dans `.env.example`, à laisser **vide en production**.
-    4. En local, mettre `Decelio <onboarding@resend.dev>` : cet expéditeur fonctionne sans domaine vérifié mais n'écrit qu'au propriétaire du compte Resend, soit `krom.pro@outlook.com`.
-    5. Tests dans `lib/email/from.test.ts` : variable absente, vide, composée d'espaces, valeur normale, valeur entourée d'espaces.
-  - **La production ne change pas** tant que la variable n'est pas définie.
+  - **Preuve : #182.** Nouveau `lib/email/from.ts` : `emailFrom()` lit `ALERT_FROM_EMAIL` à chaque appel, sinon garde `Decelio <bonjour@decelio.fr>`. Les six expéditeurs figés sont remplacés. `ALERT_FROM_EMAIL` documentée dans `.env.example`, à laisser vide en production. La production ne change pas tant que la variable n'est pas définie.
   - **Vérification** : en local, une alerte part vers l'adresse du compte Resend et `AlertEvent` est écrit.
   - **Taille** : S
+
+- [x] **T093** [ING] Panne du scanner par montée d'undici : corrigée, garde posée - `decelio/lib/scanner/crawler.ts`, `.github/dependabot.yml`
+  - **Dépendances** : Aucune
+  - **Défaut** : la demande Dependabot #174 avait monté `undici` de 7.30.0 à 8.11.2. Depuis, **aucune requête du scanner ne partait** : `lib/scanner/crawler.ts` passe au `fetch` global un dispatcher construit avec la classe `Agent` d'undici (protection contre le rebinding DNS), et le `fetch` global de Node embarque sa propre copie d'undici en 7.x — il refuse un dispatcher venant d'un undici majeur différent (`UND_ERR_INVALID_ARG`). Reproduit : un scan réel d'example.com renvoyait `simpleStatus: "ERREUR"`, `httpStatus: 0`, `error: "fetch failed"` pour tous les robots. Les 749 tests n'ont rien vu : ils simulent tous `fetch`.
+  - **Preuve : #183.** Retour à `undici: ^7.30.0` ; nouveau test sans réseau externe `lib/scanner/crawler.dispatcher.test.ts` (serveur `node:http` local, vrai `fetch`, vrai dispatcher épinglé), vérifié qu'il échoue sous undici 8 et passe sous undici 7 ; `undici` ajouté aux montées majeures ignorées de `.github/dependabot.yml`, avec la raison écrite. `createPinnedDispatcher` inchangée, protection SSRF intacte. Preuve après correction : scan réel d'example.com, les trois robots répondent HTTP 200.
+  - **Vérification** : `lib/scanner/crawler.dispatcher.test.ts` vert ; un scan réel aboutit avec un code HTTP non nul.
+  - **Taille** : S
+
+- [ ] **T094** [ING] Tests de réalité : sortir la couche réseau, Stripe et l'e-mail de la simulation - `decelio/lib/scanner/*`, CI
+  - **Dépendances** : Aucune
+  - **Angle mort identifié le 28/09** : les 749 tests simulent le réseau, Stripe et l'envoi d'e-mails. Seule la base de données est réelle en CI (service PostgreSQL 17). C'est ce qui a laissé passer la panne `undici` de T093 sans qu'aucun test ne l'attrape.
+  - **Note** : trois pistes retenues, par ordre de rentabilité — (1) des « tests de réalité » sans simulation, contre un serveur local, pour la couche réseau sortante (c'est ce qui aurait attrapé la panne undici) ; (2) une commande « vérification avant mise en ligne » lancée à la main, avec de vrais appels (scan réel, base, Stripe en mode test, envoi d'e-mail de test), qui ne peut pas tourner en CI faute de clés ; (3) un parcours client rejoué par Playwright, à faire seulement quand il y aura des clients.
+  - **Décision du fondateur (28/09) : à traiter après le MVP**, pas maintenant.
+  - **Vérification** : au moins la piste (1) est en place et aurait attrapé une régression du type undici/fetch.
+  - **Taille** : M

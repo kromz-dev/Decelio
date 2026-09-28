@@ -7,6 +7,14 @@ Source de vérité pour reprendre le travail, avec un humain ou un agent.
 
 ---
 
+## 28/09 (soir) — quatre demandes fusionnées, panne undici trouvée et corrigée
+
+T089 à T092 (phase 13) sont fusionnées : le bouton « Relancer un scan » émet enfin un événement écouté et n'affiche plus « Scan terminé » en cas d'échec (#181) ; un site ajouté depuis le tableau de bord déclenche son premier scan, et les alertes ont un expéditeur de repli configurable (#182). Baseline des migrations Prisma sur Neon `main` (production) vérifié : T073 cochée. `AUTH_TRUST_HOST` ajoutée à `render.yaml`, qui aurait cassé la connexion en production sans elle (#184).
+
+**Panne majeure trouvée et corrigée (#183)** : la montée d'`undici` en version 8 (Dependabot #174) empêchait silencieusement le scanner de faire la moindre requête réseau réelle, sans qu'aucun des 749 tests ne le voie — ils simulent tous `fetch`. Corrigé en revenant à `undici` 7, avec un nouveau test qui parle à un vrai serveur local. `undici` est désormais exclue des montées majeures automatiques.
+
+T082 est décochée : sa preuve reposait sur un scan fait avant la correction de la panne undici, donc invalide. À rejouer. T083 est débloqué par #182. État détaillé, ordre de reprise et pièges : `docs/REPRISE.md`.
+
 ## 28/09 — rangement, test local du MVP, défauts trouvés
 
 **Espace de travail consolidé.** Le dépôt vit désormais dans un seul dossier, `business/saas/decelio`, avec le `.git` dedans — c'est l'ancien `Cited` renommé. Le worktree lié `decelio-ing` a été supprimé après récupération de ses trois fichiers de suivi non commités, qui étaient plus récents que ceux de `main`. Les dossiers inertes (`Cited-backups`, `_archives`, `exemplesaasdesign`, `prompts-gemini-v4.md`) sont regroupés dans `business/saas/_archive/`. Une sauvegarde complète de l'état d'avant existe dans `business/saas-backup-2026-09-28/` — à conserver jusqu'à ce que le fondateur soit certain que rien n'est perdu. Fusionné par #178. Les deux stash antérieurs (`feat/t021-bulk`, PostHog T005) sont intacts.
