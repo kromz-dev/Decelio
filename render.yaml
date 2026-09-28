@@ -24,6 +24,18 @@ services:
         sync: false # URL Neon DIRECTE / non poolée (hôte sans -pooler), requise par Prisma Migrate — voir runbook §a
       - key: AUTH_SECRET
         generateValue: true
+      # Auth.js v5 refuse la requête (MissingAuthTrustHost) derrière un proxy
+      # inverse tant qu'on ne lui dit pas de faire confiance à l'en-tête
+      # « host » transmis. Render en est un : sans cette variable, la
+      # connexion est cassée en production.
+      - key: AUTH_TRUST_HOST
+        value: "true"
+      # Nombre de relais de confiance devant l'application, pour lire la
+      # bonne IP d'appel dans x-forwarded-for (lib/rate-limit.ts). Render
+      # en pose un seul. La valeur par défaut du code est déjà 1 : on
+      # l'écrit ici pour qu'elle soit visible et vérifiable.
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
       - key: AUTH_GOOGLE_ID
         sync: false
       - key: AUTH_GOOGLE_SECRET
