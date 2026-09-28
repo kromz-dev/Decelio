@@ -46,9 +46,9 @@ Aucune de ces branches n'est prise en compte dans les cases cochées de `tasks/m
 
 ### Ce qui bloque le lancement
 
-- **SIREN en attente.** Micro-entreprise en franchise de TVA (ADR-003) : **aucune vente avant** de l'avoir reçu.
-- **Resend : domaine créé, DNS à ajouter.** `decelio.fr` acheté depuis le 26/09, créé dans Resend le 27/09 (région eu-west-1), mais **non vérifié** : les enregistrements DNS OVH restent à ajouter (T068).
-- **Neon `main` (production) sans historique de migrations.** Les tables existent (poussées par `db push`), mais aucune table `_prisma_migrations` : `npx prisma migrate deploy` échouera tel quel, il faut baseliner d'abord (T073). **Protection impossible en offre gratuite** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render.
+- **SIREN en cours d'attribution.** Nous avons décidé de ne pas attendre le SIREN pour lancer (facturation légale avec la mention "SIREN en cours d'attribution"). Stripe est maintenu (Lemon Squeezy rejeté car il annulerait l'avantage de la franchise en base de TVA). Stripe bloquera les virements (payouts) temporairement, mais les encaissements peuvent commencer.
+- **Resend : domaine créé, DNS à ajouter (BLOQUÉ).** `decelio.fr` acheté le 26/09, attente de 48h pour la propagation des DNS OVH (T068).
+- **Neon `main` (production) sans historique de migrations (RÉSOLU).** Les tables existaient (poussées par `db push`), mais l'historique a été réparé le 28/09 via `npx prisma migrate resolve` (T073). Le déploiement standard via `npx prisma migrate deploy` fonctionne désormais. **Protection impossible en offre gratuite** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render.
 - **Render : rootDir déjà `decelio/`** (vérifié), variables d'environnement et déploiement automatique à configurer dans le tableau de bord (T003/T004).
 - **Aucun webhook Stripe** (T074), et Stripe reste en mode test — l'activation en réel (T075) suit le SIREN.
 

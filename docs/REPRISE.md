@@ -62,7 +62,8 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 ### Fondateur
 
 - **Décision du fondateur : on ne déploie pas tant que le MVP n'est pas entièrement testé en local** (Neon `local-dev`, Stripe en mode test). C'est la prochaine étape, avant tout déploiement. Le parcours complet est dans la liste de contrôle, section 4. Prérequis à poser avant de commencer : installer Stripe CLI (absent du poste, nécessaire pour relayer les webhooks avec `stripe listen --forward-to localhost:3000/api/webhooks/stripe`) ; lancer le serveur Inngest local avec `npx inngest-cli@latest dev` ; savoir que les e-mails ne partiront pas tant que le domaine Resend n'est pas vérifié (DNS OVH, voir T068). Une fois le test local réussi : poser l'étiquette Git `v0.1-mvp` sur `main`.
-- SIREN : ensuite, compléter les pages légales et activer Stripe en paiement réel.
+- **Décision du fondateur (28/09) : on n'attend plus le SIREN pour lancer.** On garde Stripe (au lieu d'un MoR) pour conserver l'avantage de la franchise en base de TVA. Les factures porteront la mention "SIREN en cours d'attribution". Stripe bloquera les virements temporairement, mais on peut encaisser.
+- Le déploiement complet via Render a été lancé (migrations Prisma baselines appliquées le 28/09).
 - Fusionner #159 et #101 (droits « workflow » que l'agent n'a pas), et décider du sort de `claude/upbeat-franklin-3lkvc0`.
 
 ## 4. Façon de travailler
