@@ -4,28 +4,37 @@
 
 Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` le prouve.
 
-## 0. Session du 28/09 — à lire en premier
+## 0. Session du 28/09 (soir) — à lire en premier
 
-**Le dépôt a déménagé.** Un seul dossier désormais : `business/saas/decelio`, avec le `.git` dedans, l'application dans `decelio/decelio`. C'est l'ancien `Cited` renommé ; le worktree `decelio-ing` n'existe plus. Les dossiers morts sont dans `business/saas/_archive/`, et une sauvegarde complète d'avant l'opération est dans `business/saas-backup-2026-09-28/` — ne pas la supprimer sans vérification. Fusionné par #178.
+**Quatre demandes fusionnées ce soir.** T089 à T092 sont réglées :
+- **#181** (T089, T090) : le bouton « Relancer un scan » émettait un événement (`campaign.run`) qu'aucune fonction n'écoutait. Il émet maintenant `app/scan.site`, sur un `MonitoredSite` réel de l'utilisateur. Le faux message « Scan terminé » en cas d'échec est supprimé : un échec affiche la cause en rouge, un succès dit « Scan lancé » (le scan est asynchrone, il n'est pas déjà « terminé »).
+- **#182** (T091, T092) : ajouter un site depuis le tableau de bord déclenche désormais son premier scan (identifiant déterministe, jamais de doublon avec l'onboarding). L'expéditeur des e-mails d'alerte a un repli configurable (`lib/email/from.ts`, variable `ALERT_FROM_EMAIL`), à laisser vide en production.
+- **#183 — panne majeure trouvée et corrigée** : depuis la montée de dépendance `undici` 7 → 8 (Dependabot #174), **le scanner ne faisait plus aucune requête réseau**. `lib/scanner/crawler.ts` passe un dispatcher `undici` au `fetch` global de Node pour se protéger du rebinding DNS ; le `fetch` de Node embarque sa propre copie d'`undici` en version 7 et refuse un dispatcher d'une version majeure différente (`UND_ERR_INVALID_ARG`). Tous les scans réels échouaient (`httpStatus: 0`, `error: "fetch failed"`), **sans qu'aucun des 749 tests ne le voie** : ils simulent tous `fetch`, aucun ne parle à un vrai serveur. Corrigé en revenant à `undici: ^7.30.0`, avec un nouveau test qui parle à un vrai serveur local (`lib/scanner/crawler.dispatcher.test.ts`) et qui aurait attrapé la panne. `undici` est ajouté aux montées majeures ignorées de Dependabot, avec la raison écrite dans `.github/dependabot.yml`.
+- **#184** : `AUTH_TRUST_HOST` manquait dans `render.yaml` bien que `.env.example` la documente. Sans elle, Auth.js v5 refuse toute connexion derrière le proxy inverse de Render (`MissingAuthTrustHost`) — la connexion aurait été cassée en production après un déploiement pourtant réussi. Ajoutée, avec `TRUSTED_PROXY_HOPS=1` (déjà la valeur par défaut du code, écrite pour être vérifiable).
 
-**Pourquoi Render échouait depuis le 25/09** : `DIRECT_URL` n'était pas définie sur le service. `prisma migrate deploy` tourne dans le `buildCommand` et lit `directUrl` ; `render.yaml` la déclare `sync: false`, donc Render ne la remplit jamais seul. Les variables ont été collées par le fondateur le 28/09. **Aucun déploiement n'a encore été relancé** — c'est la prochaine action côté Render.
+**Leçon à retenir** : les 749 tests simulent le réseau, Stripe et l'envoi d'e-mails. Ils ne peuvent pas attraper une panne comme celle d'`undici`, qui casse uniquement le vrai réseau. C'est une dette connue, section 5 (« tests de réalité »).
 
-**Test local du MVP** : T080, T081, T082, T084 validés. T083 bloqué par Resend (403, domaine non vérifié) — comportement correct du code, qui n'enregistre pas une alerte non envoyée. T087 partiel, aucun défaut : zéro erreur console, zéro violation CSP sur treize écrans, PostHog toujours par `/ingest`. Restent T085, T086, T088.
+**État de `main` après ces fusions** : `tsc`, `eslint`, `build` verts ; **749 tests sur 92 fichiers** (`npx vitest run`, revérifié ce soir).
 
-**L'ordre du parcours n'est pas l'ordre numérique** : le plan gratuit a `maxSites: 0`, donc T084 (souscription) doit précéder T082 (ajout de site).
+**Neon `main` (production)** : le baseline est fait. Les 5 migrations (`20260925000000_init`, `20260926230000_add_updated_at_and_site_unique`, `20260927000000_audit_lead_brand_name_optional`, `20260927120000_add_user_trial_fields`, `20260927180000_add_user_terms_acceptance`) y sont enregistrées. T073 est cochée.
 
-**Quatre défauts ouverts en phase 13.** T089 et T090 bloquent le lancement : le bouton « Relancer un scan » émet un événement qu'aucune fonction n'écoute, et il affiche « Scan terminé » même en échec. T091 et T092 appellent une décision du fondateur.
+**Render : jamais déployé, contrairement à ce qu'une version antérieure de ce document laissait entendre.** Service `srv-darer6btqb8s73f7d670`, URL actuelle `https://cited-6ihy.onrender.com`. Quatre déploiements, **tous en `build_failed`**, aucun n'a jamais abouti. Le dernier, le 27/09 à 23h55, a échoué sur `Error code: P1012 — Environment variable not found: DIRECT_URL`. `autoDeploy` reste sur `no`. Variables encore à saisir par le fondateur, dans le tableau de bord Render, jamais dans une conversation : `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `INNGEST_SIGNING_KEY`, `INNGEST_EVENT_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SOLO`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_SCALE`, `RESEND_API_KEY`, `ENGINE_CACHE_SECRET`, `GEMINI_API_KEY`, `GROQ_API_KEY` ; puis, après le premier déploiement, `NEXT_PUBLIC_APP_URL` et `STRIPE_WEBHOOK_SECRET`.
 
-**Décisions du fondateur (28/09)** : `autoDeploy` reste sur `no` jusqu'au premier déploiement réussi, puis passera à `yes`. **On finit le parcours local avant tout déploiement.** T091 est à corriger, T092 aura un expéditeur de repli. Les plans d'implémentation des deux sont écrits dans `tasks/mvp-tasks.md`, phase 13 — ils sont prêts à coder, rien n'a encore été écrit dans le code.
+**T083 débloqué.** `.env.local` du poste porte désormais `ALERT_FROM_EMAIL="Decelio <onboarding@resend.dev>"` (grâce à #182) : l'alerte peut partir en local, vers `krom.pro@outlook.com`, seule adresse autorisée sans domaine Resend vérifié.
 
-**Ordre de reprise conseillé** : T089 et T090 d'abord (les deux bloquants, même fichier, une seule branche), puis T091 et T092 dont les plans sont prêts, puis finir le parcours local T085, T086, T087, T088. Le déploiement Render vient après.
+**T082 décoché, à rejouer.** Il avait été validé le 28/09 avant la découverte de la panne `undici` : le scan réel qui a servi de preuve tournait sur un code qui, ensuite, ne fonctionnait plus. À revérifier avec le code corrigé (#183) avant de le recocher.
 
-**Tranché, à ne plus rechercher** : Gemini et Groq ne servent pas au scan. Le renommage Neon `cited` → `decelio` a été refusé par le classifieur de permissions de la session ; à faire depuis la console Neon, en dernier, en sachant que les quatre chaînes de connexion seront à recopier ensuite.
+**Ordre de reprise conseillé** : rejouer T082 (scan réel, code corrigé) ; puis T085, T086, T087, T088 pour finir le parcours local ; puis le déploiement Render, en commençant par saisir les variables manquantes listées ci-dessus et en relançant un déploiement manuel.
+
+**Piège à ne plus refaire** : après une fusion qui touche les dépendances (comme #183), relancer `npm ci` avant tout test local — sinon on teste un `node_modules` périmé, pas le vrai code. C'est ce qui s'est produit ce soir : le dossier local avait encore `undici` 7.29.1 alors que le verrou demandait 8.11.2.
+
+**Tranché, à ne plus rechercher** : Gemini et Groq ne servent pas au scan. Le renommage Neon `cited` → `decelio` a été refusé par le classifieur de permissions de la session ; à faire depuis la console Neon, en dernier, en sachant que les quatre chaînes de connexion seront à recopier ensuite. La demande #180 (plan marketing) reste ouverte, non fusionnée.
 
 ## 1. Ce qui est sur `main`
 
-- Code vérifié en fin de journée : `tsc`, `eslint`, `vitest` (**733 tests sur 89 fichiers**) et `build` au vert. CI verte sur les derniers commits.
-- Fusionné depuis hier soir :
+- Code vérifié en fin de soirée du 28/09 : `tsc`, `eslint`, `vitest` (**749 tests sur 92 fichiers**) et `build` au vert. CI verte sur les derniers commits.
+- Fusionné le 28/09 (soir) : #181 (T089, T090 — bouton « Relancer un scan »), #182 (T091, T092 — scan à l'ajout, expéditeur de repli), #183 (panne du scanner par montée d'`undici`, corrigée), #184 (`AUTH_TRUST_HOST` dans `render.yaml`). Détail en section 0.
+- Fusionné depuis le 27/09 (soir) :
   - **E-mails aux couleurs du site** (#167) : gabarit commun `lib/email/layout.ts` (logo servi depuis `https://decelio.fr`, couleurs du site, bouton en pilule, polices système, pied `contact@decelio.fr` + `/confidentialite`, verdicts avec forme et mot), appliqué à la réinitialisation du mot de passe, la découverte, le rapport mensuel, la fin d'essai, l'alerte et le récapitulatif, l'offre fondatrice. Pas d'e-mail de bienvenue, il n'existe pas.
   - **Plateforme détectée affichée sur la fiche d'un site** (#168) : lue dans le payload du `ScanLog`, sans migration (`lib/sites/latest-platform.ts`, schéma partagé `lib/scanner/platform-schema.ts`).
   - **Mode sombre de l'application** (#169, Design).
@@ -48,9 +57,10 @@ Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` l
 ## 2. En cours
 
 - **Dépôt GitHub assaini (27/09, soir)** : `main` est désormais **protégée** — toute modification passe par une demande de fusion (PR), même pour l'administrateur ; pas d'écrasement (force push) ni de suppression de `main` ; aucune approbation obligatoire (fondateur seul). Les branches sont **supprimées automatiquement** après fusion. Les branches mortes ont été supprimées.
-- **#159 (hygiène des secrets)** et **#101 (CodeQL v4)** : vertes, mais touchent `.github/workflows` — fusion par le fondateur, l'agent n'a pas l'autorisation « workflow ».
-- **`claude/upbeat-franklin-3lkvc0`** : branche de compétences d'agent ajoutées le 27/09, non fusionnée, à décider par le fondateur.
-- **Dependabot** : #173 (lucide-react, resend, three) et #174 (undici 8, compatible Node 22.19+, Render sur Node 22) fusionnées ; #172 (PostgreSQL 18 pour la base locale) fermée — on garde PostgreSQL 17, comme Neon en production. #171 a corrigé l'écosystème docker → docker-compose.
+- **#159 (hygiène des secrets)** et **#101 (CodeQL v4)** : fusionnées le 28/09 (soir).
+- **`claude/upbeat-franklin-3lkvc0`** : branche de compétences d'agent ajoutées le 27/09, toujours non fusionnée, à décider par le fondateur.
+- **Dependabot** : #173 (lucide-react, resend, three) fusionnée. #174 (undici 8) a été fusionnée puis a **cassé silencieusement tout le scanner** (voir section 0, #183) : `undici` est revenu en version 7 et est désormais dans les montées majeures ignorées de `.github/dependabot.yml`. #172 (PostgreSQL 18 pour la base locale) fermée — on garde PostgreSQL 17, comme Neon en production. #171 a corrigé l'écosystème docker → docker-compose.
+- **#180 (plan marketing)** : toujours ouverte, non fusionnée.
 - Aucune autre branche ouverte connue à cette date.
 
 ## 3. Reste à faire
@@ -72,7 +82,7 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 | Stripe (réel) | Non activé, un seul compte visible (mode test). | Activer, puis recréer prix, coupon, portail et webhook | SIREN |
 | Neon `main` (production) | Baseline documenté et rejoué sans risque sur une branche jetable (voir `docs/runbooks/deploiement-render-neon.md`, section a). | Lancer le baseline pour de vrai au déploiement, avec la chaîne de `main`, jamais avant. | Fondateur, au déploiement |
 | Neon `local-dev` | Toutes les migrations appliquées, schéma identique à `schema.prisma`. Confirmé le 28/09 : `migrate status` répond « Database schema is up to date! ». | — | — |
-| Render | Root Directory `decelio/`, région Francfort, `healthCheckPath` `/api/health`, déploiement automatique coupé. Quatre déploiements en échec (`build_failed`) entre le 25 et le 27/09, cause identifiée : `DIRECT_URL` absente. `DATABASE_URL` et `DIRECT_URL` collées par le fondateur le 28/09. | Relancer un déploiement manuel et vérifier `/api/health`. Compléter les autres variables de `.env.example` (`AUTH_TRUST_HOST=true`, `TRUSTED_PROXY_HOPS=1`, `RESEND_API_KEY`, clés Inngest, Stripe, PostHog). Domaine `decelio.fr`. Décider si `autoDeploy` repasse à `yes`. Secrets collés par le fondateur dans le tableau de bord, jamais dans une conversation. | Fondateur |
+| Render | Jamais déployé avec succès : **quatre déploiements, tous en `build_failed`**. Le dernier (27/09, 23h55) a échoué sur `DIRECT_URL` absente (P1012). `DATABASE_URL` et `DIRECT_URL` collées par le fondateur le 28/09. `AUTH_TRUST_HOST` et `TRUSTED_PROXY_HOPS=1` désormais dans `render.yaml` (#184, 28/09 soir). | Saisir les variables encore manquantes (voir section 0), relancer un déploiement manuel et vérifier `/api/health`. Domaine `decelio.fr`. Décider si `autoDeploy` repasse à `yes`. Secrets collés par le fondateur dans le tableau de bord, jamais dans une conversation. | Fondateur |
 | Inngest | — | Déclarer l'application avec l'URL de production, puis ajouter les clés | Déploiement |
 | Google OAuth | Pas de bouton « Continuer avec Google » à l'écran actuellement. | Ajouter l'URL de retour de production ; poser la mention CGV Google avec le bouton, quand il existera. | Déploiement |
 | PostHog | Vérification locale faite par le Design dans un navigateur : aucune requête hors `localhost`, événements bien sur `/ingest`. | Refaire la vérification une fois l'application déployée (T072 reste non cochée). | Déploiement |
@@ -81,8 +91,8 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 
 - **Décision du fondateur : on ne déploie pas tant que le MVP n'est pas entièrement testé en local** (Neon `local-dev`, Stripe en mode test). C'est la prochaine étape, avant tout déploiement. Le parcours complet est dans la liste de contrôle, section 4. Prérequis à poser avant de commencer : installer Stripe CLI (absent du poste, nécessaire pour relayer les webhooks avec `stripe listen --forward-to localhost:3000/api/webhooks/stripe`) ; lancer le serveur Inngest local avec `npx inngest-cli@latest dev` ; savoir que les e-mails ne partiront pas tant que le domaine Resend n'est pas vérifié (DNS OVH, voir T068). Une fois le test local réussi : poser l'étiquette Git `v0.1-mvp` sur `main`.
 - **Décision du fondateur (28/09) : on n'attend plus le SIREN pour lancer.** On garde Stripe (au lieu d'un MoR) pour conserver l'avantage de la franchise en base de TVA. Les factures porteront la mention "SIREN en cours d'attribution". Stripe bloquera les virements temporairement, mais on peut encaisser.
-- Le déploiement complet via Render a été lancé (migrations Prisma baselines appliquées le 28/09).
-- Fusionner #159 et #101 (droits « workflow » que l'agent n'a pas), et décider du sort de `claude/upbeat-franklin-3lkvc0`.
+- Le baseline des migrations Prisma sur Neon `main` est fait (28/09). **Render n'a en revanche jamais été déployé avec succès** — voir section 0 et le tableau de configuration ci-dessous.
+- #159 et #101 (droits « workflow ») sont fusionnés. `claude/upbeat-franklin-3lkvc0` existe toujours comme branche distante non fusionnée, à décider par le fondateur.
 
 ## 4. Façon de travailler
 
@@ -101,3 +111,5 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 - Un test instable a été signalé par le Design le 27/09 : non reproduit après six passages complets, aucun échec dans l'historique CI du jour hors Dependabot. À surveiller, pas encore un défaut confirmé.
 - Le logo des e-mails pointe vers `https://decelio.fr` et restera cassé tant que le site n'est pas déployé — c'est normal.
 - Dans un gabarit d'e-mail, ne jamais mettre de guillemets doubles dans une valeur de style (ex. police `"Segoe UI"`) : ils coupent l'attribut `style="…"` en plein milieu (corrigé dans #167).
+- **Après une fusion qui touche les dépendances, relancer `npm ci` avant tout test local.** Sinon on teste un `node_modules` périmé, pas le vrai code (piège rencontré le 28/09 soir avec `undici`).
+- **Piège undici/fetch** : ne jamais construire un dispatcher `undici` (protection SSRF, rebinding DNS) avec une version majeure d'`undici` différente de celle embarquée dans le `fetch` global de Node — Node la refuse silencieusement côté réseau réel (`UND_ERR_INVALID_ARG`), et **aucun test qui simule `fetch` ne peut le voir**. `undici` est verrouillé en version 7 et ignoré par Dependabot pour cette raison (#183).
