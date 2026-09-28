@@ -703,13 +703,27 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 - [ ] **T091** [ING] Ajouter un domaine depuis le tableau de bord ne déclenche aucun scan - `decelio/app/actions/sites.ts`
   - **Dépendances** : Aucune
   - **Défaut** : `addMonitoredSite` et `addMonitoredSitesBulk` n'appellent jamais `inngest.send`. Seul `app/(app)/onboarding/actions.ts` émet `app/scan.site`. Un site ajouté depuis le tableau de bord reste sans aucun scan jusqu'au passage du cron quotidien.
-  - **Décision attendue du fondateur** : comportement voulu ou à corriger. Si c'est voulu, le dire à l'écran plutôt que de laisser croire au contraire.
-  - **Vérification** : un site ajouté depuis le tableau de bord est scanné, ou l'interface annonce clairement quand il le sera.
+  - **Décision du fondateur (28/09) : à corriger.** Un domaine ajouté depuis le tableau de bord doit déclencher un scan, comme dans l'onboarding.
+  - **Plan d'implémentation** (établi le 28/09, non écrit) :
+    1. Dans `app/actions/sites.ts`, ajouter un helper `triggerSiteScans(sites)` qui envoie `app/scan.site` pour chaque site, avec l'identifiant déterministe `scan-site-${site.id}` — Inngest déduplique ainsi un double envoi sur sa fenêtre de 24 h. Le helper ne lève jamais : en cas d'échec il renvoie `false`.
+    2. `addMonitoredSite` renvoie `{ data, scanTriggered }`.
+    3. `addMonitoredSitesBulk(raw, options)` accepte `{ triggerScan = true }` et renvoie `scanTriggered` dans `data`.
+    4. `app/(app)/onboarding/actions.ts` appelle le bulk avec `{ triggerScan: false }` — il envoie déjà ses propres événements ; sans ce garde-fou, deux scans partiraient par site sous deux identifiants différents.
+    5. `components/DashboardSites.tsx` affiche un message **honnête** selon `scanTriggered` : « premier scan lancé » seulement si c'est vrai, sinon « il partira au prochain passage quotidien ». Même règle pour l'ajout en lot.
+    6. Ajouter `vi.mock('@/inngest/client', …)` en tête de `app/actions/sites.test.ts` : sans lui, l'import du client Inngest casse la suite existante.
+  - **Vérification** : un site ajouté depuis le tableau de bord est scanné, une ligne `ScanLog` apparaît, et l'interface n'annonce un scan que lorsqu'il a réellement démarré.
   - **Taille** : S
 
 - [ ] **T092** [ING] Aucun repli d'expéditeur pour les e-mails d'alerte hors production - `decelio/lib/alerting/sendAlert.ts:33`
   - **Dépendances** : Aucune
   - **Défaut** : l'expéditeur est figé à `Decelio <bonjour@decelio.fr>`. Tant que le domaine n'est pas vérifié chez Resend, tout envoi d'alerte échoue en 403 et la fonctionnalité ne peut être vérifiée de bout en bout, même en local. Le refus lui-même est sain — on n'enregistre pas d'alerte non envoyée — mais il rend le test impossible.
-  - **Décision attendue du fondateur** : ajouter un expéditeur de repli en développement, ou accepter d'attendre T068.
+  - **Décision du fondateur (28/09) : ajouter un expéditeur de repli**, pour rendre T083 testable sans attendre le DNS.
+  - **Plan d'implémentation** (établi le 28/09, non écrit) :
+    1. Créer `lib/email/from.ts` exportant `DEFAULT_EMAIL_FROM = "Decelio <bonjour@decelio.fr>"` et `emailFrom()`, qui renvoie `process.env.ALERT_FROM_EMAIL` s'il est non vide après `trim()`, sinon l'adresse par défaut. Lecture **à chaque appel**, jamais au chargement du module, pour qu'un test puisse faire varier la variable.
+    2. Remplacer les **six** expéditeurs figés : `lib/alerting/sendAlert.ts:33` (const `FROM`) et sa seule utilisation ligne 158, `lib/alerting/sendFounderOffer.ts:100`, et quatre occurrences dans `lib/email/resend.ts` (lignes 41, 88, 224, 308).
+    3. Documenter `ALERT_FROM_EMAIL` dans `.env.example`, à laisser **vide en production**.
+    4. En local, mettre `Decelio <onboarding@resend.dev>` : cet expéditeur fonctionne sans domaine vérifié mais n'écrit qu'au propriétaire du compte Resend, soit `krom.pro@outlook.com`.
+    5. Tests dans `lib/email/from.test.ts` : variable absente, vide, composée d'espaces, valeur normale, valeur entourée d'espaces.
+  - **La production ne change pas** tant que la variable n'est pas définie.
   - **Vérification** : en local, une alerte part vers l'adresse du compte Resend et `AlertEvent` est écrit.
   - **Taille** : S

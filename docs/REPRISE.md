@@ -16,6 +16,10 @@ Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` l
 
 **Quatre défauts ouverts en phase 13.** T089 et T090 bloquent le lancement : le bouton « Relancer un scan » émet un événement qu'aucune fonction n'écoute, et il affiche « Scan terminé » même en échec. T091 et T092 appellent une décision du fondateur.
 
+**Décisions du fondateur (28/09)** : `autoDeploy` reste sur `no` jusqu'au premier déploiement réussi, puis passera à `yes`. **On finit le parcours local avant tout déploiement.** T091 est à corriger, T092 aura un expéditeur de repli. Les plans d'implémentation des deux sont écrits dans `tasks/mvp-tasks.md`, phase 13 — ils sont prêts à coder, rien n'a encore été écrit dans le code.
+
+**Ordre de reprise conseillé** : T089 et T090 d'abord (les deux bloquants, même fichier, une seule branche), puis T091 et T092 dont les plans sont prêts, puis finir le parcours local T085, T086, T087, T088. Le déploiement Render vient après.
+
 **Tranché, à ne plus rechercher** : Gemini et Groq ne servent pas au scan. Le renommage Neon `cited` → `decelio` a été refusé par le classifieur de permissions de la session ; à faire depuis la console Neon, en dernier, en sachant que les quatre chaînes de connexion seront à recopier ensuite.
 
 ## 1. Ce qui est sur `main`
