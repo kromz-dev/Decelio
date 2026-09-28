@@ -10,6 +10,7 @@ Rappels valables pour toutes les demandes : quatre portes au vert (`tsc`, `lint`
 
 | ID | Agent | Demande | Priorité | Dépend de |
 |---|---|---|---|---|
+| **D-00** | **Ingénierie** | **Le scanner de `main` ne joint plus aucun site (undici 8)** | **Bloquante, avant tout le reste, y compris le test local** | — |
 | D-01 | Ingénierie | Diagnostic de portefeuille gratuit (1 à 5 sites, sans compte), côté API | Haute, après le déploiement | — |
 | D-02 | Ingénierie | E-mails d'essai (bienvenue, relance carte, premier scan, premier rapport) | Haute | Textes à venir (`docs/marketing/emails-essai.md`), domaine Resend vérifié |
 | D-03 | Ingénierie | Événement PostHog quand un rapport est généré ou téléchargé | Moyenne | — |
@@ -33,6 +34,32 @@ Rappels valables pour toutes les demandes : quatre portes au vert (`tsc`, `lint`
 ---
 
 ## Agent Ingénierie
+
+### D-00. Le scanner ne joint plus aucun site — BLOQUANT
+
+**Constat (28/09/2026, reproduit en local sur `main`, commit `e1a2caf`, Node v24.18.0) :** `runCoreScan("https://example.com")` renvoie `access.risk = "unreachable"`, `error: "fetch failed"`, et `ERREUR` pour chaque robot. Aucun site n'est joignable.
+
+**Cause isolée :** `lib/scanner/crawler.ts` crée un dispatcher avec `new Agent(...)` importé du **paquet npm `undici` (8.11.2 depuis la PR Dependabot #174)**, puis le passe au **`fetch` intégré à Node**, qui embarque sa propre version d'undici (7.28.0 sous Node 24). Le `fetch` intégré refuse ce dispatcher :
+
+```
+global fetch + dispatcher undici 8  -> UND_ERR_INVALID_ARG
+fetch du paquet undici 8 + même dispatcher -> 200
+global fetch sans dispatcher -> 200
+```
+
+**Pourquoi la CI est verte :** les tests simulent le réseau et ne font jamais de vraie requête.
+
+**Production :** Render tourne sous Node 22, dont le `fetch` intégré embarque aussi une version d'undici antérieure à 8. Le même échec est très probable, **non vérifié**. Si c'est le cas, le diagnostic public, le scan quotidien et les alertes sont tous en panne.
+
+**Pistes (à choisir et justifier par l'agent Ingénierie) :**
+- utiliser le `fetch` exporté par le paquet `undici` dans `crawler.ts`, avec le même dispatcher, ce qui garantit une seule version cohérente ;
+- ou revenir à une version d'`undici` compatible avec celle embarquée par Node 22 et 24, et bloquer les montées majeures d'`undici` dans Dependabot.
+
+**À ajouter dans tous les cas :** un test d'intégration qui échoue si `fetch` et le dispatcher sont incompatibles. Par exemple : une vraie requête vers un serveur HTTP local lancé par le test, sans réseau externe.
+
+**Impact sur le test local du fondateur (T082 et suivants) :** tant que D-00 n'est pas corrigé, tout site ajouté affichera `ERREUR`.
+
+**Note :** pour le baromètre v2, la session marketing contourne le problème uniquement dans un script local, hors du dépôt, en remplaçant `globalThis.fetch` par le `fetch` du paquet `undici`. Rien n'est modifié dans `decelio/`.
 
 ### D-01. Diagnostic de portefeuille gratuit, côté API
 
