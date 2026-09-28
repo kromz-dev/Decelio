@@ -10,7 +10,7 @@ Rappels valables pour toutes les demandes : quatre portes au vert (`tsc`, `lint`
 
 | ID | Agent | Demande | Priorité | Dépend de |
 |---|---|---|---|---|
-| **D-00** | **Ingénierie** | **Le scanner de `main` ne joint plus aucun site (undici 8)** | **Bloquante, avant tout le reste, y compris le test local** | — |
+| D-00 | Ingénierie | Le scanner de `main` ne joignait plus aucun site (undici 8) | **Résolu le 28/09 par la PR #183** (retour à undici 7 + test) | — |
 | D-01 | Ingénierie | Diagnostic de portefeuille gratuit (1 à 5 sites, sans compte), côté API | Haute, après le déploiement | — |
 | D-02 | Ingénierie | E-mails d'essai (bienvenue, relance carte, premier scan, premier rapport) | Haute | Textes à venir (`docs/marketing/emails-essai.md`), domaine Resend vérifié |
 | D-03 | Ingénierie | Événement PostHog quand un rapport est généré ou téléchargé | Moyenne | — |
@@ -35,7 +35,9 @@ Rappels valables pour toutes les demandes : quatre portes au vert (`tsc`, `lint`
 
 ## Agent Ingénierie
 
-### D-00. Le scanner ne joint plus aucun site — BLOQUANT
+### D-00. Le scanner ne joignait plus aucun site — RÉSOLU (PR #183)
+
+**Résolu le 28/09/2026** par l'agent Ingénierie : retour à undici 7, dont le dispatcher est accepté par le `fetch` de Node, et test qui vérifie que le dispatcher épinglé est accepté. Le constat d'origine est conservé ci-dessous pour mémoire.
 
 **Constat (28/09/2026, reproduit en local sur `main`, commit `e1a2caf`, Node v24.18.0) :** `runCoreScan("https://example.com")` renvoie `access.risk = "unreachable"`, `error: "fetch failed"`, et `ERREUR` pour chaque robot. Aucun site n'est joignable.
 
