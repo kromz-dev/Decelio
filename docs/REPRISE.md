@@ -1,8 +1,26 @@
-# Reprise du projet — état au 27/09/2026 (fin de journée)
+# Reprise du projet — état au 28/09/2026
 
 À lire par toute personne ou IA qui reprend le développement, **après** `CLAUDE.md`. Ce fichier décrit ce qui est sur GitHub, ce qui est en cours et ce qui reste à faire. La liste détaillée de la configuration est dans `docs/runbooks/checklist-mise-en-production.md`.
 
 Règle d'or : on ne coche une tâche, dans `tasks/mvp-tasks.md`, que si `main` le prouve.
+
+## 0. Session du 28/09 — à lire en premier
+
+**Le dépôt a déménagé.** Un seul dossier désormais : `business/saas/decelio`, avec le `.git` dedans, l'application dans `decelio/decelio`. C'est l'ancien `Cited` renommé ; le worktree `decelio-ing` n'existe plus. Les dossiers morts sont dans `business/saas/_archive/`, et une sauvegarde complète d'avant l'opération est dans `business/saas-backup-2026-09-28/` — ne pas la supprimer sans vérification. Fusionné par #178.
+
+**Pourquoi Render échouait depuis le 25/09** : `DIRECT_URL` n'était pas définie sur le service. `prisma migrate deploy` tourne dans le `buildCommand` et lit `directUrl` ; `render.yaml` la déclare `sync: false`, donc Render ne la remplit jamais seul. Les variables ont été collées par le fondateur le 28/09. **Aucun déploiement n'a encore été relancé** — c'est la prochaine action côté Render.
+
+**Test local du MVP** : T080, T081, T082, T084 validés. T083 bloqué par Resend (403, domaine non vérifié) — comportement correct du code, qui n'enregistre pas une alerte non envoyée. T087 partiel, aucun défaut : zéro erreur console, zéro violation CSP sur treize écrans, PostHog toujours par `/ingest`. Restent T085, T086, T088.
+
+**L'ordre du parcours n'est pas l'ordre numérique** : le plan gratuit a `maxSites: 0`, donc T084 (souscription) doit précéder T082 (ajout de site).
+
+**Quatre défauts ouverts en phase 13.** T089 et T090 bloquent le lancement : le bouton « Relancer un scan » émet un événement qu'aucune fonction n'écoute, et il affiche « Scan terminé » même en échec. T091 et T092 appellent une décision du fondateur.
+
+**Décisions du fondateur (28/09)** : `autoDeploy` reste sur `no` jusqu'au premier déploiement réussi, puis passera à `yes`. **On finit le parcours local avant tout déploiement.** T091 est à corriger, T092 aura un expéditeur de repli. Les plans d'implémentation des deux sont écrits dans `tasks/mvp-tasks.md`, phase 13 — ils sont prêts à coder, rien n'a encore été écrit dans le code.
+
+**Ordre de reprise conseillé** : T089 et T090 d'abord (les deux bloquants, même fichier, une seule branche), puis T091 et T092 dont les plans sont prêts, puis finir le parcours local T085, T086, T087, T088. Le déploiement Render vient après.
+
+**Tranché, à ne plus rechercher** : Gemini et Groq ne servent pas au scan. Le renommage Neon `cited` → `decelio` a été refusé par le classifieur de permissions de la session ; à faire depuis la console Neon, en dernier, en sachant que les quatre chaînes de connexion seront à recopier ensuite.
 
 ## 1. Ce qui est sur `main`
 
@@ -53,8 +71,8 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 | Stripe (test) | Portail client (`bpc_1UK9qEE0KhuxlY8ktCu3wqFY`) porte maintenant `privacy_policy_url` (`https://decelio.fr/confidentialite`) et `terms_of_service_url` (`https://decelio.fr/cgv`). | Toujours aucun webhook. Pied de page des factures (ADR-003). Renommer le compte « Cited » en « Decelio ». | Déploiement pour le webhook |
 | Stripe (réel) | Non activé, un seul compte visible (mode test). | Activer, puis recréer prix, coupon, portail et webhook | SIREN |
 | Neon `main` (production) | Baseline documenté et rejoué sans risque sur une branche jetable (voir `docs/runbooks/deploiement-render-neon.md`, section a). | Lancer le baseline pour de vrai au déploiement, avec la chaîne de `main`, jamais avant. | Fondateur, au déploiement |
-| Neon `local-dev` | Toutes les migrations appliquées, schéma identique à `schema.prisma` (`migrate diff` : aucune différence). | — | — |
-| Render | Root Directory déjà `decelio/` (vérifié), région Francfort, `healthCheckPath` `/api/health`, déploiement automatique coupé. | Variables de `.env.example`, dont `DIRECT_URL`, `AUTH_TRUST_HOST=true`, `TRUSTED_PROXY_HOPS=1`, `RESEND_API_KEY`. Domaine `decelio.fr`. Secrets collés par le fondateur dans le tableau de bord, jamais dans une conversation. | Fondateur |
+| Neon `local-dev` | Toutes les migrations appliquées, schéma identique à `schema.prisma`. Confirmé le 28/09 : `migrate status` répond « Database schema is up to date! ». | — | — |
+| Render | Root Directory `decelio/`, région Francfort, `healthCheckPath` `/api/health`, déploiement automatique coupé. Quatre déploiements en échec (`build_failed`) entre le 25 et le 27/09, cause identifiée : `DIRECT_URL` absente. `DATABASE_URL` et `DIRECT_URL` collées par le fondateur le 28/09. | Relancer un déploiement manuel et vérifier `/api/health`. Compléter les autres variables de `.env.example` (`AUTH_TRUST_HOST=true`, `TRUSTED_PROXY_HOPS=1`, `RESEND_API_KEY`, clés Inngest, Stripe, PostHog). Domaine `decelio.fr`. Décider si `autoDeploy` repasse à `yes`. Secrets collés par le fondateur dans le tableau de bord, jamais dans une conversation. | Fondateur |
 | Inngest | — | Déclarer l'application avec l'URL de production, puis ajouter les clés | Déploiement |
 | Google OAuth | Pas de bouton « Continuer avec Google » à l'écran actuellement. | Ajouter l'URL de retour de production ; poser la mention CGV Google avec le bouton, quand il existera. | Déploiement |
 | PostHog | Vérification locale faite par le Design dans un navigateur : aucune requête hors `localhost`, événements bien sur `/ingest`. | Refaire la vérification une fois l'application déployée (T072 reste non cochée). | Déploiement |
@@ -68,7 +86,7 @@ Détail complet : `docs/REPRISE-DESIGN.md`.
 
 ## 4. Façon de travailler
 
-- L'Ingénierie est une session locale, dans le worktree `decelio-ing`, qui délègue à des sous-agents Sonnet.
+- L'Ingénierie est une session locale, dans le dossier `business/saas/decelio`, qui délègue à des sous-agents Sonnet. Le worktree `decelio-ing` a été supprimé le 28/09.
 - Crédits limités : peu d'agents en parallèle, sur un modèle économique.
 - Les fusions sont faites par le fondateur, ou par l'agent quand tout est vert et que le fondateur a donné son accord.
 - La session cloud ne peut pas supprimer de branche distante : le fondateur le fait depuis son clone.
