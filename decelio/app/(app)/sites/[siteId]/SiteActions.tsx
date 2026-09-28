@@ -8,18 +8,29 @@ import { Button } from "@/components/ui/button";
 export function SiteActions({ siteId }: { siteId: string }) {
   const [isPending, startTransition] = useTransition();
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [feedbackIsError, setFeedbackIsError] = useState(false);
 
   const handleRescan = () => {
     setFeedbackMessage(null);
+    setFeedbackIsError(false);
     startTransition(async () => {
       try {
         await launchAuditCampaign(siteId);
-        setFeedbackMessage("Scan lancé.");
+        // Le scan est asynchrone (Inngest) : il est lancé, pas terminé.
+        // Annoncer un résultat ici serait faux (constitution, article I).
+        setFeedbackIsError(false);
+        setFeedbackMessage("Scan lancé. Le résultat apparaîtra dans quelques instants.");
         setTimeout(() => setFeedbackMessage(null), 4000);
-      } catch {
-        // Even if mock site or campaign error, simulate success for UI feedback
-        setFeedbackMessage("Scan terminé, données actualisées.");
-        setTimeout(() => setFeedbackMessage(null), 4000);
+      } catch (error) {
+        // Échec réel : on le dit, avec la cause quand elle est connue.
+        // Ne jamais afficher un succès simulé (constitution, article I).
+        setFeedbackIsError(true);
+        setFeedbackMessage(
+          error instanceof Error
+            ? `Échec de la relance du scan : ${error.message}`
+            : "Échec de la relance du scan.",
+        );
+        // Le message d'erreur reste affiché : l'utilisateur doit pouvoir le lire.
       }
     });
   };
@@ -31,7 +42,14 @@ export function SiteActions({ siteId }: { siteId: string }) {
   return (
     <div className="flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
       {feedbackMessage && (
-        <span className="animate-fade-in rounded-sm border border-ok/30 bg-ok-soft px-2.5 py-1.5 text-sm font-medium text-ok">
+        <span
+          role={feedbackIsError ? "alert" : "status"}
+          className={
+            feedbackIsError
+              ? "animate-fade-in rounded-sm border border-stop/30 bg-stop-soft px-2.5 py-1.5 text-sm font-medium text-stop"
+              : "animate-fade-in rounded-sm border border-ok/30 bg-ok-soft px-2.5 py-1.5 text-sm font-medium text-ok"
+          }
+        >
           {feedbackMessage}
         </span>
       )}
