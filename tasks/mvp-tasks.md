@@ -540,7 +540,7 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
 
 - [ ] **T068** [MARKETING] Vérifier le domaine `decelio.fr` chez Resend - tableau de bord Resend
   - **Dépendances** : Aucune
-  - **Note** : bloquant pour tous les e-mails produits. Domaine créé dans Resend (région eu-west-1), statut **`not_started`** au 27/09 (fin de journée) : la vérification n'a pas commencé. DNS OVH reste à ajouter (TXT `resend._domainkey`, MX `send`, TXT `send` SPF, CNAME `rsend`).
+  - **Note** : (BLOQUÉ) En attente de la propagation des DNS OVH (48h). Bloquant pour tous les e-mails produits. Domaine créé dans Resend, statut `not_started`.
   - **Vérification** : `list-domains` renvoie `decelio.fr` avec le statut vérifié.
   - **Taille** : S
 
@@ -571,7 +571,7 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : les requêtes PostHog partent du domaine `decelio.fr` dans l'onglet réseau, jamais de `*.posthog.com` directement.
   - **Taille** : S
 
-- [ ] **T073** [ING] Baseline des migrations Prisma sur Neon `main` (production) - `docs/runbooks/deploiement-render-neon.md`
+- [x] **T073** [ING] Baseline des migrations Prisma sur Neon `main` (production) - `docs/runbooks/deploiement-render-neon.md`
   - **Dépendances** : Aucune
   - **Note** : les tables existent sur `main` mais aucune table `_prisma_migrations` — la base a été peuplée par `db push`. `npx prisma migrate deploy` échouera tel quel. **Protection de branche impossible en offre gratuite Neon** (0 branche protégée autorisée) : ne jamais sortir la chaîne de `main` hors de Render.
   - **Vérification** : `npx prisma migrate resolve --applied <dernière migration>` exécuté sur `main`, puis `npx prisma migrate status` ne signale plus aucune migration en attente.
@@ -583,9 +583,9 @@ Chaque phase se termine par son point de contrôle avant de passer à la suivant
   - **Vérification** : un événement `checkout.session.completed` envoyé depuis le tableau de bord Stripe en test met à jour l'abonnement de l'utilisateur correspondant.
   - **Taille** : S
 
-- [ ] **T075** [FACT] Activer Stripe en mode réel après réception du SIREN - tableau de bord Stripe
-  - **Dépendances** : SIREN reçu (prérequis administratif du fondateur, aucune vente avant)
-  - **Note** : recréer à l'identique en mode réel les 3 prix, le coupon `FONDATEUR50`, le portail client et le webhook, aujourd'hui uniquement en mode test. Ajouter le pied de page des factures (mention art. 293 B du CGI, franchise de TVA — ADR-003).
+- [ ] **T075** [FACT] Activer Stripe en mode réel - tableau de bord Stripe
+  - **Dépendances** : T074
+  - **Note** : On n'attend plus le SIREN (décision du 28/09). Stripe bloquera les virements, mais on peut encaisser. Recréer à l'identique en mode réel les 3 prix, le coupon `FONDATEUR50`, le portail client et le webhook. Ajouter le pied de page des factures (mention art. 293 B du CGI, franchise de TVA, et "SIREN en cours d'attribution").
   - **Vérification** : un paiement réel de test (carte du fondateur, remboursé ensuite) aboutit à un abonnement actif.
   - **Taille** : M
 
